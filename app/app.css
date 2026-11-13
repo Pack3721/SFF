@@ -296,3 +296,5 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 12px); }
 #setup-status .msg-icon { order: -1; margin: 0; }
 #banner .row .msg-icon { margin-left: auto; }
 @media (max-width: 359px) { .card-texts button { white-space: normal; line-height: 1.15; } }   /* small phones: labels may wrap */
+#sheet .available:disabled { color: #999; background: #f1f1f1; }
+#sheet .available-note { margin: -6px 0 10px; font-size: 13px; color: #777; text-align: center; }

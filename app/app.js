@@ -1038,8 +1038,11 @@ function renderList() {
     } else {                             // the total for your group
       const n = mine.reduce((t, x) => t + x.houses, 0);
       h("p", "total", `${mine.length} segment${mine.length === 1 ? "" : "s"} \u2022 ${n} house${n === 1 ? "" : "s"}`, body);
+      // "available for more" is for when you've finished: greyed out until every tracked segment is done
       const av = h("button", "available", "Text \u201cavailable for more\u201d", body); av.type = "button"; msgIcon(av);
+      av.disabled = !allDone() || !textsReady();
       av.addEventListener("click", () => sendText("available"));
+      if (!allDone()) h("p", "available-note", "Once all your segments are done", body);
     }
     groups.push(["", mine]);
   } else if (pack) for (const d of DATA.dens) groups.push([d.short, d.segments.map(segById)]);
