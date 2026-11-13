@@ -934,25 +934,29 @@ function renderCard() {
   const tg = h("button", "target" + (mySegs.target === s.id ? " on" : ""), mySegs.target === s.id ? "\u25c9 Target" : "\u25ce Make target", row);
   tg.type = "button"; tg.setAttribute("aria-pressed", mySegs.target === s.id);
   tg.addEventListener("click", () => setTarget(s.id));
-  // texts to the dispatcher about this segment
+  // texts to the dispatcher about this segment. Done is offered on your target (and Undo on a done one);
+  // Needs coverage and Need bags only work once texting is set up, so they're greyed out until then.
   const texts = h("div", "card-texts", null, card);
   const isDone = mySegs.done.includes(s.id);
-  const dn = h("button", "done" + (isDone ? " on" : ""), isDone ? "\u2714\ufe0e Done \u2013 undo" : "\u2714\ufe0e Done", texts);
-  dn.type = "button";
-  if (!isDone) msgIcon(dn);
-  dn.addEventListener("click", () => {
-    if (isDone) markDone(s.id, false);   // undo: no text
-    else {                               // marks done either way; texts too when texting is set up
-      if (textsReady()) sendText("done", s.id);
-      markDone(s.id, true);
-    }
-  });
-  const hp = h("button", "", "Need help", texts); hp.type = "button"; msgIcon(hp);
-  hp.addEventListener("click", () => sendText("help", s.id));
-  if (week() !== 2) {                    // bags only go out in Week 1
-    const bg = h("button", "", "Need bags", texts); bg.type = "button"; msgIcon(bg);
-    bg.addEventListener("click", () => sendText("bags", s.id));
+  if (isDone || mySegs.target === s.id) {
+    const dn = h("button", "done" + (isDone ? " on" : ""), isDone ? "\u2714\ufe0e Done \u2013 undo" : "\u2714\ufe0e Done", texts);
+    dn.type = "button";
+    if (!isDone) msgIcon(dn);
+    dn.addEventListener("click", () => {
+      if (isDone) markDone(s.id, false);   // undo: no text
+      else {                               // marks done either way; texts too when texting is set up
+        if (textsReady()) sendText("done", s.id);
+        markDone(s.id, true);
+      }
+    });
   }
+  const textBtn = (label, kind) => {
+    const b = h("button", "", label, texts); b.type = "button"; msgIcon(b);
+    b.disabled = !textsReady();
+    b.addEventListener("click", () => sendText(kind, s.id));
+  };
+  textBtn("Needs coverage", "coverage");
+  if (week() !== 2) textBtn("Need bags", "bags");   // bags only go out in Week 1
   document.body.style.setProperty("--card-h", card.getBoundingClientRect().height + "px");
 }
 
@@ -1151,7 +1155,7 @@ const showTel = (t) => t ? `(${t.slice(2, 5)}) ${t.slice(5, 8)}-${t.slice(8)}` :
 const textsReady = () => !!(settings.tel && settings.group);
 function textBody(kind, id) {
   const who = `Wk${week()} ${settings.group}`;
-  return { done: `${who} \u2013 ${id} done`, help: `${who} \u2013 ${id} need help`,
+  return { done: `${who} \u2013 ${id} done`, coverage: `${who} \u2013 ${id} needs coverage`,
            bags: `${who} \u2013 ${id} need bags`, available: `${who} available` }[kind];
 }
 // iPhones want sms:NUMBER&body=…, Android sms:NUMBER?body=…

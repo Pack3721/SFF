@@ -239,12 +239,13 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 12px); }
   margin-left: auto; flex: none; width: 44px; height: 44px; font-size: 24px;
   color: #333; background: transparent; border: 0;
 }
-.card-texts { display: flex; gap: 8px; margin-top: 10px; }
+.card-texts { display: flex; gap: 6px; margin-top: 10px; }
 .card-texts button {
   font: inherit; font-size: 15px; font-weight: 700; flex: 1; min-height: 48px; padding: 0 6px;
   color: #111; background: #f1f1f1; border: 2px solid #f1f1f1; border-radius: 12px;
 }
-.card-texts button.done { flex: 1.3; color: #fff; background: #1e7e34; border-color: #1e7e34; }
+.card-texts button:disabled { color: #999; background: #f6f6f6; border-color: #f6f6f6; }
+.card-texts button.done { flex: 1 1 auto; color: #fff; background: #1e7e34; border-color: #1e7e34; }
 .card-texts button.done.on { color: #1e7e34; background: #fff; }
 
 .seg-row.is-done .lines { color: #777; }
@@ -281,7 +282,8 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 12px); }
 /* message icons on buttons that text the dispatcher; crossed out while texting isn't set up */
 .msg-icon { flex: none; vertical-align: -3px; margin-left: 6px; }
 .msg-icon.off { opacity: .55; }
-.card-texts button { display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; padding: 0 4px; }
+.card-texts button { display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; padding: 0 4px;
+  min-width: 0; font-size: 14px; letter-spacing: -.01em; flex: 1 1 auto; }
 .card-texts .msg-icon { width: 16px; height: 16px; margin-left: 4px; }
 #setup-status {
   position: fixed; z-index: 2; left: 12px; right: 48px;
@@ -293,3 +295,4 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 12px); }
 #setup-status[hidden] { display: none; }
 #setup-status .msg-icon { order: -1; margin: 0; }
 #banner .row .msg-icon { margin-left: auto; }
+@media (max-width: 359px) { .card-texts button { white-space: normal; line-height: 1.15; } }   /* small phones: labels may wrap */

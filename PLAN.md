@@ -37,7 +37,7 @@ These match the wording printed on page 1 of the map pack:
 | Done | `Wk1 Wolf A – W7 done` |
 | Available for more | `Wk1 Wolf A available` |
 | Need bags (Week 1 only) | `Wk1 Wolf A – W8 need bags` |
-| Need help | `Wk1 Wolf A – W8 need help` |
+| Needs coverage | `Wk1 Wolf A – W8 needs coverage` |
 
 The week (`Wk1` or `Wk2`) goes at the front, so the dispatcher can tell a late Week 1 text from a Week 2 one. The rest matches page 1.
 
@@ -118,10 +118,10 @@ There are 79 segments and 1,183 houses. Den keys are L, T, W, B, WB (Webelos, wh
    Built:
    - A Segments panel with two tabs: **Segments** (the den's, or every den's in the pack view) and **Mine**. Tap ☆ to track the segments your group was given. Mine shows the total and has **Add by ID** for when the dispatcher sends a group elsewhere. Tracking your first segment from the pack view switches to that den.
    - One **target** segment, the one you're on or heading to. It's shown in a banner with progress ("◉ 10", "✔ 12 of 34") and on the map by white dashes that march along it in walking order.
-   - Tap a segment for its **card**: all its lines, Track, Make target, and the texts **✔ Done**, **Need help** and **Need bags** (Week 1 only). Each opens Messages with the text written (`Wk1 Wolf A – W7 done`). Done also marks the segment: ✔ on its tag and in the list, the bar fills, and the target moves to your next segment that isn't done. Undo is on the same button.
+   - Tap a segment for its **card**: all its lines, Track, Make target, and the texts **Needs coverage** and **Need bags** (Week 1 only), plus **✔ Done** on your target's card. Each opens Messages with the text written (`Wk1 Wolf A – W7 done`). Done also marks the segment: ✔ on its tag and in the list, the bar fills, and the target moves to your next segment that isn't done. Undo is on the same button.
    - When every tracked segment is done, the banner offers **"available"** (`Wk1 Wolf A available`). The Mine tab also has the button.
    - **Settings** (⚙): the dispatcher's number (until milestone 4's link or QR fills it in) and the group's name, typed as people say it ("e.g. Wolf A"), since not everyone has the paper map. There's no week setting: the week comes from the date. Save keeps whatever is valid; a number that doesn't look right isn't saved, and the panel says so. Everything is stored only on the phone.
-   - **Works without texting set up.** Done still marks segments. A short amber line under the banner says what's missing ("Texting off – add dispatcher's number"); tap it to open Settings. Need help, Need bags and Available open Settings until texting is set up. Every button that sends a text has a speech-bubble icon, crossed out while texting is off.
+   - **Works without texting set up.** Done still marks segments. A short amber line under the banner says what's missing ("Texting off – add dispatcher's number"); tap it to open Settings. Needs coverage and Need bags are greyed out until texting is set up; Available opens Settings. Every button that sends a text has a speech-bubble icon, crossed out while texting is off.
    - Once you track any segment, the rest of the den turns grey. Their labels are the first to go when zoomed out.
    - `sms:` links use `&body=` on iPhone and `?body=` elsewhere.
 
