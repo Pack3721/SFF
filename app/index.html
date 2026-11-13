@@ -49,8 +49,14 @@
 
 <section id="card" aria-label="Segment" hidden></section>
 
-<section id="sheet" aria-labelledby="sheet-title" hidden>
-  <header><h2 id="sheet-title">Segments</h2><button id="sheet-close" type="button" class="close" aria-label="Close">&#10005;</button></header>
+<section id="sheet" aria-label="Segments" hidden>
+  <header>
+    <div class="tabs" role="tablist" aria-label="Segments">
+      <button id="tab-all" type="button" role="tab">Segments</button>
+      <button id="tab-mine" type="button" role="tab">Mine</button>
+    </div>
+    <button id="sheet-close" type="button" class="close" aria-label="Close">&#10005;</button>
+  </header>
   <div id="sheet-body"></div>
 </section>
 

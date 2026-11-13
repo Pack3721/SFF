@@ -800,24 +800,35 @@ function renderBanner() {
 banner.addEventListener("click", () => mySegs.target && select(mySegs.target, true));
 
 // the list: yours first, then the den's (or every den's, in the whole-pack view)
-let listAnchor = null;                   // {id, group, top}: the row just tapped, kept still on screen
+// the list has two tabs: Segments (the den's, or every den's in the pack view) and Mine (tracked ones)
+let listTab = null;                      // "all" or "mine"; null until the panel is first opened
+let listAnchor = null;                   // {id, top}: the row just tapped, kept still on screen
 function renderList() {
   const body = document.getElementById("sheet-body");
   const keepScroll = body.scrollTop;
   body.textContent = "";
   const pack = denKey === PACK;
   const den = !pack && DATA.dens.find((d) => d.key === denKey);
-  document.getElementById("sheet-title").textContent = pack ? "Segments" : den.short + " segments";
+  const tabAll = document.getElementById("tab-all"), tabMine = document.getElementById("tab-mine");
+  tabAll.textContent = pack ? "All segments" : den.short + " segments";
+  tabMine.textContent = `Mine (${mySegs.tracked.length})`;
+  for (const [b, on] of [[tabAll, listTab !== "mine"], [tabMine, listTab === "mine"]]) {
+    b.classList.toggle("on", on); b.setAttribute("aria-selected", on);
+  }
   const groups = [];
-  const mine = mySegs.tracked.map(segById).sort(segOrder);
-  if (mine.length) groups.push(["Mine", mine]);
-  if (pack) for (const d of DATA.dens) groups.push([d.short, d.segments.map(segById)]);
-  else groups.push([mine.length ? "All " + den.short : "", den.segments.map(segById)]);
+  if (listTab === "mine") {
+    const mine = mySegs.tracked.map(segById).sort(segOrder);
+    if (!mine.length) {
+      h("p", "empty", "No segments yet. On the Segments tab, tap \u2606 on the ones your group was given.", body);
+    }
+    groups.push(["", mine]);
+  } else if (pack) for (const d of DATA.dens) groups.push([d.short, d.segments.map(segById)]);
+  else groups.push(["", den.segments.map(segById)]);
   for (const [title, list] of groups) {
     if (title) h("h3", "", title, body);
     for (const s of list) {
       const row = h("div", "seg-row" + (mySegs.target === s.id ? " is-target" : ""), null, body);
-      row.dataset.id = s.id; row.dataset.group = title;
+      row.dataset.id = s.id;
       const main = h("button", "seg-main", null, row); main.type = "button";
       chip(s, main);
       linesOf(s, main, false);
@@ -830,21 +841,34 @@ function renderList() {
       star.setAttribute("aria-label", (isTracked(s.id) ? "Stop tracking " : "Track ") + s.id);
       star.setAttribute("aria-pressed", isTracked(s.id));
       star.addEventListener("click", () => {
-        listAnchor = { id: s.id, group: title, top: row.getBoundingClientRect().top };
+        listAnchor = { id: s.id, top: row.getBoundingClientRect().top };
         setTracked(s.id, !isTracked(s.id));
       });
     }
   }
-  // put the scroll back, then nudge so the row you tapped hasn't moved (rows above it may have come or gone)
-  body.scrollTop = keepScroll;
+  body.scrollTop = keepScroll;           // a redraw keeps your place; the starred row stays where it was
   if (listAnchor) {
     const a = listAnchor; listAnchor = null;
-    const rows = [...body.querySelectorAll(".seg-row")].filter((r) => r.dataset.id === a.id);
-    const same = rows.find((r) => r.dataset.group === a.group) || rows[rows.length - 1];
+    const same = body.querySelector(`.seg-row[data-id="${a.id}"]`);
     if (same) body.scrollTop += same.getBoundingClientRect().top - a.top;
   }
 }
-function openSheet() { renderList(); sheet.hidden = false; }
+function showTab(tab) {
+  listTab = tab;
+  try { sessionStorage.setItem("sff.listTab", tab); } catch (_) { /* ignore */ }
+  document.getElementById("sheet-body").scrollTop = 0;
+  renderList();
+}
+document.getElementById("tab-all").addEventListener("click", () => showTab("all"));
+document.getElementById("tab-mine").addEventListener("click", () => showTab("mine"));
+function openSheet() {
+  if (!listTab) {                        // first time: the tab used last, else Mine if you have any
+    try { listTab = sessionStorage.getItem("sff.listTab"); } catch (_) { /* ignore */ }
+    if (!listTab) listTab = mySegs.tracked.length ? "mine" : "all";
+  }
+  sheet.hidden = false;
+  renderList();
+}
 function closeSheet() { sheet.hidden = true; }
 document.getElementById("segs-btn").addEventListener("click", openSheet);
 document.getElementById("sheet-close").addEventListener("click", closeSheet);

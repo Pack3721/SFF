@@ -172,7 +172,13 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 12px); }
 #sheet { top: calc(var(--bar-h) + env(safe-area-inset-top) + 24px); display: flex; flex-direction: column; padding-bottom: 0; }
 #sheet[hidden] { display: none; }
 #sheet header { display: flex; align-items: center; }
-#sheet h2 { margin: 0; font-size: 20px; }
+.tabs { display: flex; gap: 6px; padding: 4px 0; }
+.tabs button {
+  font: inherit; font-size: 16px; font-weight: 700; min-height: 44px; padding: 0 14px;
+  color: #333; background: #f1f1f1; border: 2px solid transparent; border-radius: 22px;
+}
+.tabs button.on { color: #fff; background: #111; }
+#sheet .empty { color: #555; font-size: 15px; margin: 16px 0; }
 #sheet-body { overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
 #sheet h3 { margin: 14px 0 4px; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: #555; }
 .seg-row { display: flex; align-items: stretch; border-top: 1px solid #e3e3e3; }
