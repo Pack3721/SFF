@@ -93,11 +93,11 @@ html, body {
 #scale-bar { height: 4px; background: #333; margin-bottom: 2px; }
 #build { display: block; font-size: 10px; color: #999; font-family: ui-monospace, Menlo, monospace; }
 
-body.card-open #segs-btn, body.card-open #scale, body.card-open #gps-status { display: none; }
+body.card-open #segs-handle, body.card-open #scale, body.card-open #gps-status { display: none; }
 body.card-open #tools { bottom: calc(var(--card-h, 0px) + 12px); }
 #tools {
   position: fixed; right: 12px; z-index: 1;
-  bottom: calc(14px + env(safe-area-inset-bottom));
+  bottom: calc(62px + env(safe-area-inset-bottom));   /* above the list tab's row */
   display: flex; flex-direction: column; gap: 10px;
 }
 #tools button {
@@ -289,10 +289,8 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 12px); }
 #settings .preview { margin: 0; font-size: 15px; color: #333; }
 #settings .err { margin: 0; color: #b00000; font-weight: 700; }
 #settings .err:empty { display: none; }
-#settings .save {
-  font: inherit; font-size: 17px; font-weight: 800; min-height: 52px;
-  color: #fff; background: #111; border: 0; border-radius: 12px;
-}
+#settings .saved { margin: 0; font-size: 14px; font-weight: 700; color: #1e7e34; opacity: 0; transition: opacity .3s; }
+#settings .saved.on { opacity: 1; }
 #banner.alldone .fill { background: #1e7e34; }
 
 /* message icons on buttons that text the dispatcher; crossed out while texting isn't set up */
@@ -321,3 +319,14 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 12px); }
 #banner .dot.on { width: 11px; height: 11px; opacity: 1; box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px #111; }
 #banner { overflow: hidden; }
 #banner .content { display: flex; flex-direction: column; gap: 4px; min-width: 0; will-change: transform; }
+
+/* pull-up tab for the segments list: bottom center, a grabber line and a list icon */
+#segs-handle {
+  position: fixed; z-index: 1; left: 50%; transform: translateX(-50%);
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  width: 72px; height: 40px; padding: 4px 0 0; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  color: #333; background: #fff; border: 0; border-radius: 14px; box-shadow: 0 1px 6px rgba(0, 0, 0, .3);
+  touch-action: none;
+}
+#segs-handle .grip { width: 28px; height: 4px; border-radius: 2px; background: #bbb; }
+#sheet header { touch-action: none; }

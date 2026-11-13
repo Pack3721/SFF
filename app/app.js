@@ -443,10 +443,11 @@ function commit() {                     // the full redraw at the current view
   scaleBar();
 }
 
-function scaleBar() {                   // the longest round number of metres that fits in 160 px
+function scaleBar() {                   // the longest round number of metres that fits (160 px at most)
   const mPerPx = M_PER_UNIT / k;
   const steps = [10, 20, 25, 50, 100, 200, 250, 500, 1000];
-  const m = steps.filter((v) => v / mPerPx <= 160).pop() || 10;
+  const room = Math.min(160, wrap.getBoundingClientRect().width / 2 - 60);   // stop short of the list tab
+  const m = steps.filter((v) => v / mPerPx <= room).pop() || 10;
   document.getElementById("scale-bar").style.width = Math.round(m / mPerPx) + "px";
   document.getElementById("scale-text").textContent = `${m} m (~${Math.round(m * 3.281 / 10) * 10} ft)`;
 }
@@ -1337,7 +1338,22 @@ function openSheet() {
   renderList();
 }
 function closeSheet() { slideOut(sheet); }
-document.getElementById("segs-btn").addEventListener("click", openSheet);
+// The list opens from a small pull-up tab at the bottom of the map: tap it or swipe up on it.
+// Swipe down on the list's header to close it.
+const handle = document.getElementById("segs-handle");
+handle.addEventListener("click", openSheet);
+function swipeY(el, dirUp, act) {         // the finger may lift outside el, so listen for that on the page
+  let y0 = null;
+  el.addEventListener("pointerdown", (e) => { y0 = e.clientY; });
+  document.addEventListener("pointerup", (e) => {
+    if (y0 == null) return;
+    const dy = e.clientY - y0; y0 = null;
+    if (dirUp ? dy < -25 : dy > 40) act();
+  });
+  document.addEventListener("pointercancel", () => { y0 = null; });
+}
+swipeY(handle, true, openSheet);
+swipeY(sheet.querySelector("header"), false, closeSheet);
 document.getElementById("sheet-close").addEventListener("click", closeSheet);
 
 // ---------- texts to the dispatcher ----------
@@ -1464,31 +1480,37 @@ function renderSettings() {
 
   const preview = h("p", "preview", null, f);
   const err = h("p", "err", null, f);
-  const save = h("button", "save", "Save", f); save.type = "submit";
+  const saved = h("p", "saved", "\u2714\ufe0e Saved", f);
 
   function paint() {
     preview.textContent = `Texts will read: Wk${week()} ${group.value.trim() || "\u2026"} \u2013 ${mySegs.target || "W7"} done`;
   }
-  group.addEventListener("input", paint);
   paint();
 
-  // Save keeps whatever is good. A number that doesn't look right isn't saved (the old one stays),
-  // and the panel stays open to say so.
-  f.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const typed = tel.value.trim(), t = normTel(typed);
-    if (t) settings.tel = t;
-    else if (!typed) settings.tel = "";
-    settings.group = group.value.trim().replace(/\s+/g, " ");
+  // Saves as you fill it in: the group as you type; the number once it's a good 10 digits (or cleared).
+  // A number that doesn't look right is never saved (the last good one stays); you're told when you leave it.
+  let flash = 0;
+  function store() {
     saveSettings();
     textingChanged();
-    if (typed && !t) {
-      err.textContent = "Saved the rest \u2013 that number doesn\u2019t look right. It needs 10 digits, like (314) 555-0100.";
-      tel.focus();
-      return;
-    }
-    closeSettings();
+    saved.classList.add("on");
+    clearTimeout(flash); flash = setTimeout(() => saved.classList.remove("on"), 1200);
+  }
+  group.addEventListener("input", () => {
+    paint();
+    settings.group = group.value.trim().replace(/\s+/g, " ");
+    store();
   });
+  tel.addEventListener("input", () => {
+    const typed = tel.value.trim(), t = normTel(typed);
+    if (t || !typed) { err.textContent = ""; if (settings.tel !== (t || "")) { settings.tel = t || ""; store(); } }
+  });
+  tel.addEventListener("blur", () => {
+    const typed = tel.value.trim();
+    err.textContent = typed && !normTel(typed) ? "That number doesn\u2019t look right \u2013 it needs 10 digits, like (314) 555-0100." : "";
+    if (normTel(typed)) tel.value = showTel(normTel(typed));   // tidy it up
+  });
+  f.addEventListener("submit", (e) => { e.preventDefault(); document.activeElement.blur(); });   // Return on the keyboard: done typing
 }
 document.getElementById("settings-btn").addEventListener("click", () => openSettings());
 document.getElementById("settings-close").addEventListener("click", closeSettings);
