@@ -216,6 +216,14 @@ function draw() {
     }
   }
 
+  // landmarks (Sappington Elementary, where every walk starts and ends): a marker and its name
+  for (const lm of D.landmarks) {
+    const [x, y] = P(lm.lonlat);
+    const g = screenGroup(Lstop, x, y, 0, ALWAYS);
+    el("circle", { r: 7, fill: "#1a1a1a", stroke: "#fff", "stroke-width": 2.5 }, g);
+    el("text", { class: "landmark", x: 12, "dominant-baseline": "central" }, g).textContent = lm.name;
+  }
+
   // 5. stop signs
   for (const st of D.stops) {
     const [x, y] = P(st.lonlat);
