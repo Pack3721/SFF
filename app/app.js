@@ -922,6 +922,7 @@ function renderBanner() {
     chip(s, row);
     const first = s.lines.find((l) => !l.warning);
     h("span", "what", first ? first.text : "", row);
+    h("span", "hses", s.houses + (s.houses === 1 ? " house" : " houses"), row);
   } else {
     h("span", "what", "No target \u2013 tap to pick one", row);
   }
@@ -934,7 +935,15 @@ function renderBanner() {
   const bar = h("span", "bar", null, prog);
   const fill = h("span", "fill", null, bar);
   fill.style.width = (total ? (100 * done) / total : 0) + "%";
-  if (s) fill.style.background = (segEls[s.id] && segEls[s.id].color) || s.color;
+  if (s) {
+    const col = (segEls[s.id] && segEls[s.id].color) || s.color;
+    fill.style.background = col;
+    if (isTracked(s.id) && !mySegs.done.includes(s.id)) {   // the target's share, pale, just after what's done
+      const next = h("span", "next", null, bar);
+      next.style.width = (100 * s.houses) / total + "%";
+      next.style.background = tint(col, 0.35);
+    }
+  }
   h("span", "count", `${done} of ${total} houses`, prog);
   bar.setAttribute("role", "progressbar");
   bar.setAttribute("aria-valuemin", 0); bar.setAttribute("aria-valuemax", total); bar.setAttribute("aria-valuenow", done);
