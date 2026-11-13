@@ -1337,7 +1337,7 @@ function openSheet() {
   renderList();
 }
 function closeSheet() { slideOut(sheet); }
-document.getElementById("segs-btn").addEventListener("click", openSheet);   // the list button, beside Center on me
+document.getElementById("segs-btn").addEventListener("click", openSheet);   // the list button, in the corner (the one you hit most)
 document.getElementById("sheet-close").addEventListener("click", closeSheet);
 
 // ---------- texts to the dispatcher ----------
