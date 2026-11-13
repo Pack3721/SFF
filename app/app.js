@@ -810,13 +810,14 @@ function renderList() {
   const pack = denKey === PACK;
   const den = !pack && DATA.dens.find((d) => d.key === denKey);
   const tabAll = document.getElementById("tab-all"), tabMine = document.getElementById("tab-mine");
-  tabAll.textContent = pack ? "All segments" : den.short + " segments";
+  tabAll.textContent = "Segments";
   tabMine.textContent = `Mine (${mySegs.tracked.length})`;
   for (const [b, on] of [[tabAll, listTab !== "mine"], [tabMine, listTab === "mine"]]) {
     b.classList.toggle("on", on); b.setAttribute("aria-selected", on);
   }
   const groups = [];
   if (listTab === "mine") {
+    addForm(body);
     const mine = mySegs.tracked.map(segById).sort(segOrder);
     if (!mine.length) {
       h("p", "empty", "No segments yet. On the Segments tab, tap \u2606 on the ones your group was given.", body);
@@ -853,6 +854,34 @@ function renderList() {
     if (same) body.scrollTop += same.getBoundingClientRect().top - a.top;
   }
 }
+// "Add by ID": type the segment(s) the dispatcher sends you to, from any den
+let addMsg = "";
+function addForm(body) {
+  const f = h("form", "add", null, body);
+  const label = h("label", "", null, f);
+  h("span", "add-label", "Add by ID", label);
+  const input = h("input", "", null, label);
+  Object.assign(input, { type: "text", placeholder: "e.g. B7 or B7, B8", autocomplete: "off", spellcheck: false });
+  input.setAttribute("autocapitalize", "characters"); input.setAttribute("enterkeyhint", "done");
+  const go = h("button", "", "Add", f); go.type = "submit";
+  if (addMsg) h("p", "add-msg", addMsg, f);
+  f.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const ids = [], bad = [];
+    for (const raw of input.value.toUpperCase().split(/[\s,;]+/).filter(Boolean)) {
+      const id = raw.replace(/^(M?)WB(?=\d)/, "$1WE");   // Webelos: people may type WB3 for WE3
+      (segById(id) ? ids : bad).push(segById(id) ? id : raw);
+    }
+    addMsg = bad.length ? `No segment ${bad.join(", ")}` : "";
+    if (!ids.length) { renderList(); return; }
+    for (const id of ids) if (!isTracked(id)) mySegs.tracked.push(id);
+    saveSegs();
+    if (ids.length === 1 && !bad.length) {  // one segment: go straight to it on the map
+      closeSheet(); segmentsChanged(true); select(ids[0], true);
+    } else { segmentsChanged(true); }
+  });
+}
+
 function showTab(tab) {
   listTab = tab;
   try { sessionStorage.setItem("sff.listTab", tab); } catch (_) { /* ignore */ }
