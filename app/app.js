@@ -1378,7 +1378,12 @@ function saveSettings() {
 // Keep the address in step with the saved number (…#tel=…), so Add to Home Screen from this page carries
 // it even when it was typed in Settings rather than scanned. replaceState: no reload, no Back step.
 function syncLink() {
-  const frag = settings.tel ? "tel=" + settings.tel.slice(2) : "";   // a setup link's other parts are applied, then dropped
+  // the address keeps the number and a den QR code's den; a setup link's other parts are applied, then dropped
+  const q = new URLSearchParams();
+  if (settings.tel) q.set("tel", settings.tel.slice(2));
+  const den = new URLSearchParams(location.hash.slice(1)).get("den");
+  if (den) q.set("den", den);
+  const frag = q.toString();
   if (frag === location.hash.slice(1)) return;
   history.replaceState(history.state, "", location.pathname + location.search + (frag ? "#" + frag : ""));
 }
@@ -1397,15 +1402,31 @@ const textsReady = () => !!(settings.tel && settings.group);
 function readLink() {
   const q = new URLSearchParams(location.hash.slice(1));
   if (q.has("seg") || q.has("g")) { applySetup(q); return; }
+  linkDen(q.get("den"));
   const t = normTel(q.get("tel"));
   if (!t || t === settings.tel) return;
   settings.tel = t;
   saveSettings();
 }
+// A den's QR code (…#tel=…&den=W) opens the map on that den. It only switches when the link names a den
+// it hasn't switched to before, so re-opening a Home Screen icon doesn't undo a den picked since.
+function linkDen(den) {
+  if (!den || !(den === PACK || DATA.dens.some((d) => d.key === den))) return false;
+  let last = null;
+  try { last = localStorage.getItem("sff.linkDen"); } catch (_) { /* ignore */ }
+  if (last === den) return false;
+  try { localStorage.setItem("sff.linkDen", den); localStorage.setItem(STORE_KEY, den); } catch (_) { /* ignore */ }
+  return true;
+}
 window.addEventListener("hashchange", () => {
-  const full = /(^|&)(seg|g)=/.test(location.hash.slice(1));
+  const h = location.hash.slice(1);
+  const full = /(^|&)(seg|g)=/.test(h);
+  let before = null;
+  try { before = localStorage.getItem("sff.linkDen"); } catch (_) { /* ignore */ }
   readLink();
-  if (full) pick(localStorage.getItem(STORE_KEY) || denKey);   // a whole setup: redraw for its den and segments
+  let after = null;
+  try { after = localStorage.getItem("sff.linkDen"); } catch (_) { /* ignore */ }
+  if (full || after !== before) pick(localStorage.getItem(STORE_KEY) || denKey);   // a new den or a whole setup: redraw
   textingChanged();
 });
 

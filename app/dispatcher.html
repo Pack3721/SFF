@@ -26,19 +26,13 @@
     <p class="small">This page doesn't save or send your number. The QR code is made on this device.</p>
   </section>
 
-  <section id="sheet" class="sheet" hidden>
-    <h2>Scouting for Food &ndash; Pack 721</h2>
-    <p class="lead">Scan with your phone's camera to open the walking map.</p>
-    <div id="qr" class="qr"></div>
-    <p class="link"><span id="link"></span></p>
-    <ol class="steps">
-      <li><b>iPhone:</b> tap Share, then <b>Add to Home Screen</b>, and open <b>SFF 721 Map</b> from there.</li>
-      <li>Pick your den, star (&#9734;) the segments your group was given, and tap one to make it your target.</li>
-      <li>Tap the gear and type your group&rsquo;s name, like &ldquo;Wolf A&rdquo;.</li>
-      <li>Texts to the dispatcher go to <b id="tel-shown"></b>.</li>
-    </ol>
-    <button id="print" type="button" class="print">Print this sheet</button>
-  </section>
+  <fieldset id="mode" class="mode" hidden>
+    <legend>Print</legend>
+    <label><input type="radio" name="mode" id="mode-pack" value="pack" checked> One page for the whole pack</label>
+    <label><input type="radio" name="mode" id="mode-dens" value="dens"> A page for each den (6 pages)</label>
+  </fieldset>
+  <div id="sheets"></div>
+  <button id="print" type="button" class="print" hidden>Print</button>
 </main>
 </body>
 </html>
