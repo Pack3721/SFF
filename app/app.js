@@ -1580,8 +1580,8 @@ function renderSettings() {
     marks(bad);
   });
   f.addEventListener("submit", (e) => { e.preventDefault(); document.activeElement.blur(); });   // Return on the keyboard: done typing
-  moveSection(body);
-  shareSection(body);
+  shareSection(body);                    // for any parent: the map and the dispatcher's number
+  moveSection(body);                     // for your group (or your own Home Screen app): everything
 }
 
 // "Share the map": a QR code another parent can scan off this screen, and the phone's own share sheet.
@@ -1611,24 +1611,31 @@ function qrSvg(text) {
 }
 function moveSection(body) {
   const sec = h("section", "share move", null, body);
-  h("h3", "", "Move my setup", sec);
-  h("p", "hint", "Copy here, then Paste in the Home Screen app or on another phone: number, group, den and segments.", sec);
+  h("h3", "", "Share with your group", sec);
+  h("p", "hint", "For a parent in your group, or your own Home Screen app: your group name" +
+    (settings.group ? ` (\u201c${settings.group}\u201d)` : "") + ", den, segments and the dispatcher\u2019s number. " +
+    "Send it, or Copy here and Paste on the other phone.", sec);
   const row = h("div", "move-row", null, sec);
   const say = h("p", "move-msg", null, sec);
-  const copy = h("button", "share-btn", "Copy my setup", row); copy.type = "button";
+  if (navigator.share) {
+    const send = h("button", "share-btn", "Send to group\u2026", row); send.type = "button";
+    send.addEventListener("click", () => navigator.share({ title: "SFF 721 Map \u2013 " + (settings.group || "our group"),
+      text: "Our group's Scouting for Food segments", url: setupLink() }).catch(() => {}));
+  }
+  const copy = h("button", "share-btn", "Copy", row); copy.type = "button";
   copy.addEventListener("click", () => {
     const link = setupLink();
     (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject())
-      .then(() => { say.textContent = "\u2714\ufe0e Copied. Now open the other app and tap Paste setup."; })
+      .then(() => { say.textContent = "\u2714\ufe0e Copied. On the other phone or app, tap Paste here."; })
       .catch(() => { say.textContent = link; });   // no clipboard: show it to copy by hand
   });
-  const paste = h("button", "share-btn", "Paste setup", row); paste.type = "button";
+  const paste = h("button", "share-btn", "Paste", row); paste.type = "button";
   paste.addEventListener("click", () => {
     if (!navigator.clipboard || !navigator.clipboard.readText) { say.textContent = "This browser can\u2019t paste here. Paste the link into the address bar instead."; return; }
     navigator.clipboard.readText().then((text) => {
       const at = (text || "").indexOf("#");
       const q = new URLSearchParams(at >= 0 ? text.slice(at + 1) : "");
-      if (!q.has("seg") && !q.has("g") && !q.has("tel")) { say.textContent = "That isn\u2019t a setup. Tap Copy my setup on the other one first."; return; }
+      if (!q.has("seg") && !q.has("g") && !q.has("tel")) { say.textContent = "That isn\u2019t a group setup. Tap Copy on the other phone first."; return; }
       const n = applySetup(q);
       pick(localStorage.getItem(STORE_KEY) || denKey);
       textingChanged();
@@ -1640,14 +1647,15 @@ function moveSection(body) {
 }
 function shareSection(body) {
   const sec = h("section", "share", null, body);
-  h("h3", "", "Share the map", sec);
-  h("p", "hint", settings.tel ? "Another parent can scan this. It includes the dispatcher\u2019s number, not your group."
-                              : "Another parent can scan this to open the map.", sec);
+  h("h3", "", settings.tel ? "Share the map & dispatcher\u2019s number" : "Share the map", sec);
+  h("p", "hint", settings.tel
+    ? `For any parent: opens the map with texts going to the dispatcher, ${showTel(settings.tel)}. Doesn\u2019t include your group or segments.`
+    : "For any parent: opens the map. (This phone doesn\u2019t have the dispatcher\u2019s number yet.)", sec);
   const box = h("div", "share-qr", null, sec);
   const link = shareLink();
   loadQr().then(() => { box.textContent = ""; box.appendChild(qrSvg(link)); })
           .catch(() => { box.textContent = "QR code needs a signal the first time."; });
-  const btn = h("button", "share-btn", navigator.share ? "Share link\u2026" : "Copy link", sec); btn.type = "button";
+  const btn = h("button", "share-btn", navigator.share ? "Share map link\u2026" : "Copy map link", sec); btn.type = "button";
   btn.addEventListener("click", () => {
     if (navigator.share) navigator.share({ title: "SFF 721 Map", text: "Scouting for Food walking map", url: link }).catch(() => {});
     else if (navigator.clipboard) navigator.clipboard.writeText(link).then(() => { btn.textContent = "\u2714\ufe0e Copied"; });
