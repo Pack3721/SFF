@@ -277,6 +277,8 @@ function fit() {
 
 function preview() {                    // cheap: move the picture drawn at (k0, tx0, ty0) to (k, tx, ty)
   const s = k / k0;
+  // a plain pan nearing the edge of what's drawn: redraw now (only the offset changes) so no blank shows
+  if (s === 1 && (Math.abs(tx - tx0) > mx * 0.6 || Math.abs(ty - ty0) > my * 0.6)) { commit(); return; }
   const dx = tx - tx0 * s + mx * (1 - s), dy = ty - ty0 * s + my * (1 - s);
   svg.style.transform = `translate(${dx}px, ${dy}px) scale(${s})`;
   scaleBar();
@@ -284,9 +286,11 @@ function preview() {                    // cheap: move the picture drawn at (k0,
 
 let placedK = 0;
 function commit() {                     // the full redraw at the current view
+  const panOnly = k === k0 && k === placedK;   // labels and line widths only depend on the zoom
   k0 = k; tx0 = tx; ty0 = ty;
   svg.style.transform = "";
   view.setAttribute("transform", `translate(${tx + mx} ${ty + my}) scale(${k})`);
+  if (panOnly) return;
   const inv = 1 / k;
   const shrink = Math.min(Math.max(k / 0.8, 0.75), 1);   // labels a bit smaller when zoomed far out
   for (const s of scaled) {
