@@ -1059,7 +1059,7 @@ function renderCard() {
   card.textContent = "";
   // top row, like a row of the segment list: target radio, ID, then the track star and close
   const top = h("div", "card-top", null, card);
-  const rd = targetRadio(s, top, null, true);
+  const rd = targetRadio(s, top);
   rd.addEventListener("click", () => setTarget(s.id));
   chip(s, top);
   h("span", "card-gap", null, top);

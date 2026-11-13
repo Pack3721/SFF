@@ -206,7 +206,7 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 12px); }
   border: 1.5px solid #d0d0d0; border-radius: 22px;
 }
 .radio.labeled.on { color: #111; border-color: #111; }
-.card-top { margin-left: 0; }
+.card-top { margin-left: -10px; }
 
 #sheet { top: calc(var(--bar-h) + env(safe-area-inset-top) + 24px); display: flex; flex-direction: column; padding-bottom: 0; }
 #sheet[hidden] { display: none; }
