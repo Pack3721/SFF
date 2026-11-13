@@ -154,7 +154,7 @@ function draw() {
   const den = pack ? null : D.dens.find((d) => d.key === denKey);
   const mine = new Set(pack ? D.segments.map((s) => s.id) : den.segments);
   // also draw segments you track from other dens (when the dispatcher sends you to help)
-  const shown = new Set([...mine, ...mySegs.tracked]);
+  const shown = new Set(leader ? mine : [...mine, ...mySegs.tracked]);   // den leader: just this den
   const segs = D.segments.filter((s) => shown.has(s.id));
   segEls = {};
   const denColor = Object.fromEntries(D.dens.map((d) => [d.key, d.color]));
@@ -379,9 +379,10 @@ function fitBox(box, instant) {
   follow(false);
   layout();
   const r = wrap.getBoundingClientRect();
-  const cardH = card.classList.contains("open") ? card.getBoundingClientRect().height : 0;
+  const cardH = leader ? leaderPanel.getBoundingClientRect().height
+              : card.classList.contains("open") ? card.getBoundingClientRect().height : 0;
   const below = setupStatus.hidden ? banner : setupStatus;
-  const padTop = below.getBoundingClientRect().bottom - r.top + 12, padSide = 12;           // room for the north arrow, banner,
+  const padTop = leader ? 56 : below.getBoundingClientRect().bottom - r.top + 12, padSide = 12;           // room for the north arrow, banner,
   const padBottom = Math.max(60, cardH + 16);                      // scale, buttons and the segment card
   const bw = box[2] - box[0], bh = box[3] - box[1];
   const W = r.width - 2 * padSide, H = r.height - padTop - padBottom;
@@ -916,6 +917,7 @@ function segmentsChanged(redraw) {
 // once you track any segment, the others turn grey and their labels give way first (see declutter);
 // tapping a grey segment shows it in colour while it's selected
 function styleSegments() {
+  if (leader) { leaderStyle(); return; }
   const any = mySegs.tracked.length > 0;
   for (const id in segEls) {
     const e = segEls[id];
@@ -1001,6 +1003,7 @@ function tapAt(p) {
       if (d < bestD) { best = id; bestD = d; }
     }
   }
+  if (leader) { if (best) assignGroup(best); return; }
   if (best) select(best, false);
   else if (selected) select(null);
 }
@@ -1769,6 +1772,244 @@ function groupPane(pane) {
 document.getElementById("settings-btn").addEventListener("click", () => openSettings());
 document.getElementById("settings-close").addEventListener("click", closeSettings);
 
+// ---------- den leader: split a den into walking groups ----------
+// Picked from the den drop-down. No targets or tracking here: the den's segments are coloured by group, a
+// panel sets how many groups and their names, the first split keeps each group's segments close together
+// with about even houses, and tapping a segment moves it into the selected group. Each group gets a QR
+// code / link that sets a parent's phone up with that group's name and segments. Saved per den, on this phone.
+const LEADER = "LEADER";
+const GROUP_COLORS = ["#1f77b4", "#d62728", "#2ca02c", "#9467bd", "#ff7f0e", "#17becf", "#e377c2", "#8c564b"];
+const LEADER_KEY = "sff.leader";
+let leader = null;                       // {den, n, names, assign: {segId: group}, active} while in this mode
+const leaderPanel = document.getElementById("leader");
+const groupPanel = document.getElementById("gqr");
+
+function leaderStore(den, value) {
+  let all = {};
+  try { all = JSON.parse(localStorage.getItem(LEADER_KEY) || "{}") || {}; } catch (_) { /* ignore */ }
+  if (value === undefined) return all[den];
+  all[den] = value;
+  try { localStorage.setItem(LEADER_KEY, JSON.stringify(all)); } catch (_) { /* ignore */ }
+}
+const saveLeader = () => leaderStore(leader.den, { n: leader.n, names: leader.names, assign: leader.assign });
+function groupNames() {                  // fill in default names: Wolf A, Wolf B, …
+  for (let i = 0; i < leader.n; i++) if (!leader.names[i]) leader.names[i] = `${SINGULAR[leader.den]} ${"ABCDEFGH"[i]}`;
+  leader.names.length = leader.n;
+}
+
+function enterLeader(den) {
+  den = den || (denKey && denKey !== PACK && denKey !== LEADER ? denKey : DATA.dens[0].key);
+  const saved = leaderStore(den);
+  const segIds = DATA.dens.find((d) => d.key === den).segments;
+  const ok = saved && saved.assign && segIds.every((id) => id in saved.assign);
+  leader = { den, n: (saved && saved.n) || 2, names: (saved && saved.names) || [], assign: ok ? saved.assign : null, active: 0 };
+  groupNames();
+  if (!leader.assign) splitGroups();
+  selected = null; renderCard(); closeSheet(); slideOut(availPanel);
+  document.body.classList.add("leader");
+  denKey = den;
+  draw();
+  picker.value = LEADER;
+  renderLeader();
+  slideIn(leaderPanel);
+  fit();
+}
+function exitLeader(quiet) {
+  const den = leader.den;
+  leader = null;
+  document.body.classList.remove("leader");
+  slideOut(leaderPanel); slideOut(groupPanel);
+  if (!quiet) pick(den);
+}
+
+// The first split: walk the den's segments in one sweep (nearest next segment each time), cut the sweep
+// into groups of about equal houses, and keep the sweep, over every starting segment, whose groups are
+// most compact and most even. Contiguous pieces of a sweep stay close together.
+function splitGroups() {
+  const segs = DATA.dens.find((d) => d.key === leader.den).segments.map(segById);
+  const n = Math.min(leader.n, segs.length);
+  const ids = segs.map((s) => s.id), cen = {}, w = {};
+  for (const s of segs) {
+    const pts = DATA.houses.filter((h) => h.seg === s.id).map((h) => P(h.lonlat));
+    cen[s.id] = [pts.reduce((a, p) => a + p[0], 0) / pts.length, pts.reduce((a, p) => a + p[1], 0) / pts.length];
+    w[s.id] = s.houses;
+  }
+  // which side of each main road a segment is on, so groups can stay on one side (cross only at the stop)
+  const roads = DATA.arterials.map((a) => a.line.map(P));
+  const side = (pt, line) => {
+    let bi = 1, bd = Infinity;
+    for (let q = 1; q < line.length; q++) { const d = segDist(pt, line[q - 1], line[q]); if (d < bd) { bd = d; bi = q; } }
+    const [a, b] = [line[bi - 1], line[bi]];
+    return bd > 600 ? 0 : Math.sign((b[0] - a[0]) * (pt[1] - a[1]) - (b[1] - a[1]) * (pt[0] - a[0]));   // 0: too far to matter
+  };
+  const sides = {};
+  for (const id of ids) sides[id] = roads.map((line) => side(cen[id], line));
+  const total = ids.reduce((a, id) => a + w[id], 0);
+  // cost of a split: spread (house-weighted squared distance to the group's middle), unevenness, and main-road
+  // straddling (houses on the smaller side of a road, per group)
+  function cost(assign) {
+    let c = 0;
+    for (let g = 0; g < n; g++) {
+      const mine = ids.filter((id) => assign[id] === g);
+      if (!mine.length) { c += 1e9; continue; }
+      const hs = mine.reduce((a, id) => a + w[id], 0);
+      const m = [mine.reduce((a, id) => a + cen[id][0] * w[id], 0) / hs, mine.reduce((a, id) => a + cen[id][1] * w[id], 0) / hs];
+      c += mine.reduce((a, id) => a + dist(cen[id], m) ** 2 / 150 * w[id], 0);   // squared: one far-off segment costs a lot
+      c += Math.abs(hs - total / n) * 400;
+      roads.forEach((_, r) => {
+        let pos = 0, neg = 0;
+        for (const id of mine) { if (sides[id][r] > 0) pos += w[id]; else if (sides[id][r] < 0) neg += w[id]; }
+        c += Math.min(pos, neg) * 600;
+      });
+    }
+    return c;
+  }
+  let best = null, bestCost = Infinity;
+  for (const start of ids) {
+    // 1. one sweep through the den (nearest next segment), cut into n runs of about equal houses
+    const left = new Set(ids); let cur = start; const tour = [cur]; left.delete(cur);
+    while (left.size) {
+      let nb = null, bd = Infinity;
+      for (const id of left) { const d = dist(cen[cur], cen[id]); if (d < bd) { bd = d; nb = id; } }
+      tour.push(nb); left.delete(nb); cur = nb;
+    }
+    const assign = {}; let acc = 0, g = 0, inGroup = 0;
+    tour.forEach((id, t) => {
+      if (g < n - 1 && inGroup > 0 && (acc + w[id] / 2 > total * (g + 1) / n || tour.length - t < n - g)) { g++; inGroup = 0; }
+      assign[id] = g; acc += w[id]; inGroup++;
+    });
+    // 2. tidy up: move single segments to another group while that lowers the cost
+    let c = cost(assign);
+    for (let pass = 0, moved = true; moved && pass < 30; pass++) {
+      moved = false;
+      for (const id of ids) for (let to = 0; to < n; to++) {
+        const from = assign[id];
+        if (to === from) continue;
+        assign[id] = to;
+        const c2 = cost(assign);
+        if (c2 < c - 1e-6) { c = c2; moved = true; } else assign[id] = from;
+      }
+    }
+    if (c < bestCost) { bestCost = c; best = { ...assign }; }
+  }
+  leader.assign = best;
+  saveLeader();
+}
+
+function assignGroup(id) {
+  leader.assign[id] = leader.active;
+  saveLeader();
+  styleSegments();
+  renderLeader();
+}
+function leaderStyle() {                 // segments in their group's colour (grey if in none)
+  for (const id in segEls) {
+    const e = segEls[id];
+    const g = leader.assign[id];
+    const col = g != null && g < leader.n ? GROUP_COLORS[g] : "#9a9a9a";
+    e.faded = false;
+    for (const [part, attr] of e.paint) part.setAttribute(attr, part === e.homes ? tint(col, 0.45) : col);
+    e.route.setAttribute("opacity", 0.9); e.homes.setAttribute("opacity", 1);
+    for (const x of e.extras) x.setAttribute("opacity", 1);
+    if (e.tagText) {
+      e.tagText.textContent = e.tagLabel; e.tagText.style.fill = "";
+      e.tagBox.setAttribute("x", -e.tagW[0] / 2); e.tagBox.setAttribute("width", e.tagW[0]);
+    }
+    e.halo.style.display = "none";
+  }
+  ants.style.display = "none";
+  for (const [, copy] of fxCopies) copy.remove();
+  fxCopies = [];
+  if (bbox) { placedK = 0; commit(); }
+}
+const groupSegs = (i) => DATA.dens.find((d) => d.key === leader.den).segments.filter((id) => leader.assign[id] === i);
+
+function renderLeader() {
+  leaderPanel.textContent = "";
+  const top = h("div", "card-top", null, leaderPanel);
+  h("h2", "", "Den leader", top);
+  const den = h("select", "leader-den", null, top);
+  den.setAttribute("aria-label", "Den");
+  for (const d of DATA.dens) { const o = h("option", "", d.short, den); o.value = d.key; }
+  den.value = leader.den;
+  den.addEventListener("change", () => enterLeader(den.value));
+  h("span", "card-gap", null, top);
+  const x = h("button", "close", "\u2715", top); x.type = "button"; x.setAttribute("aria-label", "Leave den leader");
+  x.addEventListener("click", () => exitLeader());
+
+  const row = h("div", "leader-count", null, leaderPanel);
+  h("span", "lbl", "Groups", row);
+  const minus = h("button", "step", "\u2212", row); minus.type = "button"; minus.setAttribute("aria-label", "Fewer groups");
+  h("b", "", String(leader.n), row);
+  const plus = h("button", "step", "+", row); plus.type = "button"; plus.setAttribute("aria-label", "More groups");
+  const again = h("button", "share-btn", "Split again", row); again.type = "button";
+  const setN = (n) => {
+    leader.n = Math.max(1, Math.min(8, n)); leader.active = Math.min(leader.active, leader.n - 1);
+    groupNames(); splitGroups(); styleSegments(); renderLeader();
+  };
+  minus.disabled = leader.n <= 1; plus.disabled = leader.n >= 8;
+  minus.addEventListener("click", () => setN(leader.n - 1));
+  plus.addEventListener("click", () => setN(leader.n + 1));
+  again.addEventListener("click", () => { splitGroups(); styleSegments(); renderLeader(); });
+
+  const list = h("div", "groups", null, leaderPanel);
+  for (let i = 0; i < leader.n; i++) {
+    const ids = groupSegs(i), hs = ids.reduce((a, id) => a + segById(id).houses, 0);
+    const g = h("div", "group" + (i === leader.active ? " on" : ""), null, list);
+    g.style.setProperty("--g", GROUP_COLORS[i]);
+    const pickBtn = h("button", "group-pick", null, g); pickBtn.type = "button";
+    pickBtn.setAttribute("aria-label", "Move tapped segments to " + leader.names[i]);
+    pickBtn.setAttribute("aria-pressed", i === leader.active);
+    pickBtn.addEventListener("click", () => { leader.active = i; renderLeader(); });
+    const name = h("input", "group-name", null, g);
+    Object.assign(name, { type: "text", value: leader.names[i], maxLength: 24, autocomplete: "off" });
+    name.setAttribute("aria-label", "Group name");
+    name.addEventListener("focus", () => { if (leader.active !== i) { leader.active = i; for (const el2 of list.children) el2.classList.toggle("on", el2 === g); } });
+    name.addEventListener("input", () => { leader.names[i] = name.value.trim() || leader.names[i]; saveLeader(); });
+    h("span", "group-stats", `${ids.length} seg \u2022 ${hs} hses`, g);
+    const qr = h("button", "share-btn group-qr", "QR", g); qr.type = "button";
+    qr.setAttribute("aria-label", "QR code for " + leader.names[i]);
+    qr.disabled = !ids.length;
+    qr.addEventListener("click", () => showGroupQr(i));
+  }
+  h("p", "hint", "Tap a group, then tap segments on the map to move them into it.", leaderPanel);
+  document.body.style.setProperty("--leader-h", leaderPanel.getBoundingClientRect().height + "px");
+}
+
+function groupLink(i) {                  // a group setup link: name, den, segments and the number if known
+  const q = new URLSearchParams();
+  if (settings.tel) q.set("tel", settings.tel.slice(2));
+  q.set("g", leader.names[i]);
+  q.set("den", leader.den);
+  q.set("seg", groupSegs(i).join(","));
+  return new URL("./", location.href).href + "#" + q.toString().replace(/%2C/g, ",");
+}
+function showGroupQr(i) {
+  const link = groupLink(i);
+  groupPanel.textContent = "";
+  const top = h("div", "card-top", null, groupPanel);
+  const t = h("h2", "", leader.names[i], top); t.style.color = GROUP_COLORS[i];
+  h("span", "card-gap", null, top);
+  const x = h("button", "close", "\u2715", top); x.type = "button"; x.setAttribute("aria-label", "Close");
+  x.addEventListener("click", () => slideOut(groupPanel));
+  h("p", "hint", `${groupSegs(i).join(", ")}. A parent scans this to set up their phone for this group` +
+    (settings.tel ? ", with the dispatcher\u2019s number." : ". (Add the dispatcher\u2019s number in settings to include it.)"), groupPanel);
+  const box = h("div", "share-qr", null, groupPanel);
+  loadQr().then(() => { box.textContent = ""; box.appendChild(qrSvg(link)); })
+          .catch(() => { box.textContent = "QR code needs a signal the first time."; });
+  const row = h("div", "move-row", null, groupPanel);
+  if (navigator.share) {
+    const sh = h("button", "share-btn", "Share link\u2026", row); sh.type = "button";
+    sh.addEventListener("click", () => navigator.share({ title: "SFF 721 Map \u2013 " + leader.names[i], url: link }).catch(() => {}));
+  }
+  const cp = h("button", "share-btn", "Copy link", row); cp.type = "button";
+  cp.addEventListener("click", () => {
+    (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject())
+      .then(() => { cp.textContent = "\u2714\ufe0e Copied"; }).catch(() => { cp.textContent = "Couldn\u2019t copy"; });
+  });
+  slideIn(groupPanel);
+}
+
 // ---------- den picker ----------
 const picker = document.getElementById("den");
 function pick(key, instant) {
@@ -1786,7 +2027,12 @@ function pick(key, instant) {
 // list and closing it without a change also zooms back out to the whole den (there's no separate button).
 let pickerChanged = false;
 picker.addEventListener("focus", () => { pickerChanged = false; });
-picker.addEventListener("change", () => { pickerChanged = true; pick(picker.value); });
+picker.addEventListener("change", () => {
+  pickerChanged = true;
+  if (picker.value === LEADER) { enterLeader(); return; }
+  if (leader) exitLeader(true);
+  pick(picker.value);
+});
 picker.addEventListener("blur", () => { if (!pickerChanged) fit(); });
 
 function start(data) {
@@ -1799,6 +2045,9 @@ function start(data) {
   const o = document.createElement("option");
   o.value = PACK; o.textContent = "Whole pack";
   picker.appendChild(o);
+  const lo = document.createElement("option");
+  lo.value = LEADER; lo.textContent = "Den leader";
+  picker.appendChild(lo);
   const ok = (key) => key === PACK || data.dens.some((d) => d.key === key);
   loadSegs();
   autoTarget();

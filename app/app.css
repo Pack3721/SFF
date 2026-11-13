@@ -182,14 +182,14 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 4px); }
 #banner .label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: #555; }
 #banner .what { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-#card, #sheet, #settings, #avail {
+#card, #sheet, #settings, #avail, #leader, #gqr {
   position: fixed; z-index: 4; left: 0; right: 0; bottom: 0;
   background: #fff; border-radius: 16px 16px 0 0; box-shadow: 0 -2px 12px rgba(0, 0, 0, .3);
   padding: 8px 16px calc(16px + env(safe-area-inset-bottom));
 }
-#card, #sheet, #settings, #avail { transform: translateY(105%); transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
-#card.open, #sheet.open, #settings.open, #avail.open { transform: none; }
-@media (prefers-reduced-motion: reduce) { #card, #sheet, #settings, #avail { transition: none; } }
+#card, #sheet, #settings, #avail, #leader, #gqr { transform: translateY(105%); transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
+#card.open, #sheet.open, #settings.open, #avail.open, #leader.open, #gqr.open { transform: none; }
+@media (prefers-reduced-motion: reduce) { #card, #sheet, #settings, #avail, #leader, #gqr { transition: none; } }
 .card-top { display: flex; align-items: center; gap: 4px; margin-left: -10px; }
 .card-gap { flex: 1; }
 .card-top .star { width: 44px; height: 44px; }
@@ -352,3 +352,32 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 4px); }
 #avail .avail-q { margin: 2px 0 6px; font-size: 16px; }
 #avail .card-top { margin-left: 0; }
 .star:disabled { cursor: default; opacity: .6; }
+
+/* ---------- den leader ---------- */
+body.leader #banner, body.leader #setup-status, body.leader #segs-btn, body.leader #scale, body.leader #gps-status { display: none !important; }
+body.leader #tools { bottom: calc(var(--leader-h, 0px) + 4px); }
+#leader { max-height: 55vh; overflow-y: auto; }
+#leader h2, #gqr h2 { margin: 6px 0; font-size: 20px; }
+#leader .card-top { margin-left: 0; gap: 10px; }
+#leader .leader-den { font: inherit; font-size: 16px; min-height: 40px; padding: 0 8px; border: 1.5px solid #bbb; border-radius: 10px; background: #fff; }
+.leader-count { display: flex; align-items: center; gap: 10px; margin: 6px 0 10px; }
+.leader-count .lbl { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: #555; }
+.leader-count b { min-width: 1.4em; text-align: center; font-size: 20px; }
+.leader-count .step { font: inherit; font-size: 22px; width: 40px; height: 40px; border: 1.5px solid #bbb; border-radius: 50%; background: #fff; color: #111; }
+.leader-count .share-btn { margin-left: auto; min-height: 40px; }
+.groups { display: flex; flex-direction: column; gap: 6px; }
+.group { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 8px; padding: 4px 6px; border: 2px solid transparent; border-radius: 12px; }
+.group.on { border-color: var(--g); background: color-mix(in srgb, var(--g) 10%, #fff); }
+.group-pick { width: 28px; height: 28px; border-radius: 50%; border: 3px solid #fff; background: var(--g); box-shadow: 0 0 0 1.5px var(--g); padding: 0; }
+.group.on .group-pick { box-shadow: 0 0 0 3px #111; }
+.group-name { font: inherit; font-size: 16px; min-width: 0; min-height: 40px; padding: 0 8px; border: 1.5px solid #ccc; border-radius: 10px; }
+.group-stats { font-size: 13px; color: #555; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.group .group-qr { min-height: 36px; padding: 0 12px; font-size: 14px; margin: 0; }
+#leader .hint { margin: 8px 0 0; font-size: 13px; color: #666; }
+#gqr { z-index: 6; text-align: center; }
+#gqr .card-top { margin-left: 0; }
+#gqr .hint { text-align: left; font-size: 14px; color: #555; }
+#gqr .share-qr { display: flex; justify-content: center; }
+#gqr .share-qr svg { width: 220px; height: 220px; }
+#gqr .move-row { display: flex; gap: 8px; justify-content: center; margin-top: 8px; }
+#gqr .share-btn, #leader .share-btn { font: inherit; font-size: 15px; font-weight: 700; min-height: 44px; padding: 0 16px; color: #111; background: #fff; border: 2px solid #333; border-radius: 22px; }
