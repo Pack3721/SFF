@@ -368,7 +368,7 @@ function fitBox(box, instant) {
   layout();
   const r = wrap.getBoundingClientRect();
   const cardH = card.classList.contains("open") ? card.getBoundingClientRect().height : 0;
-  const padTop = 100, padSide = 12;           // room for the north arrow, banner,
+  const padTop = banner.getBoundingClientRect().bottom - r.top + 12, padSide = 12;           // room for the north arrow, banner,
   const padBottom = Math.max(60, cardH + 16);                      // scale, buttons and the segment card
   const bw = box[2] - box[0], bh = box[3] - box[1];
   const W = r.width - 2 * padSide, H = r.height - padTop - padBottom;
@@ -719,7 +719,7 @@ function resumeGps() {
 // Tracked = the segments your group was given. Target = the one you're on or heading to.
 // Both live only on this phone (localStorage).
 const SEG_KEY = "sff.segments";
-let mySegs = { tracked: [], target: null };
+let mySegs = { tracked: [], target: null, done: [] };   // done: filled in by the Done text (milestone 3)
 let segEls = {};                         // id -> drawn pieces, rebuilt by draw()
 let selected = null;                     // the segment shown in the card
 const card = document.getElementById("card");
@@ -732,6 +732,7 @@ function loadSegs() {
     const ok = new Set(DATA.segments.map((s) => s.id));
     mySegs.tracked = (v.tracked || []).filter((id) => ok.has(id));
     mySegs.target = ok.has(v.target) ? v.target : null;
+    mySegs.done = (v.done || []).filter((id) => ok.has(id));
   } catch (_) { /* nothing saved, or no storage */ }
 }
 function saveSegs() { try { localStorage.setItem(SEG_KEY, JSON.stringify(mySegs)); } catch (_) { /* ignore */ } }
@@ -915,14 +916,28 @@ function renderBanner() {
   banner.hidden = false;
   banner.classList.toggle("empty", !s);
   banner.textContent = "";
-  if (!s) {
-    h("span", "what", "No target \u2013 tap to pick one", banner);
-    return;
+  const row = h("span", "row", null, banner);
+  if (s) {
+    h("span", "label", "Target", row);
+    chip(s, row);
+    const first = s.lines.find((l) => !l.warning);
+    h("span", "what", first ? first.text : "", row);
+  } else {
+    h("span", "what", "No target \u2013 tap to pick one", row);
   }
-  h("span", "label", "Target", banner);
-  chip(s, banner);
-  const first = s.lines.find((l) => !l.warning);
-  h("span", "what", first ? first.text : "", banner);
+  // progress: houses on your tracked segments that are done, out of all your tracked houses
+  const mine = mySegs.tracked.map(segById);
+  if (!mine.length) return;
+  const total = mine.reduce((t, x) => t + x.houses, 0);
+  const done = mine.filter((x) => mySegs.done.includes(x.id)).reduce((t, x) => t + x.houses, 0);
+  const prog = h("span", "progress", null, banner);
+  const bar = h("span", "bar", null, prog);
+  const fill = h("span", "fill", null, bar);
+  fill.style.width = (total ? (100 * done) / total : 0) + "%";
+  if (s) fill.style.background = (segEls[s.id] && segEls[s.id].color) || s.color;
+  h("span", "count", `${done} of ${total} houses`, prog);
+  bar.setAttribute("role", "progressbar");
+  bar.setAttribute("aria-valuemin", 0); bar.setAttribute("aria-valuemax", total); bar.setAttribute("aria-valuenow", done);
 }
 banner.addEventListener("click", () => {
   if (mySegs.target) select(mySegs.target, true);
