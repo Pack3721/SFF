@@ -227,7 +227,13 @@ function draw() {
 
     const hh = housesOf[s.id] || [];
     const he = el("path", { d: hh.map((h) => ringD(h.outline.map(P))).join(""), fill: tint(c, 0.45) }, Lhouse);
-    segEls[s.id] = { seg: s, color: c, routes, houses: hh, halo, route: re, homes: he, extras: [] };
+    segEls[s.id] = { seg: s, color: c, routes, houses: hh, halo, route: re, homes: he, extras: [],
+                     paint: [[re, "stroke", c, "#a9a9a9"], [he, "fill", tint(c, 0.45), "#d6d6d6"]] };
+    const extra = (g, kind, part, attr) => {   // a label of this segment, and the part that takes its colour
+      g.segId = s.id; g.kind = kind;
+      segEls[s.id].extras.push(g);
+      segEls[s.id].paint.push([part, attr, c, "#9a9a9a"]);
+    };
 
     // start arrow: from the first route point toward the first point at least 12 units on
     const rt = routes[0];
@@ -236,8 +242,7 @@ function draw() {
       while (j < rt.length - 1 && dist(rt[0], rt[j]) < 12) j++;
       const ang = Math.atan2(rt[j][1] - rt[0][1], rt[j][0] - rt[0][0]) * 180 / Math.PI;
       const g = screenGroup(Larrow, rt[j][0], rt[j][1], ang, ALWAYS);
-      segEls[s.id].extras.push(g);
-      el("path", { d: "M2 0 L-12 -6.5 L-9 0 L-12 6.5 Z", fill: c, stroke: "#fff", "stroke-width": 1.2, "stroke-linejoin": "round" }, g);
+      extra(g, "arrow", el("path", { d: "M2 0 L-12 -6.5 L-9 0 L-12 6.5 Z", fill: c, stroke: "#fff", "stroke-width": 1.2, "stroke-linejoin": "round" }, g), "fill");
     }
 
     // house numbers at the first and last house
@@ -246,16 +251,18 @@ function draw() {
       for (const h of ends) {
         const [x, y] = P(h.lonlat);
         const g = screenGroup(Lnum, x, y, 0, NUMBER);
-        segEls[s.id].extras.push(g);
-        el("text", { class: "endnum", fill: c, "text-anchor": "middle", y: -5 }, g).textContent = h.num;
+        const t = el("text", { class: "endnum", fill: c, "text-anchor": "middle", y: -5 }, g);
+        t.textContent = h.num;
+        extra(g, "num", t, "fill");
       }
     }
 
     // segment ID tag, where the PDF puts it
     const [lx, ly] = P(s.label);
     const g = screenGroup(Lid, lx, ly, 0, pack ? NUMBER : ALWAYS);   // in the pack view IDs give way to each other
-    segEls[s.id].tag = [lx, ly]; segEls[s.id].extras.push(g);
+    segEls[s.id].tag = [lx, ly];
     const box = el("rect", { fill: c, stroke: s.main_road ? "#222" : "#fff", "stroke-width": 1.5, rx: 4 }, g);
+    extra(g, "tag", box, "fill");
     const t = el("text", { class: "segid", "text-anchor": "middle", "dominant-baseline": "central" }, g);
     t.textContent = s.id + (s.main_road ? " ⚠" : "");
     const w = t.getComputedTextLength() + 10;
@@ -392,15 +399,18 @@ function measure(s) {                  // the label's screen box at scale 1, tur
   s.box = { dx: cx * Math.cos(a) - cy * Math.sin(a), dy: cx * Math.sin(a) + cy * Math.cos(a),
             hw: (b.width * c + b.height * n) / 2 + 1, hh: (b.width * n + b.height * c) / 2 + 1, w: b.width };
 }
+const GREY = 9;                          // labels of grey (untracked) segments: give way to everything
 function declutter(shrink) {
   const placed = [];
-  const order = scaled.slice().sort((a, b) => a.prio - b.prio);
+  const prio = (s) => (s.el.segId && segEls[s.el.segId] && segEls[s.el.segId].faded ? GREY : s.prio);
+  const order = scaled.slice().sort((a, b) => prio(a) - prio(b));
   for (const s of order) {
     const x = s.x * k + s.box.dx * shrink, y = s.y * k + s.box.dy * shrink;
     const hw = s.box.hw * shrink, hh = s.box.hh * shrink;
     let show = true;
     if (s.fit && s.fit * k < s.box.w * shrink + 16) show = false;   // street too short for its name
-    if (show && s.prio !== ALWAYS)
+    if (prio(s) === GREY && s.el.kind !== "tag" && k < 1) show = false;   // grey arrows and numbers: walking zoom only
+    if (show && prio(s) !== ALWAYS)
       show = !placed.some((p) => (Math.abs(p.x - x) < p.hw + hw && Math.abs(p.y - y) < p.hh + hh) ||
                                  (s.el.name && p.name === s.el.name && Math.hypot(p.x - x, p.y - y) < 250));
     s.el.style.display = show ? "" : "none";
@@ -689,18 +699,20 @@ function segmentsChanged(redraw) {
 }
 
 // map styling: once you track anything, the rest fades; the target and the selected segment get a halo
+// once you track any segment, the others turn grey and their labels give way first (see declutter);
+// tapping a grey segment shows it in colour while it's selected
 function styleSegments() {
   const any = mySegs.tracked.length > 0;
   for (const id in segEls) {
     const e = segEls[id];
-    const mineSeg = !any || isTracked(id);
-    e.route.setAttribute("opacity", mineSeg ? 0.9 : 0.3);
-    e.homes.setAttribute("opacity", mineSeg ? 1 : 0.4);
-    for (const x of e.extras) x.setAttribute("opacity", mineSeg ? 1 : 0.45);
+    e.faded = any && !isTracked(id) && id !== selected;
+    for (const [part, attr, colour, grey] of e.paint) part.setAttribute(attr, e.faded ? grey : colour);
+    e.route.setAttribute("opacity", e.faded ? 0.8 : 0.9);
     const halo = id === mySegs.target ? "#111" : id === selected ? e.color : null;
     e.halo.style.display = halo ? "" : "none";
     if (halo) { e.halo.setAttribute("stroke", halo); e.halo.setAttribute("stroke-opacity", id === mySegs.target ? 0.8 : 0.35); }
   }
+  if (bbox) { placedK = 0; commit(); }   // relabel: which labels show depends on what's grey
 }
 
 function segBox(s) {
