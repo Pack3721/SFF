@@ -1561,7 +1561,12 @@ function renderSettings() {
     mark(telMark, telBad ? "bad" : typed && normTel(typed) && normTel(typed) === settings.tel ? "ok" : "");
   }
   marks(false);
-  function store() { saveSettings(); textingChanged(); marks(false); }
+  function store() { saveSettings(); textingChanged(); marks(false); refreshShare(); }
+  // the Share section and credits below show the number and group, so redraw them after each save
+  function refreshShare() {
+    for (const el of body.querySelectorAll(":scope > .share, :scope > .about")) el.remove();
+    shareArea(body); about(body);
+  }
   group.addEventListener("input", () => {
     paint();
     settings.group = group.value.trim().replace(/\s+/g, " ");
