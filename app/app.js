@@ -1140,9 +1140,9 @@ function renderBanner() {
   count.setAttribute("aria-label", `${done} of ${total} houses done`);
   bar.setAttribute("role", "progressbar");
   bar.setAttribute("aria-valuemin", 0); bar.setAttribute("aria-valuemax", total); bar.setAttribute("aria-valuenow", done);
-  // preview (?dots): a dot per unfinished segment of yours, in its colour; the target's dot is bigger
+  // a dot per unfinished segment of yours, in its colour; the target's dot is bigger. Swipe to change.
   const left = cycleList();
-  if (DOTS && left.length > 1) {
+  if (left.length > 1) {
     const dots = h("span", "dots", null, banner);
     dots.setAttribute("aria-hidden", "true");
     for (const x of left) {
@@ -1152,10 +1152,9 @@ function renderBanner() {
   }
 }
 
-// ---------- preview (?dots): swipe the banner to change target ----------
+// ---------- swipe the banner to change target ----------
 // Left = next of your unfinished segments, right = previous (wrapping). The banner follows your finger,
 // then the new target slides in; the map glides to it unless Center on me is following you.
-const DOTS = new URLSearchParams(location.search).has("dots");
 const cycleList = () => mySegs.tracked.map(segById).sort(segOrder).filter((x) => !mySegs.done.includes(x.id));
 let swipe = null, swiped = false;
 function cycleTarget(dir) {
@@ -1169,7 +1168,7 @@ function cycleTarget(dir) {
   banner.classList.add(dir > 0 ? "slide-l" : "slide-r");
   if (!me.following) fitBox(segBox(next));
 }
-if (DOTS) {
+{
   banner.addEventListener("pointerdown", (e) => { swipe = { x: e.clientX, y: e.clientY, id: e.pointerId, on: false }; swiped = false; });
   banner.addEventListener("pointermove", (e) => {
     if (!swipe || e.pointerId !== swipe.id) return;

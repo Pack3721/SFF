@@ -315,7 +315,7 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 12px); }
 #sheet .available:disabled { color: #999; background: #f1f1f1; }
 #sheet .available-note { margin: -6px 0 10px; font-size: 13px; color: #777; text-align: center; }
 
-/* preview (?dots): target dots under the progress bar, and the slide when the target changes */
+/* target dots under the progress bar (swipe the banner to change target), and the slide when it changes */
 #banner .dots { display: flex; justify-content: center; align-items: center; gap: 7px; padding: 1px 0 2px; }
 #banner .dot { width: 7px; height: 7px; border-radius: 50%; opacity: .55; }
 #banner .dot.on { width: 11px; height: 11px; opacity: 1; box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px #111; }
