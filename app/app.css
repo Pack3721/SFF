@@ -211,3 +211,4 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 12px); }
 }
 .add-msg { flex-basis: 100%; margin: 0; color: #b00000; font-weight: 700; }
 #sheet .add input::placeholder { text-transform: none; }
+#sheet .total { margin: 4px 0 8px; font-size: 16px; font-weight: 800; }

@@ -874,6 +874,9 @@ function renderList() {
     const mine = mySegs.tracked.map(segById).sort(segOrder);
     if (!mine.length) {
       h("p", "empty", "No segments yet. On the Segments tab, tap \u2606 on the ones your group was given.", body);
+    } else {                             // the total for your group
+      const n = mine.reduce((t, x) => t + x.houses, 0);
+      h("p", "total", `${mine.length} segment${mine.length === 1 ? "" : "s"} \u2022 ${n} house${n === 1 ? "" : "s"}`, body);
     }
     groups.push(["", mine]);
   } else if (pack) for (const d of DATA.dens) groups.push([d.short, d.segments.map(segById)]);
