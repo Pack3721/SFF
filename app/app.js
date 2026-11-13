@@ -19,6 +19,32 @@ const STORE_KEY = "sff.den";
 // The version is the ?v= on this script's own URL: the git SHA once deployed (pages.yml), "dev" locally.
 const BUILD = new URL(document.currentScript.src).searchParams.get("v") || "dev";
 document.getElementById("build").textContent = BUILD === "dev" ? "dev" : BUILD.slice(0, 7);
+
+// Updates: a Home Screen app can sit suspended for days and wake on old code. Whenever the page starts,
+// comes back to the front, is restored, or gets a signal again, fetch index.html fresh (cache: "reload"
+// also refreshes the browser's copy) and reload if it names a different build.
+let checking = false;
+function checkForUpdate() {
+  if (BUILD === "dev" || checking || !navigator.onLine) return;
+  checking = true;
+  fetch(location.pathname, { cache: "reload" })
+    .then((r) => (r.ok ? r.text() : ""))
+    .then((html) => {
+      const m = html.match(/app\.js\?v=([0-9a-f]+)/);
+      if (!m || m[1] === BUILD) return;
+      let tried = null;
+      try { tried = sessionStorage.getItem("sff.reloadedFor"); } catch (_) { /* ignore */ }
+      if (tried === m[1]) return;        // already reloaded for this build once: don't loop
+      try { sessionStorage.setItem("sff.reloadedFor", m[1]); } catch (_) { /* ignore */ }
+      location.reload();
+    })
+    .catch(() => { /* no signal: try again next time */ })
+    .finally(() => { checking = false; });
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden) checkForUpdate(); });
+window.addEventListener("pageshow", (e) => { if (e.persisted) checkForUpdate(); });   // restored from memory
+window.addEventListener("online", checkForUpdate);
+checkForUpdate();
 const svg = document.getElementById("map");
 const wrap = document.getElementById("wrap");
 const view = document.getElementById("view");
