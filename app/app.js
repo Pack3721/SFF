@@ -1580,8 +1580,7 @@ function renderSettings() {
     marks(bad);
   });
   f.addEventListener("submit", (e) => { e.preventDefault(); document.activeElement.blur(); });   // Return on the keyboard: done typing
-  shareSection(body);                    // for any parent: the map and the dispatcher's number
-  moveSection(body);                     // for your group (or your own Home Screen app): everything
+  shareArea(body);                       // tabs: the map & number for anyone, or the whole group setup
 }
 
 // "Share the map": a QR code another parent can scan off this screen, and the phone's own share sheet.
@@ -1609,22 +1608,58 @@ function qrSvg(text) {
   el("path", { d, fill: "#000" }, svgEl);
   return svgEl;
 }
-function moveSection(body) {
-  const sec = h("section", "share move", null, body);
-  h("h3", "", "Share with your group", sec);
+// Share: two tabs, both a link shown as a QR code to scan off this screen, or sent from the phone.
+//  Map & number: for any parent; the map and the dispatcher's number only.
+//  Group setup: for a parent in your group or your own Home Screen app; group, den, segments and number.
+let shareTab = "map";
+function shareArea(body) {
+  const sec = h("section", "share", null, body);
+  h("h3", "", "Share", sec);
+  const tabs = h("div", "tabs share-tabs", null, sec);
+  tabs.setAttribute("role", "tablist");
+  const pane = h("div", "share-pane", null, sec);
+  const tabBtn = (key, label) => {
+    const b = h("button", key === shareTab ? "on" : "", label, tabs); b.type = "button";
+    b.setAttribute("role", "tab"); b.setAttribute("aria-selected", key === shareTab);
+    b.addEventListener("click", () => { shareTab = key; sec.remove(); shareArea(body); });
+  };
+  tabBtn("map", "Map & number");
+  tabBtn("group", "Group setup");
+  if (shareTab === "map") mapPane(pane); else groupPane(pane);
+}
+function qrBox(parent, link) {
+  const box = h("div", "share-qr", null, parent);
+  loadQr().then(() => { box.textContent = ""; box.appendChild(qrSvg(link)); })
+          .catch(() => { box.textContent = "QR code needs a signal the first time."; });
+}
+function mapPane(pane) {
+  h("p", "hint", settings.tel
+    ? `For any parent: opens the map with texts going to the dispatcher, ${showTel(settings.tel)}. Doesn\u2019t include your group or segments.`
+    : "For any parent: opens the map. (This phone doesn\u2019t have the dispatcher\u2019s number yet.)", pane);
+  const link = shareLink();
+  qrBox(pane, link);
+  const row = h("div", "move-row", null, pane);
+  const btn = h("button", "share-btn", navigator.share ? "Share map link\u2026" : "Copy map link", row); btn.type = "button";
+  btn.addEventListener("click", () => {
+    if (navigator.share) navigator.share({ title: "SFF 721 Map", text: "Scouting for Food walking map", url: link }).catch(() => {});
+    else if (navigator.clipboard) navigator.clipboard.writeText(link).then(() => { btn.textContent = "\u2714\ufe0e Copied"; });
+  });
+}
+function groupPane(pane) {
   h("p", "hint", "For a parent in your group, or your own Home Screen app: your group name" +
     (settings.group ? ` (\u201c${settings.group}\u201d)` : "") + ", den, segments and the dispatcher\u2019s number. " +
-    "Send it, or Copy here and Paste on the other phone.", sec);
-  const row = h("div", "move-row", null, sec);
-  const say = h("p", "move-msg", null, sec);
+    "Scan it, send it, or Copy here and Paste on the other phone.", pane);
+  const link = setupLink();
+  qrBox(pane, link);
+  const row = h("div", "move-row", null, pane);
+  const say = h("p", "move-msg", null, pane);
   if (navigator.share) {
     const send = h("button", "share-btn", "Send to group\u2026", row); send.type = "button";
     send.addEventListener("click", () => navigator.share({ title: "SFF 721 Map \u2013 " + (settings.group || "our group"),
-      text: "Our group's Scouting for Food segments", url: setupLink() }).catch(() => {}));
+      text: "Our group's Scouting for Food segments", url: link }).catch(() => {}));
   }
   const copy = h("button", "share-btn", "Copy", row); copy.type = "button";
   copy.addEventListener("click", () => {
-    const link = setupLink();
     (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject())
       .then(() => { say.textContent = "\u2714\ufe0e Copied. On the other phone or app, tap Paste here."; })
       .catch(() => { say.textContent = link; });   // no clipboard: show it to copy by hand
@@ -1643,22 +1678,6 @@ function moveSection(body) {
       const msg = document.querySelector("#settings .move-msg");
       if (msg) msg.textContent = `\u2714\ufe0e Set up: ${settings.group || "no group"}, ${n} segment${n === 1 ? "" : "s"}${settings.tel ? ", dispatcher\u2019s number" : ""}.`;
     }).catch(() => { say.textContent = "Couldn\u2019t read the clipboard. Allow Paste when asked, then try again."; });
-  });
-}
-function shareSection(body) {
-  const sec = h("section", "share", null, body);
-  h("h3", "", settings.tel ? "Share the map & dispatcher\u2019s number" : "Share the map", sec);
-  h("p", "hint", settings.tel
-    ? `For any parent: opens the map with texts going to the dispatcher, ${showTel(settings.tel)}. Doesn\u2019t include your group or segments.`
-    : "For any parent: opens the map. (This phone doesn\u2019t have the dispatcher\u2019s number yet.)", sec);
-  const box = h("div", "share-qr", null, sec);
-  const link = shareLink();
-  loadQr().then(() => { box.textContent = ""; box.appendChild(qrSvg(link)); })
-          .catch(() => { box.textContent = "QR code needs a signal the first time."; });
-  const btn = h("button", "share-btn", navigator.share ? "Share map link\u2026" : "Copy map link", sec); btn.type = "button";
-  btn.addEventListener("click", () => {
-    if (navigator.share) navigator.share({ title: "SFF 721 Map", text: "Scouting for Food walking map", url: link }).catch(() => {});
-    else if (navigator.clipboard) navigator.clipboard.writeText(link).then(() => { btn.textContent = "\u2714\ufe0e Copied"; });
   });
 }
 document.getElementById("settings-btn").addEventListener("click", () => openSettings());

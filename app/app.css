@@ -341,3 +341,7 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 4px); }
 #settings .move-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 #settings .move-msg { margin: 8px 0 0; font-size: 14px; color: #1e7e34; font-weight: 700; overflow-wrap: anywhere; }
 #settings .move-msg:empty { display: none; }
+#settings .share-tabs { justify-content: center; margin: 6px 0 10px; }
+#settings .share-tabs button { font-size: 15px; min-height: 40px; }
+#settings .share-pane .hint { display: block; text-align: left; margin: 0 0 8px; }
+#settings .share-pane .move-row { margin-top: 8px; }
