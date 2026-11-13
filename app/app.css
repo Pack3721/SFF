@@ -93,8 +93,8 @@ html, body {
 #scale-bar { height: 4px; background: #333; margin-bottom: 2px; }
 #build { display: block; font-size: 10px; color: #999; font-family: ui-monospace, Menlo, monospace; }
 
-body.card-open #segs-handle, body.card-open #scale, body.card-open #gps-status { display: none; }
-body.card-open #tools { bottom: calc(var(--card-h, 0px) + 12px); }
+body.card-open #scale, body.card-open #gps-status { display: none; }
+body.card-open #tools { bottom: calc(var(--card-h, 0px) + 58px); }   /* above the list tab */
 #tools {
   position: fixed; right: 12px; z-index: 1;
   bottom: calc(62px + env(safe-area-inset-bottom));   /* above the list tab's row */
@@ -334,3 +334,5 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 12px); }
 }
 #segs-handle .grip { width: 28px; height: 4px; border-radius: 2px; background: #bbb; }
 #sheet header { touch-action: none; }
+/* the list tab stays reachable while a card is open: it sits on the card's top edge */
+body.card-open #segs-handle { bottom: calc(var(--card-h, 0px) + 8px); }
