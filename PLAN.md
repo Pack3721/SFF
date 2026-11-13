@@ -120,7 +120,8 @@ There are 79 segments and 1,183 houses. Den keys are L, T, W, B, WB (Webelos, wh
    - One **target** segment, the one you're on or heading to. It's shown in a banner with progress ("◉ 10", "✔ 12 of 34") and on the map by white dashes that march along it in walking order.
    - Tap a segment for its **card**: all its lines, Track, Make target, and the texts **✔ Done**, **Need help** and **Need bags** (Week 1 only). Each opens Messages with the text written (`Wk1 Wolf A – W7 done`). Done also marks the segment: ✔ on its tag and in the list, the bar fills, and the target moves to your next segment that isn't done. Undo is on the same button.
    - When every tracked segment is done, the banner offers **"available"** (`Wk1 Wolf A available`). The Mine tab also has the button.
-   - **Settings** (⚙): the dispatcher's number (until milestone 4's QR code fills it in), the week (set by the date, with an override for that day only), and the group's name, typed as people say it ("e.g. Wolf A"), since not everyone has the paper map. Save keeps whatever is valid; a number that doesn't look right isn't saved, and the panel says so. A text tapped before the number and group are set opens Settings first. Everything is stored only on the phone.
+   - **Settings** (⚙): the dispatcher's number (until milestone 4's link or QR fills it in) and the group's name, typed as people say it ("e.g. Wolf A"), since not everyone has the paper map. There's no week setting: the week comes from the date. Save keeps whatever is valid; a number that doesn't look right isn't saved, and the panel says so. Everything is stored only on the phone.
+   - **Works without texting set up.** Done still marks segments. A short amber line under the banner says what's missing ("Texting off – add dispatcher's number"); tap it to open Settings. Need help, Need bags and Available open Settings until texting is set up. Every button that sends a text has a speech-bubble icon, crossed out while texting is off.
    - Once you track any segment, the rest of the den turns grey. Their labels are the first to go when zoomed out.
    - `sms:` links use `&body=` on iPhone and `?body=` elsewhere.
 
@@ -132,7 +133,7 @@ There are 79 segments and 1,183 houses. Den keys are L, T, W, B, WB (Webelos, wh
 ## Decisions
 
 - **One QR code for the whole pack,** with a den picker. Dens may need help, and the dispatcher sends free groups to other areas.
-- **The week goes in the text:** `Wk1 Wolf A – W7 done`. Week 1 is Saturday Nov 14, 2026 and Week 2 is Saturday Nov 21, 2026. The app picks the week from the date. Choosing the other week in Settings only lasts that day.
+- **The week goes in the text:** `Wk1 Wolf A – W7 done`. Week 1 is Saturday Nov 14, 2026 and Week 2 is Saturday Nov 21, 2026. The app picks the week from the date; there's no setting.
 - **The dispatcher may be the same both weeks.** A new QR sheet is only needed if the number changes. The week can also be changed in settings.
 - **Hosting:** GitHub Pages, with the workflows checked by zizmor.
 - **iPhones: add to the Home Screen.** Safari tabs are often blocked from location by the phone's settings and never ask. The Home Screen app ("SFF 721 Map") asks for itself, so the app suggests it when Safari is blocked. Worth saying on the QR sheet too.

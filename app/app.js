@@ -372,7 +372,8 @@ function fitBox(box, instant) {
   layout();
   const r = wrap.getBoundingClientRect();
   const cardH = card.classList.contains("open") ? card.getBoundingClientRect().height : 0;
-  const padTop = banner.getBoundingClientRect().bottom - r.top + 12, padSide = 12;           // room for the north arrow, banner,
+  const below = setupStatus.hidden ? banner : setupStatus;
+  const padTop = below.getBoundingClientRect().bottom - r.top + 12, padSide = 12;           // room for the north arrow, banner,
   const padBottom = Math.max(60, cardH + 16);                      // scale, buttons and the segment card
   const bw = box[2] - box[0], bh = box[3] - box[1];
   const W = r.width - 2 * padSide, H = r.height - padTop - padBottom;
@@ -938,14 +939,18 @@ function renderCard() {
   const isDone = mySegs.done.includes(s.id);
   const dn = h("button", "done" + (isDone ? " on" : ""), isDone ? "\u2714\ufe0e Done \u2013 undo" : "\u2714\ufe0e Done", texts);
   dn.type = "button";
+  if (!isDone) msgIcon(dn);
   dn.addEventListener("click", () => {
     if (isDone) markDone(s.id, false);   // undo: no text
-    else if (sendText("done", s.id)) markDone(s.id, true);
+    else {                               // marks done either way; texts too when texting is set up
+      if (textsReady()) sendText("done", s.id);
+      markDone(s.id, true);
+    }
   });
-  const hp = h("button", "", "Need help", texts); hp.type = "button";
+  const hp = h("button", "", "Need help", texts); hp.type = "button"; msgIcon(hp);
   hp.addEventListener("click", () => sendText("help", s.id));
   if (week() !== 2) {                    // bags only go out in Week 1
-    const bg = h("button", "", "Need bags", texts); bg.type = "button";
+    const bg = h("button", "", "Need bags", texts); bg.type = "button"; msgIcon(bg);
     bg.addEventListener("click", () => sendText("bags", s.id));
   }
   document.body.style.setProperty("--card-h", card.getBoundingClientRect().height + "px");
@@ -970,6 +975,7 @@ function renderBanner() {
   } else if (allDone()) {
     banner.classList.add("alldone");
     h("span", "what", "\u2714\ufe0e All done \u2013 tap to text \u201cavailable\u201d", row);
+    msgIcon(row);
   } else {
     h("span", "what", "No target \u2013 tap to pick one", row);
   }
@@ -1028,7 +1034,7 @@ function renderList() {
     } else {                             // the total for your group
       const n = mine.reduce((t, x) => t + x.houses, 0);
       h("p", "total", `${mine.length} segment${mine.length === 1 ? "" : "s"} \u2022 ${n} house${n === 1 ? "" : "s"}`, body);
-      const av = h("button", "available", "Text \u201cavailable for more\u201d", body); av.type = "button";
+      const av = h("button", "available", "Text \u201cavailable for more\u201d", body); av.type = "button"; msgIcon(av);
       av.addEventListener("click", () => sendText("available"));
     }
     groups.push(["", mine]);
@@ -1120,20 +1126,18 @@ document.getElementById("sheet-close").addEventListener("click", closeSheet);
 // Wording matches page 1 of the paper pack, with the week in front: "Wk1 Wolf A – W7 done".
 const SINGULAR = { L: "Lion", T: "Tiger", W: "Wolf", B: "Bear", WB: "Webelos", A: "AOL" };
 const SET_KEY = "sff.settings";
-let settings = { tel: "", wk: null, wkDay: null, group: "" };   // group: typed as people say it, e.g. "Wolf A"
+let settings = { tel: "", group: "" };   // group: typed as people say it, e.g. "Wolf A"
 
 // The 2026 walk: Week 1 (bags) is Saturday Nov 14, Week 2 (pickup) is Saturday Nov 21. The week comes
-// from the date (Week 1 up to Nov 14, Week 2 after). A week picked in Settings only counts on the day it
-// was picked, so a phone set on the 14th doesn't still say Wk1 on the 21st.
+// from the date: Week 1 up to Nov 14, Week 2 after.
 const WEEK_DAYS = { 1: "2026-11-14", 2: "2026-11-21" };
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
-const weekByDate = () => (today() <= WEEK_DAYS[1] ? 1 : 2);
-const week = () => (settings.wk && settings.wkDay === today() ? settings.wk : weekByDate());
+const week = () => (today() <= WEEK_DAYS[1] ? 1 : 2);
 function loadSettings() {
   try {
     const v = JSON.parse(localStorage.getItem(SET_KEY) || "{}");
     if (!v.group && v.groupDen) v.group = SINGULAR[v.groupDen] + (v.letter ? " " + v.letter : "");   // older den + letter
-    settings = { tel: v.tel || "", wk: v.wk || null, wkDay: v.wkDay || null, group: v.group || "" };
+    settings = { tel: v.tel || "", group: v.group || "" };
   } catch (_) { /* ignore */ }
 }
 function saveSettings() { try { localStorage.setItem(SET_KEY, JSON.stringify(settings)); } catch (_) { /* ignore */ } }
@@ -1162,6 +1166,37 @@ function sendText(kind, id) {
   return true;
 }
 function openSms(href) { location.href = href; }   // its own function so tests can catch it
+
+// A speech bubble on every button that sends a text: plain when texting is set up, crossed out when it
+// isn't (Done still marks the segment; the others open Settings).
+function msgIcon(btn) {
+  const on = textsReady();
+  const svgEl = document.createElementNS(NS, "svg");
+  for (const [k_, v] of Object.entries({ viewBox: "0 0 24 24", width: 18, height: 18, class: "msg-icon" + (on ? "" : " off"), "aria-hidden": "true" }))
+    svgEl.setAttribute(k_, v);
+  el("path", { d: "M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H10l-5 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z",
+               fill: "none", stroke: "currentColor", "stroke-width": 2, "stroke-linejoin": "round" }, svgEl);
+  if (!on) el("path", { d: "M3 3l18 18", stroke: "currentColor", "stroke-width": 2.4, "stroke-linecap": "round" }, svgEl);
+  btn.appendChild(svgEl);
+  btn.title = on ? "Sends a text to the dispatcher" : "Texting is off \u2013 add the dispatcher\u2019s number and your group in Settings";
+}
+
+// A status line under the banner while texting isn't set up; tap it to fill in what's missing.
+const setupStatus = document.getElementById("setup-status");
+const bannerH = () => document.documentElement.style.setProperty("--banner-h", banner.offsetHeight + "px");
+if (window.ResizeObserver) new ResizeObserver(bannerH).observe(banner);
+function renderSetupStatus() {
+  bannerH();
+  const say = !settings.tel && !settings.group ? "tap to set up" : !settings.tel ? "add dispatcher\u2019s number"
+            : !settings.group ? "add your group\u2019s name" : "";
+  setupStatus.hidden = !say;
+  setupStatus.textContent = "";
+  if (!say) return;
+  msgIcon(setupStatus);
+  h("span", "", `Texting off \u2013 ${say}`, setupStatus);
+}
+setupStatus.addEventListener("click", () => openSettings());
+function textingChanged() { renderSetupStatus(); renderCard(); renderBanner(); if (!sheet.hidden) renderList(); }
 
 // Done marks the segment: ✔ on the map and list, the progress bar fills, and if it was your target,
 // the target moves on to your next segment that isn't done.
@@ -1202,16 +1237,6 @@ function renderSettings() {
   Object.assign(tel, { type: "tel", value: showTel(settings.tel), placeholder: "10 digits", autocomplete: "off" });
   tel.setAttribute("inputmode", "tel");
 
-  const wkF = h("fieldset", "field", null, f);
-  h("legend", "field-label", "Week", wkF);
-  const wkRow = h("div", "choice", null, wkF);
-  let wk = week();
-  const wkBtns = [[1, "Week 1 \u2013 bags\nSat Nov 14"], [2, "Week 2 \u2013 pickup\nSat Nov 21"]].map(([n, label]) => {
-    const b = h("button", "", label, wkRow); b.type = "button";
-    b.addEventListener("click", () => { wk = n; paint(); });
-    return [n, b];
-  });
-
   const gL = h("label", "field", null, f);
   h("span", "field-label", "Your group", gL);
   const group = h("input", "", null, gL);
@@ -1227,8 +1252,7 @@ function renderSettings() {
   const save = h("button", "save", "Save", f); save.type = "submit";
 
   function paint() {
-    for (const [n, b] of wkBtns) { b.classList.toggle("on", wk === n); b.setAttribute("aria-pressed", wk === n); }
-    preview.textContent = `Texts will read: Wk${wk} ${group.value.trim() || "\u2026"} \u2013 ${mySegs.target || "W7"} done`;
+    preview.textContent = `Texts will read: Wk${week()} ${group.value.trim() || "\u2026"} \u2013 ${mySegs.target || "W7"} done`;
   }
   group.addEventListener("input", paint);
   paint();
@@ -1241,10 +1265,8 @@ function renderSettings() {
     if (t) settings.tel = t;
     else if (!typed) settings.tel = "";
     settings.group = group.value.trim().replace(/\s+/g, " ");
-    // a week that isn't the date's own only sticks for today
-    Object.assign(settings, { wk: wk === weekByDate() ? null : wk, wkDay: wk === weekByDate() ? null : today() });
     saveSettings();
-    renderCard();                        // Need bags comes and goes with the week
+    textingChanged();
     if (typed && !t) {
       err.textContent = "Saved the rest \u2013 that number doesn\u2019t look right. It needs 10 digits, like (314) 555-0100.";
       tel.focus();
@@ -1291,6 +1313,7 @@ function start(data) {
   const ok = (key) => key === PACK || data.dens.some((d) => d.key === key);
   loadSegs();
   loadSettings();
+  renderSetupStatus();
   renderBanner();
   pick(ok(saved) ? saved : PACK, true);
   resumeGps();
