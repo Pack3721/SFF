@@ -1968,7 +1968,8 @@ function renderLeader() {
     name.addEventListener("focus", () => { if (leader.active !== i) { leader.active = i; for (const el2 of list.children) el2.classList.toggle("on", el2 === g); } });
     name.addEventListener("input", () => { leader.names[i] = name.value.trim() || leader.names[i]; saveLeader(); });
     h("span", "group-stats", `${ids.length} seg \u2022 ${hs} hses`, g);
-    const qr = h("button", "share-btn group-qr", "QR", g); qr.type = "button";
+    const qr = h("button", "share-btn group-qr", null, g); qr.type = "button";
+    qr.appendChild(qrIcon());
     qr.setAttribute("aria-label", "QR code for " + leader.names[i]);
     qr.disabled = !ids.length;
     qr.addEventListener("click", () => showGroupQr(i));
@@ -1976,6 +1977,14 @@ function renderLeader() {
   document.body.style.setProperty("--leader-h", leaderPanel.getBoundingClientRect().height + "px");
 }
 
+function qrIcon() {                      // a small QR-code picture: three corner squares and some dots
+  const svgEl = document.createElementNS(NS, "svg");
+  for (const [k_, v] of Object.entries({ viewBox: "0 0 24 24", width: 24, height: 24, "aria-hidden": "true" })) svgEl.setAttribute(k_, v);
+  const d = "M3 3h7v7H3zM5 5v3h3V5zM14 3h7v7h-7zM16 5v3h3V5zM3 14h7v7H3zM5 16v3h3v-3z" +
+            "M14 14h3v3h-3zM18 14h3v2h-3zM14 18h2v3h-2zM17 18h4v3h-4z";
+  el("path", { d, fill: "currentColor", "fill-rule": "evenodd" }, svgEl);
+  return svgEl;
+}
 function groupLink(i) {                  // a group setup link: name, den, segments and the number if known
   const q = new URLSearchParams();
   if (settings.tel) q.set("tel", settings.tel.slice(2));
