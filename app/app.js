@@ -1103,7 +1103,8 @@ function renderBanner() {
   banner.classList.toggle("empty", !s);
   banner.classList.remove("alldone");
   banner.textContent = "";
-  const row = h("span", "row", null, banner);
+  const box = h("span", "content", null, banner);   // slides sideways on a swipe; the frame and dots stay put
+  const row = h("span", "row", null, box);
   if (s) {
     h("span", "label", "Target", row);
     chip(s, row);
@@ -1123,7 +1124,7 @@ function renderBanner() {
   if (!mine.length) return;
   const total = mine.reduce((t, x) => t + x.houses, 0);
   const done = mine.filter((x) => mySegs.done.includes(x.id)).reduce((t, x) => t + x.houses, 0);
-  const prog = h("span", "progress", null, banner);
+  const prog = h("span", "progress", null, box);
   const bar = h("span", "bar", null, prog);
   const fill = h("span", "fill", null, bar);
   fill.style.width = (total ? (100 * done) / total : 0) + "%";
@@ -1153,19 +1154,28 @@ function renderBanner() {
 }
 
 // ---------- swipe the banner to change target ----------
-// Left = next of your unfinished segments, right = previous (wrapping). The banner follows your finger,
-// then the new target slides in; the map glides to it unless Center on me is following you.
+// Left = next of your unfinished segments, right = previous (wrapping). Inside the banner's frame the
+// content follows your finger, slides out, and the new target slides in from the other side (the dots stay
+// put). An open card follows the new target; the map glides to it unless Center on me is following you.
 const cycleList = () => mySegs.tracked.map(segById).sort(segOrder).filter((x) => !mySegs.done.includes(x.id));
 let swipe = null, swiped = false;
+const bannerBox = () => banner.querySelector(".content");
 function cycleTarget(dir) {
   const left = cycleList();
   if (!left.length) return;
   const i = left.findIndex((x) => x.id === mySegs.target);
   const next = left[i < 0 ? (dir > 0 ? 0 : left.length - 1) : (i + dir + left.length) % left.length];
   mySegs.target = next.id; saveSegs();
+  if (selected) select(next.id, false);  // the open card moves with the target
   segmentsChanged(false);
-  banner.classList.remove("slide-l", "slide-r"); void banner.offsetWidth;
-  banner.classList.add(dir > 0 ? "slide-l" : "slide-r");
+  const box = bannerBox();               // the new content comes in from the side it's swiped from
+  if (box && !calm) {
+    box.style.transition = "none";
+    box.style.transform = `translateX(${dir > 0 ? 100 : -100}%)`;
+    void box.offsetWidth;
+    box.style.transition = "transform .2s ease-out";
+    box.style.transform = "";
+  }
   if (!me.following) fitBox(segBox(next));
 }
 {
@@ -1174,14 +1184,26 @@ function cycleTarget(dir) {
     if (!swipe || e.pointerId !== swipe.id) return;
     const dx = e.clientX - swipe.x, dy = e.clientY - swipe.y;
     if (!swipe.on && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.5) { swipe.on = true; banner.setPointerCapture(e.pointerId); }
-    if (swipe.on) { banner.style.transition = "none"; banner.style.transform = `translateX(${dx * 0.6}px)`; banner.style.opacity = 1 - Math.min(Math.abs(dx) / 400, 0.4); }
+    const box = bannerBox();
+    if (swipe.on && box) { box.style.transition = "none"; box.style.transform = `translateX(${dx}px)`; }
   });
   const end = (e) => {
     if (!swipe || e.pointerId !== swipe.id) return;
-    const dx = e.clientX - swipe.x, on = swipe.on;
+    const dx = e.clientX - swipe.x, on = swipe.on, box = bannerBox();
     swipe = null;
-    banner.style.transition = ""; banner.style.transform = ""; banner.style.opacity = "";
-    if (on) { swiped = true; if (Math.abs(dx) > 50 && cycleList().length > 1) cycleTarget(dx < 0 ? 1 : -1); }
+    if (!on) return;
+    swiped = true;
+    if (Math.abs(dx) > 50 && cycleList().length > 1) {
+      const dir = dx < 0 ? 1 : -1;
+      if (box && !calm) {                // finish sliding the old one out, then bring the new one in
+        box.style.transition = "transform .12s ease-in";
+        box.style.transform = `translateX(${dir > 0 ? -100 : 100}%)`;
+        setTimeout(() => cycleTarget(dir), 120);
+      } else cycleTarget(dir);
+    } else if (box) {                    // not far enough: spring back
+      box.style.transition = "transform .15s ease-out";
+      box.style.transform = "";
+    }
   };
   banner.addEventListener("pointerup", end);
   banner.addEventListener("pointercancel", end);
