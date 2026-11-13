@@ -164,6 +164,9 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 12px); }
   background: #fff; border-radius: 16px 16px 0 0; box-shadow: 0 -2px 12px rgba(0, 0, 0, .3);
   padding: 8px 16px calc(16px + env(safe-area-inset-bottom));
 }
+#card, #sheet { transform: translateY(105%); transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
+#card.open, #sheet.open { transform: none; }
+@media (prefers-reduced-motion: reduce) { #card, #sheet { transition: none; } }
 .card-top { display: flex; align-items: center; gap: 10px; }
 .card-den { color: #555; font-size: 14px; }
 #card .lines { margin: 6px 0 12px; }

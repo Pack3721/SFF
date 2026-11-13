@@ -346,7 +346,7 @@ function fitBox(box) {
   follow(false);
   layout();
   const r = wrap.getBoundingClientRect();
-  const cardH = card.hidden ? 0 : card.getBoundingClientRect().height;
+  const cardH = card.classList.contains("open") ? card.getBoundingClientRect().height : 0;
   const padTop = 100, padSide = 12;           // room for the north arrow, banner,
   const padBottom = Math.max(60, cardH + 16);                      // scale, buttons and the segment card
   const bw = box[2] - box[0], bh = box[3] - box[1];
@@ -821,12 +821,28 @@ function linesOf(s, parent, all) {
   return box;
 }
 
+// Panels slide up from the bottom and back down (see .open in app.css). [hidden] is set once a panel
+// has slid away, so it's gone for screen readers and taps; a panel reopened mid-slide just turns around.
+function slideIn(panel) {
+  if (panel.classList.contains("open")) return;
+  panel.hidden = false;
+  panel.getBoundingClientRect();         // lay it out off-screen first, so the slide has somewhere to start
+  panel.classList.add("open");
+}
+function slideOut(panel) {
+  if (!panel.classList.contains("open")) return;
+  panel.classList.remove("open");
+  const done = () => { if (!panel.classList.contains("open")) panel.hidden = true; };
+  if (getComputedStyle(panel).transitionDuration === "0s") done();
+  else panel.addEventListener("transitionend", done, { once: true });
+}
+
 // the card for one segment: all its lines and the Track / Target buttons
 function renderCard() {
   const s = selected && segById(selected);
-  card.hidden = !s;
   document.body.classList.toggle("card-open", !!s);
-  if (!s) return;
+  if (!s) { slideOut(card); return; }    // keep its content while it slides away
+  slideIn(card);
   card.textContent = "";
   const top = h("div", "card-top", null, card);
   chip(s, top);
@@ -964,10 +980,10 @@ function openSheet() {
     try { listTab = sessionStorage.getItem("sff.listTab"); } catch (_) { /* ignore */ }
     if (!listTab) listTab = mySegs.tracked.length ? "mine" : "all";
   }
-  sheet.hidden = false;
+  slideIn(sheet);
   renderList();
 }
-function closeSheet() { sheet.hidden = true; }
+function closeSheet() { slideOut(sheet); }
 document.getElementById("segs-btn").addEventListener("click", openSheet);
 document.getElementById("sheet-close").addEventListener("click", closeSheet);
 
