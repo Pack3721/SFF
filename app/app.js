@@ -347,7 +347,7 @@ function fitBox(box) {
   layout();
   const r = wrap.getBoundingClientRect();
   const cardH = card.hidden ? 0 : card.getBoundingClientRect().height;
-  const padTop = banner.hidden ? 50 : 100, padSide = 12;           // room for the north arrow, banner,
+  const padTop = 100, padSide = 12;           // room for the north arrow, banner,
   const padBottom = Math.max(60, cardH + 16);                      // scale, buttons and the segment card
   const bw = box[2] - box[0], bh = box[3] - box[1];
   const W = r.width - 2 * padSide, H = r.height - padTop - padBottom;
@@ -832,18 +832,25 @@ function renderCard() {
 }
 
 // the banner: your target segment, tap to go to it
+// the banner: your target segment (tap to go to it), or a faint prompt to pick one (tap to open the list)
 function renderBanner() {
   const s = mySegs.target && segById(mySegs.target);
-  banner.hidden = !s;
-  document.body.classList.toggle("has-banner", !!s);
-  if (!s) return;
+  banner.hidden = false;
+  banner.classList.toggle("empty", !s);
   banner.textContent = "";
+  if (!s) {
+    h("span", "what", "No target \u2013 tap to pick one", banner);
+    return;
+  }
   h("span", "label", "Target", banner);
   chip(s, banner);
   const first = s.lines.find((l) => !l.warning);
   h("span", "what", first ? first.text : "", banner);
 }
-banner.addEventListener("click", () => mySegs.target && select(mySegs.target, true));
+banner.addEventListener("click", () => {
+  if (mySegs.target) select(mySegs.target, true);
+  else openSheet();
+});
 
 // the list: yours first, then the den's (or every den's, in the whole-pack view)
 // the list has two tabs: Segments (the den's, or every den's in the pack view) and Mine (tracked ones)
