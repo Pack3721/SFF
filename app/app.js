@@ -68,6 +68,19 @@ function midOn(pts) {                   // point and angle half way along a poly
   }
   return { p: pts[0], ang: 0, L };
 }
+function alongLine(pts, d) {            // point and text angle at distance d along a polyline
+  let acc = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1], b = pts[i], l = dist(a, b);
+    if (acc + l >= d && l > 0) {
+      const t = (d - acc) / l;
+      return { p: [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t], ang: upright(a, b) };
+    }
+    acc += l;
+  }
+  const n = pts.length;
+  return { p: pts[n - 1], ang: upright(pts[n - 2], pts[n - 1]) };
+}
 function upright(a, b) {                // text angle that never reads upside down
   let ang = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI;
   if (ang > 90) ang -= 180;
@@ -122,16 +135,19 @@ function draw() {
   el("path", { d: ad, fill: "none", stroke: "#c8c8c8", "stroke-width": 18 }, Lstreet);
   el("path", { d: ad, fill: "none", stroke: "#fff6dc", "stroke-width": 14 }, Lstreet);
 
-  // street names: once per name, on its longest piece, hidden when the street is too short on screen
-  const longest = {};
-  for (const s of streets) {
-    const m = midOn(s.line.map(P));
-    if (m.L > 60 && (!longest[s.name] || m.L > longest[s.name].L)) longest[s.name] = m;
-  }
-  for (const name in longest) {
-    const m = longest[name];
-    const g = screenGroup(Lslabel, m.p[0], m.p[1], m.ang, STREET, m.L);
-    el("text", { class: "street", "text-anchor": "middle", "dominant-baseline": "central" }, g).textContent = name;
+  // street names: along every piece of street, about every 300 units on long ones. Declutter keeps
+  // copies of one name well apart on screen, and drops a name where the street is too short for it.
+  for (const st of streets) {
+    const pts = st.line.map(P);
+    const L = midOn(pts).L;
+    if (L < 60) continue;
+    const n = Math.max(1, Math.round(L / 300));
+    for (let i = 0; i < n; i++) {
+      const at = alongLine(pts, L * (i + 0.5) / n);
+      const g = screenGroup(Lslabel, at.p[0], at.p[1], at.ang, STREET, L / n);
+      g.name = st.name;
+      el("text", { class: "street", "text-anchor": "middle", "dominant-baseline": "central" }, g).textContent = st.name;
+    }
   }
   // arterial names, repeated along the road
   const all = D.houses.map((h) => P(h.lonlat));
@@ -246,6 +262,7 @@ function draw() {
     ? `${D.houses.length} houses • ${D.segments.length} segments`
     : `Zone ${den.area} • ${den.houses} houses • ${den.segments.length} segments`;
   document.getElementById("fit").textContent = pack ? "Whole pack" : "Whole den";
+  view.appendChild(me.g);               // the GPS dot stays on top of whichever den is drawn
 }
 
 function extend(pts, far) {             // build.py _ext: run a road on past both ends
@@ -272,6 +289,7 @@ function layout() {
 
 function fit() {
   stopGlide();
+  follow(false);
   layout();
   const r = wrap.getBoundingClientRect();
   const padTop = 50, padBottom = 60, padSide = 12;     // room for the north arrow, scale and buttons
@@ -298,6 +316,7 @@ function commit() {                     // the full redraw at the current view
   k0 = k; tx0 = tx; ty0 = ty;
   svg.style.transform = "";
   view.setAttribute("transform", `translate(${tx + mx} ${ty + my}) scale(${k})`);
+  drawMe();
   if (panOnly) return;
   const inv = 1 / k;
   const shrink = Math.min(Math.max(k / 0.8, 0.75), 1);   // labels a bit smaller when zoomed far out
@@ -336,9 +355,10 @@ function declutter(shrink) {
     let show = true;
     if (s.fit && s.fit * k < s.box.w * shrink + 16) show = false;   // street too short for its name
     if (show && s.prio !== ALWAYS)
-      show = !placed.some((p) => Math.abs(p.x - x) < p.hw + hw && Math.abs(p.y - y) < p.hh + hh);
+      show = !placed.some((p) => (Math.abs(p.x - x) < p.hw + hw && Math.abs(p.y - y) < p.hh + hh) ||
+                                 (s.el.name && p.name === s.el.name && Math.hypot(p.x - x, p.y - y) < 250));
     s.el.style.display = show ? "" : "none";
-    if (show && s.el.parentNode.id !== "l-arrows") placed.push({ x, y, hw, hh });
+    if (show && s.el.parentNode.id !== "l-arrows") placed.push({ x, y, hw, hh, name: s.el.name });
   }
 }
 
@@ -399,6 +419,7 @@ wrap.addEventListener("pointermove", (e) => {
   if (last && pointers.size <= 2) {
     tx += g.x - last.x; ty += g.y - last.y;
     if (g.d && last.d) zoomAt(g.x, g.y, g.d / last.d);
+    if (!moved) follow(false);           // moving the map yourself stops it following you
     moved = true;
     preview();
     if (pointers.size === 1) samples.push({ t: performance.now(), x: g.x, y: g.y });
@@ -417,7 +438,10 @@ const lift = (e) => {
     return;
   }
   const now = Date.now();                // double-tap to zoom in
-  if (e.type === "pointerup" && now - lastTap < 300) { const p = local(e); zoomAt(p.x, p.y, 2); commit(); lastTap = 0; }
+  if (e.type === "pointerup" && now - lastTap < 300) {
+    const p = me.following ? myScreen() : local(e);   // while following, zoom in on yourself
+    zoomAt(p.x, p.y, 2); commit(); lastTap = 0;
+  }
   else lastTap = now;
 };
 wrap.addEventListener("pointerup", lift);
@@ -426,6 +450,7 @@ let wheelTimer;
 wrap.addEventListener("wheel", (e) => {
   e.preventDefault();
   stopGlide();
+  follow(false);
   const p = local(e);
   zoomAt(p.x, p.y, Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.002)));
   preview();
@@ -435,7 +460,121 @@ document.addEventListener("gesturestart", (e) => e.preventDefault());   // stop 
 
 document.getElementById("fit").addEventListener("click", fit);
 let resizeTimer;
-window.addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(fit, 150); });
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => { const f = me.following; fit(); if (f) centreOnMe(false); }, 150);
+});
+
+// ---------- GPS dot ----------
+// The phone's location is only used to draw the dot. It is never stored or sent anywhere.
+const WALK_K = 1.6;                      // "Centre on me" zooms in to at least this: about 250 m across a phone
+const STALE_MS = 30000;                  // no fix for this long: the dot goes grey
+const GPS_KEY = "sff.gps";               // "1" once location has worked, so it can restart by itself
+const me = { g: el("g", { id: "me" }), pos: null, acc: 0, lastFix: 0, watch: null, wanted: false,
+             following: false, centreNext: false };
+me.g.style.display = "none";
+me.ring = el("circle", { class: "acc" }, me.g);
+me.dot = el("g", {}, me.g);
+el("circle", { r: 10, fill: "#fff", class: "halo" }, me.dot);
+el("circle", { r: 7, class: "core" }, me.dot);
+
+const meBtn = document.getElementById("me-btn");
+const gpsStatus = document.getElementById("gps-status");
+function status(text, bad) {
+  gpsStatus.textContent = text || "";
+  gpsStatus.hidden = !text;
+  gpsStatus.classList.toggle("bad", !!bad);
+}
+function remember(on) { try { on ? localStorage.setItem(GPS_KEY, "1") : localStorage.removeItem(GPS_KEY); } catch (_) { /* ignore */ } }
+
+function myScreen() { return { x: me.pos[0] * k + tx, y: me.pos[1] * k + ty }; }
+
+function drawMe() {
+  if (!me.pos) return;
+  const [x, y] = me.pos;
+  me.ring.setAttribute("cx", f1(x)); me.ring.setAttribute("cy", f1(y));
+  me.ring.setAttribute("r", Math.max(me.acc / M_PER_UNIT, 0));
+  me.ring.setAttribute("stroke-width", 1.5 / k);
+  me.dot.setAttribute("transform", `translate(${f1(x)} ${f1(y)}) scale(${1 / k})`);
+  me.g.classList.toggle("stale", Date.now() - me.lastFix > STALE_MS);
+}
+setInterval(() => {
+  if (!me.pos || !me.watch) return;
+  drawMe();
+  if (Date.now() - me.lastFix > STALE_MS) status("GPS lost – last known spot", true);
+}, 5000);
+
+function follow(on) {
+  me.following = on;
+  meBtn.classList.toggle("on", on);
+  meBtn.setAttribute("aria-pressed", on);
+}
+
+function centreOnMe(zoomIn) {
+  if (!me.pos) { me.centreNext = true; startGps(); return; }
+  stopGlide();
+  const r = wrap.getBoundingClientRect();
+  if (zoomIn && k < WALK_K) k = WALK_K;
+  tx = r.width / 2 - me.pos[0] * k;
+  ty = r.height / 2 - me.pos[1] * k;
+  commit();
+  follow(true);
+}
+
+function onFix(p) {
+  const c = p.coords;
+  me.pos = P([c.longitude, c.latitude]);
+  me.acc = c.accuracy;
+  me.lastFix = Date.now();
+  me.g.style.display = "";
+  remember(true);
+  const area = DATA && DATA.houses.map((h) => P(h.lonlat));
+  const far = area && area.every((q) => dist(q, me.pos) > 900);   // ~1 km from every house on the walk
+  status(far ? "You're away from the walk area" : `GPS ±${Math.round(c.accuracy)} m`);
+  if (me.centreNext) { me.centreNext = false; centreOnMe(true); }
+  else if (me.following) centreOnMe(false);
+  else drawMe();
+}
+
+function onError(e) {
+  if (e.code === 1) {                    // PERMISSION_DENIED
+    stopGps(); me.wanted = false; me.centreNext = false; remember(false); follow(false);
+    status("Location is blocked. Allow it for this site in your browser settings to see your dot.", true);
+  } else if (e.code === 2) {             // POSITION_UNAVAILABLE
+    status("Can't get a GPS fix yet. Try outside, away from buildings.", true);
+  } else {                               // TIMEOUT: the watch keeps trying
+    status(me.pos ? "GPS is slow – dot may be old" : "Still looking for GPS…", true);
+  }
+}
+
+function startGps() {
+  if (!("geolocation" in navigator)) { status("This browser can't share location.", true); return; }
+  me.wanted = true;
+  if (me.watch !== null) return;
+  if (!me.pos) status("Finding you…");
+  me.watch = navigator.geolocation.watchPosition(onFix, onError,
+    { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 });
+}
+function stopGps() {
+  if (me.watch !== null) navigator.geolocation.clearWatch(me.watch);
+  me.watch = null;
+}
+
+meBtn.addEventListener("click", () => centreOnMe(true));
+// GPS off while the page is in the background, to save battery; back on when it returns.
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) stopGps();
+  else if (me.wanted) startGps();
+});
+// If location already worked here and is still allowed, start the dot without asking again.
+function resumeGps() {
+  let was = false;
+  try { was = localStorage.getItem(GPS_KEY) === "1"; } catch (_) { /* ignore */ }
+  if (!was || !navigator.permissions) return;
+  navigator.permissions.query({ name: "geolocation" })
+    .then((r) => { if (r.state === "granted") startGps(); })
+    .catch(() => { /* no permissions API: wait for a tap */ });
+}
 
 // ---------- den picker ----------
 const picker = document.getElementById("den");
@@ -462,6 +601,7 @@ function start(data) {
   try { saved = localStorage.getItem(STORE_KEY); } catch (_) { /* ignore */ }
   const ok = (key) => key === PACK || data.dens.some((d) => d.key === key);
   pick(ok(saved) ? saved : PACK);
+  resumeGps();
 }
 
 fetch("sff-2026.json?v=dev")   // pages.yml swaps "dev" for the git SHA (cache busting)

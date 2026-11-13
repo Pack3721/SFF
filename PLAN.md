@@ -4,7 +4,7 @@ A phone web page that shows a den's walking map for Scouting for Food, with a "y
 
 Families can use the paper map pack or this page. Both use the same segment IDs, colours, house numbers and text messages, so the dispatcher can't tell them apart.
 
-Status: milestone 1 (map only) is built in `app/` and deploys to GitHub Pages. GPS, texts and the QR flow come next.
+Status: milestones 1 (map) and 2 (GPS dot) are built in `app/` and deploy to GitHub Pages. Texts and the QR flow come next.
 
 ## Goals
 
@@ -113,7 +113,7 @@ There are 79 segments and 1,183 houses. Den keys are L, T, W, B, WB (Webelos, wh
 ## Milestones
 
 1. **Map only.** ✅ Render one den from the JSON and compare it against that den's page in the PDF. All six dens and a whole-pack view, with a den picker, pinch and zoom, and labels that give way to each other on a small screen.
-2. **GPS dot.** Add location, accuracy and "centre on me". Test while walking a real segment.
+2. **GPS dot.** Add location, accuracy and "centre on me". Test while walking a real segment. Built: the first tap asks for location, then the map follows you until you drag it. The dot goes grey after 30 s without a fix. GPS stops while the page is in the background and restarts on its own once allowed. Street names repeat along streets at walking zoom. **Still to do:** a walk on a real segment.
 3. **Segment sheet and texts.** Tap a segment, see its lines, tap Done and get a pre-filled text. Test on iPhone and Android.
 4. **QR flow.** Build the dispatcher QR page, the fragment handling and `localStorage`, and clear the fragment after reading.
 5. **Offline and polish.** Add caching, the sunlight check and the den picker.
