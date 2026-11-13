@@ -898,7 +898,6 @@ function renderCard() {
   const col = (segEls[s.id] && segEls[s.id].color) || s.color;   // the buttons take the segment's colour
   card.style.setProperty("--seg", col);
   card.style.setProperty("--seg-ink", inkOn(col));
-  card.style.setProperty("--seg-pale", tint(col, 0.22));
   const row = h("div", "card-actions", null, card);
   const tr = h("button", "track" + (isTracked(s.id) ? " on" : ""), isTracked(s.id) ? "\u2605 Tracking" : "\u2606 Track", row);
   tr.type = "button"; tr.setAttribute("aria-pressed", isTracked(s.id));
