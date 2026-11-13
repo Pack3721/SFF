@@ -1231,15 +1231,36 @@ function cycleTarget(dir) {
 banner.addEventListener("click", () => {
   if (swiped) { swiped = false; return; }   // the end of a swipe isn't a tap
   if (mySegs.target) select(mySegs.target, true);
-  else if (allDone()) sendAvailable();
+  else if (allDone()) askAvailable();
   else openSheet();
 });
 // "available for more": you've finished, so let go of the last segment (close its card, no target)
-function sendAvailable() {
-  if (!sendText("available")) return;
+function sendAvailable(extra) {
+  if (!sendText("available", null, extra)) return;
   mySegs.target = null; saveSegs();
-  closeSheet();
+  closeSheet(); slideOut(availPanel);
   if (selected) select(null); else segmentsChanged(false);
+}
+// In Week 1 (bags) the dispatcher also needs to know how many bags you have left, so "available" asks
+// first: none, a few or plenty. In Week 2 (pickup) it texts straight away.
+const availPanel = document.getElementById("avail");
+function askAvailable() {
+  if (week() !== 1) { sendAvailable(); return; }
+  if (!textsReady()) { sendText("available"); return; }   // opens Settings to fill in what's missing
+  availPanel.textContent = "";
+  const top = h("div", "card-top", null, availPanel);
+  h("h2", "", "You\u2019re all done!", top);
+  h("span", "card-gap", null, top);
+  const x = h("button", "close", "\u2715", top); x.type = "button"; x.setAttribute("aria-label", "Close");
+  x.addEventListener("click", () => slideOut(availPanel));
+  h("p", "avail-q", "Text the dispatcher you\u2019re available. How many bags do you have left?", availPanel);
+  const row = h("div", "card-texts", null, availPanel);
+  for (const [label, extra] of [["None", "no bags left"], ["A few", "a few bags left"], ["Plenty", "plenty of bags left"]]) {
+    const b = h("button", "", label, row); b.type = "button"; msgIcon(b);
+    b.addEventListener("click", () => sendAvailable(extra));
+  }
+  closeSheet();
+  slideIn(availPanel);
 }
 const allDone = () => mySegs.tracked.length > 0 && mySegs.tracked.every((id) => mySegs.done.includes(id));
 
@@ -1271,7 +1292,7 @@ function renderList() {
       // "available for more" is for when you've finished: greyed out until every tracked segment is done
       const av = h("button", "available", "Text \u201cavailable for more\u201d", body); av.type = "button"; msgIcon(av);
       av.disabled = !allDone() || !textsReady();
-      av.addEventListener("click", sendAvailable);
+      av.addEventListener("click", askAvailable);
       if (!allDone()) h("p", "available-note", "Once all your segments are done", body);
     }
     groups.push(["", mine]);
@@ -1471,20 +1492,21 @@ function applySetup(q) {                  // q: the parts after # of a setup lin
   }
   return mySegs.tracked.length;
 }
-function textBody(kind, id) {
+function textBody(kind, id, extra) {
   const who = `Wk${week()}: ${settings.group}`;
   return { done: `${who} \u2013 ${id} done`, coverage: `${who} \u2013 ${id} needs coverage`,
-           bags: `${who} \u2013 ${id} need bags`, available: `${who} available` }[kind];
+           bags: `${who} \u2013 ${id} need bags`,
+           available: `${who} available` + (extra ? ` \u2013 ${extra}` : "") }[kind];
 }
 // iPhones want sms:NUMBER&body=…, Android sms:NUMBER?body=…
 const smsHref = (body) => `sms:${settings.tel}${isIOS() ? "&" : "?"}body=${encodeURIComponent(body)}`;
-function sendText(kind, id) {
+function sendText(kind, id, extra) {
   if (!textsReady()) {
     openSettings(settings.group ? "To text the dispatcher, add their number." : settings.tel ? "To text the dispatcher, add your group\u2019s name."
                                                                                  : "To text the dispatcher, add their number and your group\u2019s name.");
     return false;
   }
-  openSms(smsHref(textBody(kind, id)));
+  openSms(smsHref(textBody(kind, id, extra)));
   return true;
 }
 function openSms(href) { location.href = href; }   // its own function so tests can catch it

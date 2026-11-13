@@ -182,14 +182,14 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 4px); }
 #banner .label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: #555; }
 #banner .what { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-#card, #sheet, #settings {
+#card, #sheet, #settings, #avail {
   position: fixed; z-index: 4; left: 0; right: 0; bottom: 0;
   background: #fff; border-radius: 16px 16px 0 0; box-shadow: 0 -2px 12px rgba(0, 0, 0, .3);
   padding: 8px 16px calc(16px + env(safe-area-inset-bottom));
 }
-#card, #sheet, #settings { transform: translateY(105%); transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
-#card.open, #sheet.open, #settings.open { transform: none; }
-@media (prefers-reduced-motion: reduce) { #card, #sheet, #settings { transition: none; } }
+#card, #sheet, #settings, #avail { transform: translateY(105%); transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
+#card.open, #sheet.open, #settings.open, #avail.open { transform: none; }
+@media (prefers-reduced-motion: reduce) { #card, #sheet, #settings, #avail { transition: none; } }
 .card-top { display: flex; align-items: center; gap: 4px; margin-left: -10px; }
 .card-gap { flex: 1; }
 .card-top .star { width: 44px; height: 44px; }
@@ -347,3 +347,7 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 4px); }
 #settings .share-pane .move-row { margin-top: 8px; }
 #settings .about { margin: 22px 0 0; padding-top: 12px; border-top: 1px solid #e3e3e3; font-size: 12px; line-height: 1.4; color: #777; }
 #settings .about a { color: #555; }
+#avail { z-index: 5; }
+#avail h2 { margin: 6px 0; font-size: 20px; color: #1e7e34; }
+#avail .avail-q { margin: 2px 0 6px; font-size: 16px; }
+#avail .card-top { margin-left: 0; }
