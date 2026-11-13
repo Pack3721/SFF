@@ -1968,7 +1968,8 @@ function renderLeader() {
     name.setAttribute("aria-label", "Group name");
     name.addEventListener("focus", () => { if (leader.active !== i) { leader.active = i; for (const el2 of list.children) el2.classList.toggle("on", el2 === g); } });
     name.addEventListener("input", () => { leader.names[i] = name.value.trim() || leader.names[i]; saveLeader(); });
-    h("span", "group-stats", `${ids.length} seg \u2022 ${hs} hses`, g);
+    const st = h("span", "group-stats", null, g);
+    h("b", "", `${hs} houses`, st); h("small", "", `${ids.length} seg`, st);
     const qr = h("button", "share-btn group-qr", null, g); qr.type = "button";
     qr.appendChild(qrIcon());
     qr.setAttribute("aria-label", "QR code for " + leader.names[i]);
@@ -2002,9 +2003,22 @@ function showGroupQr(i) {
   h("span", "card-gap", null, top);
   const x = h("button", "close", "\u2715", top); x.type = "button"; x.setAttribute("aria-label", "Close");
   x.addEventListener("click", () => slideOut(groupPanel));
-  h("p", "hint", `${groupSegs(i).join(", ")}. A parent scans this to set up their phone for this group` +
-    (settings.tel ? ", with the dispatcher\u2019s number." : ". (Add the dispatcher\u2019s number in settings to include it.)"), groupPanel);
-  const box = h("div", "share-qr", null, groupPanel);
+  h("p", "hint", "A parent scans this to set up their phone for this group" +
+    (settings.tel ? ", with the dispatcher\u2019s number." : ". (Add the dispatcher\u2019s number in settings to include it.)") +
+    " The list is for anyone using the paper map.", groupPanel);
+  const pair = h("div", "gqr-pair", null, groupPanel);
+  const box = h("div", "share-qr", null, pair);
+  const segList = h("ol", "gqr-segs", null, pair);
+  let total = 0;
+  for (const id of groupSegs(i)) {
+    const sg = segById(id); total += sg.houses;
+    const li = h("li", "", null, segList);
+    const head = h("div", "gqr-seg", null, li);
+    h("b", "", (sg.main_road ? "\u26a0 " : "") + id, head); h("span", "", sg.houses + " hses", head);
+    for (const ln of sg.lines) h("div", "gqr-line", ln.text + (ln.numbers ? " " + ln.numbers : ""), li);
+  }
+  const tot = h("li", "gqr-total", null, segList);
+  h("b", "", "Total", tot); h("span", "", total + " houses", tot);
   loadQr().then(() => { box.textContent = ""; box.appendChild(qrSvg(link)); })
           .catch(() => { box.textContent = "QR code needs a signal the first time."; });
   const row = h("div", "move-row", null, groupPanel);
