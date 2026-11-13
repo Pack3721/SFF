@@ -322,7 +322,7 @@ function draw() {
   info.textContent = pack
     ? `${D.houses.length} houses • ${D.segments.length} segments`
     : `Zone ${den.area} • ${den.houses} houses • ${den.segments.length} segments`;
-  view.appendChild(me.g);               // the GPS dot stays on top of whichever den is drawn
+  fxView.appendChild(me.g);             // the GPS dot sits on the top layer, above every label
   styleSegments();
   renderList();
 }
@@ -414,6 +414,7 @@ function preview() {                    // cheap: move the picture drawn at (k0,
   const dx = tx - tx0 * s + mx * (1 - s), dy = ty - ty0 * s + my * (1 - s);
   svg.style.transform = fx.style.transform = `translate(${dx}px, ${dy}px) scale(${s})`;
   scaleBar();
+  edgeArrow();
 }
 
 let placedK = 0;
@@ -424,6 +425,7 @@ function commit() {                     // the full redraw at the current view
   view.setAttribute("transform", `translate(${tx + mx} ${ty + my}) scale(${k})`);
   fxView.setAttribute("transform", view.getAttribute("transform"));
   sizeAnts();
+  edgeArrow();
   drawMe();
   if (panOnly) return;
   const inv = 1 / k;
@@ -604,8 +606,16 @@ const me = { g: el("g", { id: "me" }), pos: null, acc: 0, lastFix: 0, watch: nul
 me.g.style.display = "none";
 me.ring = el("circle", { class: "acc" }, me.g);
 me.dot = el("g", {}, me.g);
-el("circle", { r: 10, fill: "#fff", class: "halo" }, me.dot);
-el("circle", { r: 7, class: "core" }, me.dot);
+// easy to spot: a pulsing ring, a white rim with a dark edge, a strong blue middle (all in screen px)
+if (!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) {
+  const pulse = el("circle", { r: 10, class: "pulse" }, me.dot);
+  el("animate", { attributeName: "r", values: "10;28", dur: "1.6s", repeatCount: "indefinite" }, pulse);
+  el("animate", { attributeName: "opacity", values: "0.45;0", dur: "1.6s", repeatCount: "indefinite" }, pulse);
+}
+el("circle", { r: 12, fill: "#fff", stroke: "rgba(0,0,0,.45)", "stroke-width": 1, class: "halo" }, me.dot);
+el("circle", { r: 8.5, class: "core" }, me.dot);
+const meEdge = document.getElementById("me-edge");
+meEdge.addEventListener("click", () => centerOnMe(true));
 
 const meBtn = document.getElementById("me-btn");
 const gpsStatus = document.getElementById("gps-status");
@@ -627,6 +637,27 @@ function drawMe() {
   me.ring.setAttribute("stroke-width", 1.5 / k);
   me.dot.setAttribute("transform", `translate(${f1(x)} ${f1(y)}) scale(${1 / k})`);
   me.g.classList.toggle("stale", Date.now() - me.lastFix > STALE_MS);
+  edgeArrow();
+}
+// When your dot is off the screen, an arrow at the edge points to it (tap to center on it). It stays
+// in the clear part of the map: below the banner, above the buttons and notes at the bottom.
+const meEdgeArrow = document.createElementNS(NS, "svg");
+meEdgeArrow.setAttribute("viewBox", "-10 -10 20 20");
+el("path", { d: "M8 0 L-6 -6.5 L-3 0 L-6 6.5 Z", fill: "#fff" }, meEdgeArrow);
+meEdge.appendChild(meEdgeArrow);
+function edgeArrow() {
+  if (!me.pos || me.g.style.display === "none") { meEdge.hidden = true; return; }
+  const r = wrap.getBoundingClientRect(), p = myScreen();
+  if (p.x > 0 && p.x < r.width && p.y > 0 && p.y < r.height) { meEdge.hidden = true; return; }
+  const above = setupStatus.hidden ? banner : setupStatus;
+  const box = { l: 26, r: r.width - 26, t: above.getBoundingClientRect().bottom - r.top + 26, b: r.height - 150 };
+  const cx = (box.l + box.r) / 2, cy = (box.t + box.b) / 2, dx = p.x - cx, dy = p.y - cy;
+  const f = Math.min((box.r - cx) / Math.abs(dx || 1e-9), (box.b - cy) / Math.abs(dy || 1e-9));
+  meEdge.hidden = false;
+  meEdge.style.left = r.left + cx + dx * f + "px";
+  meEdge.style.top = r.top + cy + dy * f + "px";
+  meEdgeArrow.style.transform = `rotate(${Math.atan2(dy, dx) * 180 / Math.PI}deg)`;
+  meEdge.classList.toggle("stale", Date.now() - me.lastFix > STALE_MS);
 }
 setInterval(() => {
   if (!me.pos || !me.watch) return;
@@ -654,10 +685,10 @@ function onFix(p) {
   me.acc = c.accuracy;
   me.lastFix = Date.now();
   me.g.style.display = "";
-  remember(true);
+  if (!DEMO) remember(true);
   const area = DATA && DATA.houses.map((h) => P(h.lonlat));
   const far = area && area.every((q) => dist(q, me.pos) > 900);   // ~1 km from every house on the walk
-  status(far ? "You're away from the walk area" : `GPS ±${Math.round(c.accuracy)} m`);
+  status(DEMO ? "Demo location \u2013 not real GPS" : far ? "You're away from the walk area" : `GPS \u00b1${Math.round(c.accuracy)} m`);
   if (me.centerNext) { me.centerNext = false; centerOnMe(true); }
   else if (me.following) centerOnMe(false);
   else drawMe();
@@ -696,6 +727,7 @@ function onError(e) {
 }
 
 function startGps() {
+  if (DEMO) { me.wanted = true; if (me.watch === null) me.watch = startDemo(); return; }
   if (!("geolocation" in navigator)) { status("This browser can't share location.", true); return; }
   me.wanted = true;
   if (me.watch !== null) return;
@@ -704,8 +736,28 @@ function startGps() {
     { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 });
 }
 function stopGps() {
-  if (me.watch !== null) navigator.geolocation.clearWatch(me.watch);
+  if (me.watch !== null) { if (DEMO) clearInterval(me.watch); else navigator.geolocation.clearWatch(me.watch); }
   me.watch = null;
+}
+
+// Demo mode (open the page with ?demo): a pretend walker goes along your target segment (or your first
+// tracked one, or the den's first) at walking pace, so the dot can be tried from anywhere. Nothing is saved.
+const DEMO = new URLSearchParams(location.search).has("demo");
+function startDemo() {
+  const den = DATA.dens.find((d) => d.key === denKey);
+  const s = segById(mySegs.target || mySegs.tracked[0] || (den ? den.segments[0] : "W2"));
+  const pts = s.route;
+  const m = (a, b) => Math.hypot((b[0] - a[0]) * 87000, (b[1] - a[1]) * 111000);   // degrees to metres here
+  let i = 0, along = 0;
+  const step = () => {
+    along += 1.4;                          // metres a second
+    while (i < pts.length - 1 && along > m(pts[i], pts[i + 1])) { along -= m(pts[i], pts[i + 1]); i++; }
+    if (i >= pts.length - 1) { i = 0; along = 0; }
+    const a = pts[i], b = pts[i + 1], t = along / (m(a, b) || 1);
+    onFix({ coords: { longitude: a[0] + (b[0] - a[0]) * t, latitude: a[1] + (b[1] - a[1]) * t, accuracy: 8 } });
+  };
+  step();
+  return setInterval(step, 1000);
 }
 
 meBtn.addEventListener("click", () => centerOnMe(true));
@@ -820,7 +872,7 @@ function styleSegments() {
   if (t) ants.setAttribute("d", t.d);
   // the ants layer is above the whole map, so copy the target's ID tag and start arrow on top of the dashes
   for (const [, copy] of fxCopies) copy.remove();
-  fxCopies = t ? t.extras.filter((g) => g.kind === "tag" || g.kind === "arrow").map((g) => [g, fxView.appendChild(g.cloneNode(true))]) : [];
+  fxCopies = t ? t.extras.filter((g) => g.kind === "tag" || g.kind === "arrow").map((g) => [g, fxView.insertBefore(g.cloneNode(true), me.g.parentNode === fxView ? me.g : null)]) : [];
   syncFxCopies();
   if (bbox) { placedK = 0; commit(); }   // relabel: which labels show depends on what's grey
 }

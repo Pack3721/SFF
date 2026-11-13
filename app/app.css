@@ -113,7 +113,17 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 12px); }
 /* GPS dot: blue with a white rim; the pale ring is how sure the phone is */
 #me .acc { fill: #1a73e8; fill-opacity: .15; stroke: #1a73e8; stroke-opacity: .5; }
 #me .core { fill: #1a73e8; }
-#me .halo { filter: drop-shadow(0 0 2px rgba(0, 0, 0, .5)); }
+#me .halo { filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .45)); }
+#me .pulse { fill: #1a73e8; }
+#me.stale .pulse { display: none; }
+/* arrow at the map's edge pointing to your dot when it's off screen */
+#me-edge {
+  position: fixed; z-index: 1; width: 40px; height: 40px; margin: -20px 0 0 -20px; padding: 0;
+  border: 3px solid #fff; border-radius: 50%; background: #1a73e8; box-shadow: 0 1px 5px rgba(0, 0, 0, .45);
+}
+#me-edge[hidden] { display: none; }
+#me-edge svg { display: block; width: 100%; height: 100%; }
+#me-edge.stale { background: #888; }
 #me.stale .core { fill: #888; }
 #me.stale .acc { fill: #888; stroke: #888; }
 
