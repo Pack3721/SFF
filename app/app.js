@@ -47,6 +47,9 @@ window.addEventListener("online", checkForUpdate);
 checkForUpdate();
 const svg = document.getElementById("map");
 const wrap = document.getElementById("wrap");
+const fx = document.getElementById("fx");          // a thin layer over the map for the target's moving dashes
+const fxView = document.getElementById("fx-view");
+const ants = document.getElementById("ants");
 const view = document.getElementById("view");
 const NS = "http://www.w3.org/2000/svg";
 
@@ -227,7 +230,7 @@ function draw() {
 
     const hh = housesOf[s.id] || [];
     const he = el("path", { d: hh.map((h) => ringD(h.outline.map(P))).join(""), fill: tint(c, 0.45) }, Lhouse);
-    segEls[s.id] = { seg: s, color: c, routes, houses: hh, halo, route: re, homes: he, extras: [],
+    segEls[s.id] = { seg: s, color: c, routes, houses: hh, halo, route: re, homes: he, extras: [], d: rd,
                      paint: [[re, "stroke", c, "#a9a9a9"], [he, "fill", tint(c, 0.45), "#d6d6d6"]] };
     const extra = (g, kind, part, attr) => {   // a label of this segment, and the part that takes its colour
       g.segId = s.id; g.kind = kind;
@@ -334,6 +337,8 @@ function layout() {
   mx = Math.round(r.width * 0.25); my = Math.round(r.height * 0.25);
   svg.style.left = -mx + "px"; svg.style.top = -my + "px";
   svg.style.width = r.width + 2 * mx + "px"; svg.style.height = r.height + 2 * my + "px";
+  fx.style.left = svg.style.left; fx.style.top = svg.style.top;
+  fx.style.width = svg.style.width; fx.style.height = svg.style.height;
 }
 
 function fit() { fitBox(bbox); }
@@ -359,7 +364,7 @@ function preview() {                    // cheap: move the picture drawn at (k0,
   // a plain pan nearing the edge of what's drawn: redraw now (only the offset changes) so no blank shows
   if (s === 1 && (Math.abs(tx - tx0) > mx * 0.6 || Math.abs(ty - ty0) > my * 0.6)) { commit(); return; }
   const dx = tx - tx0 * s + mx * (1 - s), dy = ty - ty0 * s + my * (1 - s);
-  svg.style.transform = `translate(${dx}px, ${dy}px) scale(${s})`;
+  svg.style.transform = fx.style.transform = `translate(${dx}px, ${dy}px) scale(${s})`;
   scaleBar();
 }
 
@@ -367,8 +372,10 @@ let placedK = 0;
 function commit() {                     // the full redraw at the current view
   const panOnly = k === k0 && k === placedK;   // labels and line widths only depend on the zoom
   k0 = k; tx0 = tx; ty0 = ty;
-  svg.style.transform = "";
+  svg.style.transform = fx.style.transform = "";
   view.setAttribute("transform", `translate(${tx + mx} ${ty + my}) scale(${k})`);
+  fxView.setAttribute("transform", view.getAttribute("transform"));
+  sizeAnts();
   drawMe();
   if (panOnly) return;
   const inv = 1 / k;
@@ -378,6 +385,7 @@ function commit() {                     // the full redraw at the current view
     s.el.setAttribute("transform", `translate(${f1(s.x)} ${f1(s.y)}) scale(${inv * shrink}) rotate(${f1(s.rot)})`);
   }
   if (k !== placedK) { placedK = k; declutter(shrink); }  // panning doesn't change what overlaps
+  syncFxCopies();
   for (const s of strokes) {
     s.el.setAttribute("stroke-width", s.px * inv);
     if (s.dash) s.el.setAttribute("stroke-dasharray", s.dash.map((v) => v * inv).join(" "));
@@ -708,10 +716,17 @@ function styleSegments() {
     e.faded = any && !isTracked(id) && id !== selected;
     for (const [part, attr, colour, grey] of e.paint) part.setAttribute(attr, e.faded ? grey : colour);
     e.route.setAttribute("opacity", e.faded ? 0.8 : 0.9);
-    const halo = id === mySegs.target ? "#111" : id === selected ? e.color : null;
-    e.halo.style.display = halo ? "" : "none";
-    if (halo) { e.halo.setAttribute("stroke", halo); e.halo.setAttribute("stroke-opacity", id === mySegs.target ? 0.8 : 0.35); }
+    const glow = id === mySegs.target || id === selected;   // a soft glow in the segment's own colour
+    e.halo.style.display = glow ? "" : "none";
+    if (glow) { e.halo.setAttribute("stroke", e.color); e.halo.setAttribute("stroke-opacity", id === mySegs.target ? 0.45 : 0.3); }
   }
+  const t = mySegs.target && segEls[mySegs.target];
+  ants.style.display = t ? "" : "none";
+  if (t) ants.setAttribute("d", t.d);
+  // the ants layer is above the whole map, so copy the target's ID tag and start arrow on top of the dashes
+  for (const [, copy] of fxCopies) copy.remove();
+  fxCopies = t ? t.extras.filter((g) => g.kind === "tag" || g.kind === "arrow").map((g) => [g, fxView.appendChild(g.cloneNode(true))]) : [];
+  syncFxCopies();
   if (bbox) { placedK = 0; commit(); }   // relabel: which labels show depends on what's grey
 }
 
@@ -728,6 +743,27 @@ function select(id, zoom) {
   if (s && !(id in segEls)) { pick(s.den); }      // on another den's map: switch to that den
   styleSegments(); renderCard();
   if (s && zoom) fitBox(segBox(s));
+}
+
+// The target's "marching ants": white dashes that step along its line in walking order. They live in
+// their own SVG layer (#fx) so only that thin layer redraws, about 10 times a second.
+const ANT_DASH = 6, ANT_GAP = 10, ANT_STEPS = 10;   // screen px; steps per second
+const calm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+const antAnim = calm ? null : el("animate", { attributeName: "stroke-dashoffset", dur: "1s",
+  repeatCount: "indefinite", calcMode: "discrete" }, ants);
+let fxCopies = [];                       // [original label, its copy on the ants layer]
+function syncFxCopies() {
+  for (const [g, copy] of fxCopies) {
+    copy.setAttribute("transform", g.getAttribute("transform") || "");
+    copy.style.display = g.style.display;
+  }
+}
+function sizeAnts() {                    // dash sizes are in map units, so they follow the zoom
+  const u = 1 / k, period = (ANT_DASH + ANT_GAP) * u;
+  ants.setAttribute("stroke-width", 3 * u);
+  ants.setAttribute("stroke-dasharray", `${ANT_DASH * u} ${ANT_GAP * u}`);
+  if (antAnim) antAnim.setAttribute("values",
+    Array.from({ length: ANT_STEPS }, (_, i) => f1(-period * i / ANT_STEPS * 100) / 100).join(";"));
 }
 
 // one tap on the map: the nearest segment line or ID tag within about 22 px

@@ -56,22 +56,23 @@ html, body {
 
 /* The SVG is a bit bigger than the screen (app.js sets its size), so a drag shows map, not blank,
    while it's moved as one picture. */
-#map {
+#map, #fx {
   position: absolute; display: block;
   transform-origin: 0 0;
   will-change: transform;
 }
+#fx { pointer-events: none; }
 
 /* labels: white halo behind the text, like the PDF */
-#map text { paint-order: stroke; stroke: #fff; stroke-linejoin: round; }
-#map .street { font-style: italic; fill: #555; font-size: 12px; stroke-width: 3px; }
-#map .artname { font-weight: 700; fill: #7a5a00; font-size: 12px; stroke-width: 3px; }
-#map .endnum { font-weight: 700; font-size: 11px; stroke-width: 3px; }
-#map .segid { font-weight: 700; fill: #fff; font-size: 14px; stroke: none; }
-#map .denname { font-weight: 800; font-size: 22px; stroke-width: 5px; }
-#map .landmark { font-weight: 800; fill: #1a1a1a; font-size: 14px; stroke-width: 4px; }
-#map .stoplabel { font-weight: 700; fill: #d0021b; font-size: 12px; stroke-width: 3px; }
-#map .stoptext { font-weight: 700; fill: #fff; font-size: 6px; stroke: none; }
+:is(#map, #fx) text { paint-order: stroke; stroke: #fff; stroke-linejoin: round; }
+:is(#map, #fx) .street { font-style: italic; fill: #555; font-size: 12px; stroke-width: 3px; }
+:is(#map, #fx) .artname { font-weight: 700; fill: #7a5a00; font-size: 12px; stroke-width: 3px; }
+:is(#map, #fx) .endnum { font-weight: 700; font-size: 11px; stroke-width: 3px; }
+:is(#map, #fx) .segid { font-weight: 700; fill: #fff; font-size: 14px; stroke: none; }
+:is(#map, #fx) .denname { font-weight: 800; font-size: 22px; stroke-width: 5px; }
+:is(#map, #fx) .landmark { font-weight: 800; fill: #1a1a1a; font-size: 14px; stroke-width: 4px; }
+:is(#map, #fx) .stoplabel { font-weight: 700; fill: #d0021b; font-size: 12px; stroke-width: 3px; }
+:is(#map, #fx) .stoptext { font-weight: 700; fill: #fff; font-size: 6px; stroke: none; }
 
 #north {
   position: fixed; right: 12px; z-index: 1;
