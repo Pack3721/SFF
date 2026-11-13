@@ -1140,8 +1140,55 @@ function renderBanner() {
   count.setAttribute("aria-label", `${done} of ${total} houses done`);
   bar.setAttribute("role", "progressbar");
   bar.setAttribute("aria-valuemin", 0); bar.setAttribute("aria-valuemax", total); bar.setAttribute("aria-valuenow", done);
+  // preview (?dots): a dot per unfinished segment of yours, in its colour; the target's dot is bigger
+  const left = cycleList();
+  if (DOTS && left.length > 1) {
+    const dots = h("span", "dots", null, banner);
+    dots.setAttribute("aria-hidden", "true");
+    for (const x of left) {
+      const d = h("span", "dot" + (x.id === mySegs.target ? " on" : ""), null, dots);
+      d.style.background = (segEls[x.id] && segEls[x.id].color) || x.color;
+    }
+  }
+}
+
+// ---------- preview (?dots): swipe the banner to change target ----------
+// Left = next of your unfinished segments, right = previous (wrapping). The banner follows your finger,
+// then the new target slides in; the map glides to it unless Center on me is following you.
+const DOTS = new URLSearchParams(location.search).has("dots");
+const cycleList = () => mySegs.tracked.map(segById).sort(segOrder).filter((x) => !mySegs.done.includes(x.id));
+let swipe = null, swiped = false;
+function cycleTarget(dir) {
+  const left = cycleList();
+  if (!left.length) return;
+  const i = left.findIndex((x) => x.id === mySegs.target);
+  const next = left[i < 0 ? (dir > 0 ? 0 : left.length - 1) : (i + dir + left.length) % left.length];
+  mySegs.target = next.id; saveSegs();
+  segmentsChanged(false);
+  banner.classList.remove("slide-l", "slide-r"); void banner.offsetWidth;
+  banner.classList.add(dir > 0 ? "slide-l" : "slide-r");
+  if (!me.following) fitBox(segBox(next));
+}
+if (DOTS) {
+  banner.addEventListener("pointerdown", (e) => { swipe = { x: e.clientX, y: e.clientY, id: e.pointerId, on: false }; swiped = false; });
+  banner.addEventListener("pointermove", (e) => {
+    if (!swipe || e.pointerId !== swipe.id) return;
+    const dx = e.clientX - swipe.x, dy = e.clientY - swipe.y;
+    if (!swipe.on && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.5) { swipe.on = true; banner.setPointerCapture(e.pointerId); }
+    if (swipe.on) { banner.style.transition = "none"; banner.style.transform = `translateX(${dx * 0.6}px)`; banner.style.opacity = 1 - Math.min(Math.abs(dx) / 400, 0.4); }
+  });
+  const end = (e) => {
+    if (!swipe || e.pointerId !== swipe.id) return;
+    const dx = e.clientX - swipe.x, on = swipe.on;
+    swipe = null;
+    banner.style.transition = ""; banner.style.transform = ""; banner.style.opacity = "";
+    if (on) { swiped = true; if (Math.abs(dx) > 50 && cycleList().length > 1) cycleTarget(dx < 0 ? 1 : -1); }
+  };
+  banner.addEventListener("pointerup", end);
+  banner.addEventListener("pointercancel", end);
 }
 banner.addEventListener("click", () => {
+  if (swiped) { swiped = false; return; }   // the end of a swipe isn't a tap
   if (mySegs.target) select(mySegs.target, true);
   else if (allDone()) sendAvailable();
   else openSheet();
