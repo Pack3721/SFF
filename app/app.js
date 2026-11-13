@@ -443,11 +443,10 @@ function commit() {                     // the full redraw at the current view
   scaleBar();
 }
 
-function scaleBar() {                   // the longest round number of metres that fits (160 px at most)
+function scaleBar() {                   // the longest round number of metres that fits in 160 px
   const mPerPx = M_PER_UNIT / k;
   const steps = [10, 20, 25, 50, 100, 200, 250, 500, 1000];
-  const room = Math.min(160, wrap.getBoundingClientRect().width / 2 - 60);   // stop short of the list tab
-  const m = steps.filter((v) => v / mPerPx <= room).pop() || 10;
+  const m = steps.filter((v) => v / mPerPx <= 160).pop() || 10;
   document.getElementById("scale-bar").style.width = Math.round(m / mPerPx) + "px";
   document.getElementById("scale-text").textContent = `${m} m (~${Math.round(m * 3.281 / 10) * 10} ft)`;
 }
@@ -1338,22 +1337,7 @@ function openSheet() {
   renderList();
 }
 function closeSheet() { slideOut(sheet); }
-// The list opens from a small pull-up tab at the bottom of the map: tap it or swipe up on it.
-// Swipe down on the list's header to close it.
-const handle = document.getElementById("segs-handle");
-handle.addEventListener("click", openSheet);
-function swipeY(el, dirUp, act) {         // the finger may lift outside el, so listen for that on the page
-  let y0 = null;
-  el.addEventListener("pointerdown", (e) => { y0 = e.clientY; });
-  document.addEventListener("pointerup", (e) => {
-    if (y0 == null) return;
-    const dy = e.clientY - y0; y0 = null;
-    if (dirUp ? dy < -25 : dy > 40) act();
-  });
-  document.addEventListener("pointercancel", () => { y0 = null; });
-}
-swipeY(handle, true, openSheet);
-swipeY(sheet.querySelector("header"), false, closeSheet);
+document.getElementById("segs-btn").addEventListener("click", openSheet);   // the list button, beside Center on me
 document.getElementById("sheet-close").addEventListener("click", closeSheet);
 
 // ---------- texts to the dispatcher ----------

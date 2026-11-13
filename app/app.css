@@ -97,8 +97,8 @@ body.card-open #scale, body.card-open #gps-status { display: none; }
 body.card-open #tools { bottom: calc(var(--card-h, 0px) + 4px); }
 #tools {
   position: fixed; right: 12px; z-index: 1;
-  bottom: calc(6px + env(safe-area-inset-bottom));    /* same row as the list tab */
-  display: flex; flex-direction: column; gap: 10px;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  display: flex; flex-direction: row; gap: 10px;
 }
 #tools button {
   font: inherit; font-size: 16px; font-weight: 700;
@@ -110,7 +110,7 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 4px); }
 #tools button:active { background: #eee; }
 #tools button.on { background: #1a73e8; border-color: #1a73e8; color: #fff; }
 /* Center on me: a round "locate me" crosshair; blue while the map follows you */
-#tools #me-btn { width: 52px; height: 52px; min-height: 0; padding: 0; display: grid; place-items: center; border-radius: 50%; color: #333; }
+#tools #me-btn, #tools #segs-btn { width: 52px; height: 52px; min-height: 0; padding: 0; display: grid; place-items: center; border-radius: 50%; color: #333; }
 #tools #me-btn.on { color: #fff; }
 
 /* GPS dot: blue with a white rim; the pale ring is how sure the phone is */
@@ -327,15 +327,3 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 4px); }
 #banner { overflow: hidden; }
 #banner .content { display: flex; flex-direction: column; gap: 4px; min-width: 0; will-change: transform; }
 
-/* pull-up tab for the segments list: bottom center, a grabber line and a list icon */
-#segs-handle {
-  position: fixed; z-index: 1; left: 50%; transform: translateX(-50%);
-  bottom: calc(10px + env(safe-area-inset-bottom));
-  width: 72px; height: 40px; padding: 4px 0 0; display: flex; flex-direction: column; align-items: center; gap: 2px;
-  color: #333; background: #fff; border: 0; border-radius: 14px; box-shadow: 0 1px 6px rgba(0, 0, 0, .3);
-  touch-action: none;
-}
-#segs-handle .grip { width: 28px; height: 4px; border-radius: 2px; background: #bbb; }
-#sheet header { touch-action: none; }
-/* the list tab stays reachable while a card is open: it sits on the card's top edge */
-body.card-open #segs-handle { bottom: calc(var(--card-h, 0px) + 8px); }
