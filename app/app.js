@@ -1464,23 +1464,26 @@ function renderSettings() {
 
   const telL = h("label", "field", null, f);
   h("span", "field-label", "Dispatcher\u2019s mobile number", telL);
-  const tel = h("input", "", null, telL);
+  const telBox = h("span", "inputbox", null, telL);
+  const tel = h("input", "", null, telBox);
   Object.assign(tel, { type: "tel", value: showTel(settings.tel), placeholder: "10 digits", autocomplete: "off" });
   tel.setAttribute("inputmode", "tel");
+  const telMark = h("span", "mark", null, telBox);
+  const err = h("span", "err", null, telL);
 
   const gL = h("label", "field", null, f);
   h("span", "field-label", "Your group", gL);
-  const group = h("input", "", null, gL);
+  const groupBox = h("span", "inputbox", null, gL);
+  const group = h("input", "", null, groupBox);
   // the example follows your den: the den of your first segment, or the den on screen
   const first = mySegs.tracked[0] && segById(mySegs.tracked[0]);
   const guess = SINGULAR[first ? first.den : denKey !== PACK ? denKey : "W"];
   Object.assign(group, { type: "text", value: settings.group, placeholder: `e.g. ${guess} A`, autocomplete: "off", maxLength: 24 });
   group.setAttribute("autocapitalize", "words");
+  const groupMark = h("span", "mark", null, groupBox);
   h("span", "hint", "The name your group goes by, the same as the dispatcher has it.", gL);
 
   const preview = h("p", "preview", null, f);
-  const err = h("p", "err", null, f);
-  const saved = h("p", "saved", "\u2714\ufe0e Saved", f);
 
   function paint() {
     preview.textContent = `Texts will read: Wk${week()} ${group.value.trim() || "\u2026"} \u2013 ${mySegs.target || "W7"} done`;
@@ -1489,13 +1492,19 @@ function renderSettings() {
 
   // Saves as you fill it in: the group as you type; the number once it's a good 10 digits (or cleared).
   // A number that doesn't look right is never saved (the last good one stays); you're told when you leave it.
-  let flash = 0;
-  function store() {
-    saveSettings();
-    textingChanged();
-    saved.classList.add("on");
-    clearTimeout(flash); flash = setTimeout(() => saved.classList.remove("on"), 1200);
+  // each box has its own mark: ✔ once what's in it is saved, ✗ for a number that doesn't look right
+  function mark(el, state) {
+    el.textContent = state === "ok" ? "\u2714\ufe0e" : state === "bad" ? "\u2716\ufe0e" : "";
+    el.className = "mark" + (state ? " " + state : "");
+    el.setAttribute("aria-label", state === "ok" ? "Saved" : state === "bad" ? "Not saved" : "");
   }
+  function marks(telBad) {
+    mark(groupMark, settings.group ? "ok" : "");
+    const typed = tel.value.trim();
+    mark(telMark, telBad ? "bad" : typed && normTel(typed) && normTel(typed) === settings.tel ? "ok" : "");
+  }
+  marks(false);
+  function store() { saveSettings(); textingChanged(); marks(false); }
   group.addEventListener("input", () => {
     paint();
     settings.group = group.value.trim().replace(/\s+/g, " ");
@@ -1503,12 +1512,15 @@ function renderSettings() {
   });
   tel.addEventListener("input", () => {
     const typed = tel.value.trim(), t = normTel(typed);
-    if (t || !typed) { err.textContent = ""; if (settings.tel !== (t || "")) { settings.tel = t || ""; store(); } }
+    if (t || !typed) { err.textContent = ""; if (settings.tel !== (t || "")) { settings.tel = t || ""; store(); } else marks(false); }
+    else if (telMark.classList.contains("ok")) marks(false);   // editing a saved number: no ✔ until it's good again
   });
   tel.addEventListener("blur", () => {
     const typed = tel.value.trim();
-    err.textContent = typed && !normTel(typed) ? "That number doesn\u2019t look right \u2013 it needs 10 digits, like (314) 555-0100." : "";
+    const bad = typed && !normTel(typed);
+    err.textContent = bad ? "Needs 10 digits, like (314) 555-0100. Not saved." : "";
     if (normTel(typed)) tel.value = showTel(normTel(typed));   // tidy it up
+    marks(bad);
   });
   f.addEventListener("submit", (e) => { e.preventDefault(); document.activeElement.blur(); });   // Return on the keyboard: done typing
 }

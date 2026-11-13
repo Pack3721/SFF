@@ -289,8 +289,12 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 12px); }
 #settings .preview { margin: 0; font-size: 15px; color: #333; }
 #settings .err { margin: 0; color: #b00000; font-weight: 700; }
 #settings .err:empty { display: none; }
-#settings .saved { margin: 0; font-size: 14px; font-weight: 700; color: #1e7e34; opacity: 0; transition: opacity .3s; }
-#settings .saved.on { opacity: 1; }
+#settings .inputbox { position: relative; display: flex; }
+#settings .inputbox input { flex: 1; min-width: 0; padding-right: 44px; }
+#settings .mark { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 20px; font-weight: 800; pointer-events: none; }
+#settings .mark.ok { color: #1e7e34; }
+#settings .mark.bad { color: #b00000; }
+#settings .err { font-size: 14px; }
 #banner.alldone .fill { background: #1e7e34; }
 
 /* message icons on buttons that text the dispatcher; crossed out while texting isn't set up */
