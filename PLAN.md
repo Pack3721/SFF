@@ -133,11 +133,13 @@ There are 79 segments and 1,183 houses. Den keys are L, T, W, B, WB (Webelos, wh
 
 ## Den leader mode
 
-"Den leader" is the last choice in the den drop-down. It has no targets, tracking, banner or list, but GPS still works. The panel picks the den, sets the number of groups (1 to 8) and their names ("Wolf A", …), and shows each group's segment and house count with a **QR** button. The den's segments are coloured by group. Tap a group, then tap segments to move them.
+"Den leader" is the last choice in the den drop-down. It has no targets, tracking, banner or list, but GPS still works. The panel picks the den, sets the number of groups (1 to 8) and their names ("Wolf A", …), and shows each group's segment and house count with a **QR** button. The den's segments are coloured by group. Tap a group, then tap segments to move them. Each row shows the group's houses, a **list** button (segment IDs, houses, streets and a total, to share with families on the paper map) and a **QR** button. Leaders split their den the morning of the walk.
 
-The first split (and **Auto split**) tries a sweep from every segment, cuts it into groups of about equal houses, then moves single segments while that lowers a cost. The cost counts house-weighted squared distance from each group's middle (so a far-off segment costs a lot), unevenness, and houses on the smaller side of a main road within a group (cross only at the stop). It takes a few milliseconds.
+The first split (and **Auto re-split**, greyed out until a segment is moved by hand) tries a sweep from every segment, cuts it into groups of about equal houses, then moves single segments while that lowers a cost. The cost counts house-weighted squared distance from each group's middle (so a far-off segment costs a lot), unevenness, and houses on the smaller side of a main road within a group (cross only at the stop). It takes a few milliseconds.
 
 A group's QR code or link is a group setup link (`#tel=…&g=Wolf+A&den=W&seg=W6,W7,…`). A parent scans it and their phone has the group name, den, those segments starred and the dispatcher's number (if the leader's phone has it). The split and names are saved per den on the leader's phone.
+
+**Known issue:** **+** and **−** re-split the whole den. A leader who adds a "Needs coverage" group for leftover segments (low turnout) after handing out QR codes would scramble groups that parents already have. The guide says to do it before handing out codes. A possible fix: once any group's QR or list has been opened, **+** adds an empty group and leaves the others alone.
 
 ## Decisions
 
