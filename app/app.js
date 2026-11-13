@@ -1120,7 +1120,7 @@ document.getElementById("sheet-close").addEventListener("click", closeSheet);
 // Wording matches page 1 of the paper pack, with the week in front: "Wk1 Wolf A – W7 done".
 const SINGULAR = { L: "Lion", T: "Tiger", W: "Wolf", B: "Bear", WB: "Webelos", A: "AOL" };
 const SET_KEY = "sff.settings";
-let settings = { tel: "", wk: null, wkDay: null, groupDen: null, letter: "" };
+let settings = { tel: "", wk: null, wkDay: null, group: "" };   // group: typed as people say it, e.g. "Wolf A"
 
 // The 2026 walk: Week 1 (bags) is Saturday Nov 14, Week 2 (pickup) is Saturday Nov 21. The week comes
 // from the date (Week 1 up to Nov 14, Week 2 after). A week picked in Settings only counts on the day it
@@ -1130,7 +1130,11 @@ const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(
 const weekByDate = () => (today() <= WEEK_DAYS[1] ? 1 : 2);
 const week = () => (settings.wk && settings.wkDay === today() ? settings.wk : weekByDate());
 function loadSettings() {
-  try { Object.assign(settings, JSON.parse(localStorage.getItem(SET_KEY) || "{}")); } catch (_) { /* ignore */ }
+  try {
+    const v = JSON.parse(localStorage.getItem(SET_KEY) || "{}");
+    if (!v.group && v.groupDen) v.group = SINGULAR[v.groupDen] + (v.letter ? " " + v.letter : "");   // older den + letter
+    settings = { tel: v.tel || "", wk: v.wk || null, wkDay: v.wkDay || null, group: v.group || "" };
+  } catch (_) { /* ignore */ }
 }
 function saveSettings() { try { localStorage.setItem(SET_KEY, JSON.stringify(settings)); } catch (_) { /* ignore */ } }
 // a US mobile number as +1 and 10 digits, or null
@@ -1140,10 +1144,9 @@ function normTel(v) {
   return /^[2-9]\d{2}[2-9]\d{6}$/.test(d) ? "+1" + d : null;
 }
 const showTel = (t) => t ? `(${t.slice(2, 5)}) ${t.slice(5, 8)}-${t.slice(8)}` : "";
-const groupName = () => SINGULAR[settings.groupDen] + (settings.letter ? " " + settings.letter : "");
-const textsReady = () => !!(settings.tel && settings.groupDen);
+const textsReady = () => !!(settings.tel && settings.group);
 function textBody(kind, id) {
-  const who = `Wk${week()} ${groupName()}`;
+  const who = `Wk${week()} ${settings.group}`;
   return { done: `${who} \u2013 ${id} done`, help: `${who} \u2013 ${id} need help`,
            bags: `${who} \u2013 ${id} need bags`, available: `${who} available` }[kind];
 }
@@ -1151,7 +1154,8 @@ function textBody(kind, id) {
 const smsHref = (body) => `sms:${settings.tel}${isIOS() ? "&" : "?"}body=${encodeURIComponent(body)}`;
 function sendText(kind, id) {
   if (!textsReady()) {
-    openSettings("To text the dispatcher, add their number and your group.");
+    openSettings(settings.group ? "To text the dispatcher, add their number." : settings.tel ? "To text the dispatcher, add your group\u2019s name."
+                                                                                 : "To text the dispatcher, add their number and your group\u2019s name.");
     return false;
   }
   openSms(smsHref(textBody(kind, id)));
@@ -1181,10 +1185,6 @@ const setPanel = document.getElementById("settings");
 let setNote = "";
 function openSettings(note) {
   setNote = note || "";
-  if (!settings.groupDen) {               // a good guess: the den of your first segment, or the den on screen
-    const first = mySegs.tracked[0] && segById(mySegs.tracked[0]);
-    settings.groupDen = first ? first.den : denKey !== PACK ? denKey : null;
-  }
   renderSettings();
   closeSheet();
   slideIn(setPanel);
@@ -1212,18 +1212,15 @@ function renderSettings() {
     return [n, b];
   });
 
-  const gF = h("fieldset", "field", null, f);
-  h("legend", "field-label", "Your group", gF);
-  const gRow = h("div", "group", null, gF);
-  const den = h("select", "", null, gRow);
-  den.setAttribute("aria-label", "Your den");
-  h("option", "", "Den\u2026", den).value = "";
-  for (const d of DATA.dens) { const o = h("option", "", SINGULAR[d.key], den); o.value = d.key; }
-  den.value = settings.groupDen || "";
-  const letter = h("input", "", null, gRow);
-  Object.assign(letter, { type: "text", value: settings.letter, maxLength: 2, placeholder: "A", autocomplete: "off" });
-  letter.setAttribute("aria-label", "Group letter"); letter.setAttribute("autocapitalize", "characters");
-  h("span", "hint", "Same as \u201cYour group\u201d on page 1 of the paper map.", gF);
+  const gL = h("label", "field", null, f);
+  h("span", "field-label", "Your group", gL);
+  const group = h("input", "", null, gL);
+  // the example follows your den: the den of your first segment, or the den on screen
+  const first = mySegs.tracked[0] && segById(mySegs.tracked[0]);
+  const guess = SINGULAR[first ? first.den : denKey !== PACK ? denKey : "W"];
+  Object.assign(group, { type: "text", value: settings.group, placeholder: `e.g. ${guess} A`, autocomplete: "off", maxLength: 24 });
+  group.setAttribute("autocapitalize", "words");
+  h("span", "hint", "The name your group goes by, the same as the dispatcher has it.", gL);
 
   const preview = h("p", "preview", null, f);
   const err = h("p", "err", null, f);
@@ -1231,25 +1228,29 @@ function renderSettings() {
 
   function paint() {
     for (const [n, b] of wkBtns) { b.classList.toggle("on", wk === n); b.setAttribute("aria-pressed", wk === n); }
-    const g = den.value ? SINGULAR[den.value] + (letter.value.trim() ? " " + letter.value.trim().toUpperCase() : "") : "\u2026";
-    preview.textContent = `Texts will read: Wk${wk || "?"} ${g} \u2013 ${mySegs.target || "W7"} done`;
+    preview.textContent = `Texts will read: Wk${wk} ${group.value.trim() || "\u2026"} \u2013 ${mySegs.target || "W7"} done`;
   }
-  for (const e of [den, letter]) e.addEventListener("input", paint);
+  group.addEventListener("input", paint);
   paint();
 
+  // Save keeps whatever is good. A number that doesn't look right isn't saved (the old one stays),
+  // and the panel stays open to say so.
   f.addEventListener("submit", (e) => {
     e.preventDefault();
-    const t = normTel(tel.value);
-    const problems = [];
-    if (!t) problems.push("a 10-digit mobile number");
-    if (!den.value) problems.push("your den");
-    if (problems.length) { err.textContent = "Please add " + problems.join(", ") + "."; return; }
+    const typed = tel.value.trim(), t = normTel(typed);
+    if (t) settings.tel = t;
+    else if (!typed) settings.tel = "";
+    settings.group = group.value.trim().replace(/\s+/g, " ");
     // a week that isn't the date's own only sticks for today
-    Object.assign(settings, { tel: t, wk: wk === weekByDate() ? null : wk, wkDay: wk === weekByDate() ? null : today(),
-                              groupDen: den.value, letter: letter.value.trim().toUpperCase() });
+    Object.assign(settings, { wk: wk === weekByDate() ? null : wk, wkDay: wk === weekByDate() ? null : today() });
     saveSettings();
-    closeSettings();
     renderCard();                        // Need bags comes and goes with the week
+    if (typed && !t) {
+      err.textContent = "Saved the rest \u2013 that number doesn\u2019t look right. It needs 10 digits, like (314) 555-0100.";
+      tel.focus();
+      return;
+    }
+    closeSettings();
   });
 }
 document.getElementById("settings-btn").addEventListener("click", () => openSettings());

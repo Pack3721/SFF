@@ -120,7 +120,7 @@ There are 79 segments and 1,183 houses. Den keys are L, T, W, B, WB (Webelos, wh
    - One **target** segment, the one you're on or heading to. It's shown in a banner with progress ("◉ 10", "✔ 12 of 34") and on the map by white dashes that march along it in walking order.
    - Tap a segment for its **card**: all its lines, Track, Make target, and the texts **✔ Done**, **Need help** and **Need bags** (Week 1 only). Each opens Messages with the text written (`Wk1 Wolf A – W7 done`). Done also marks the segment: ✔ on its tag and in the list, the bar fills, and the target moves to your next segment that isn't done. Undo is on the same button.
    - When every tracked segment is done, the banner offers **"available"** (`Wk1 Wolf A available`). The Mine tab also has the button.
-   - **Settings** (⚙): the dispatcher's number, week and group, typed in until milestone 4's QR code fills them. A text tapped before they're set opens Settings first. They're stored only on the phone.
+   - **Settings** (⚙): the dispatcher's number (until milestone 4's QR code fills it in), the week (set by the date, with an override for that day only), and the group's name, typed as people say it ("e.g. Wolf A"), since not everyone has the paper map. Save keeps whatever is valid; a number that doesn't look right isn't saved, and the panel says so. A text tapped before the number and group are set opens Settings first. Everything is stored only on the phone.
    - Once you track any segment, the rest of the den turns grey. Their labels are the first to go when zoomed out.
    - `sms:` links use `&body=` on iPhone and `?body=` elsewhere.
 
