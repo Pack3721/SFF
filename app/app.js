@@ -1953,6 +1953,7 @@ function renderLeader() {
   again.addEventListener("click", () => { splitGroups(); styleSegments(); renderLeader(); });
 
   h("p", "hint", "Pick a group below by tapping its colour, then tap a segment on the map to put that segment in the group.", leaderPanel);
+  h("p", "leader-warn", "Hand out QR codes after the groups are final. Phones that already scanned one keep the old segments, so moving segments later means new QR codes.", leaderPanel);
   const list = h("div", "groups", null, leaderPanel);
   for (let i = 0; i < leader.n; i++) {
     const ids = groupSegs(i), hs = ids.reduce((a, id) => a + segById(id).houses, 0);
