@@ -46,7 +46,7 @@ The week (`Wk1` or `Wk2`) goes at the front, so the dispatcher can tell a late W
 ## Dispatcher number
 
 - **QR link format:** `https://pack3721.github.io/SFF/#tel=3145550123`. The week comes from the date, and there's one code for the whole pack. The `#` part (the fragment) is never sent to the web server, so it isn't in server logs and isn't in the Referer header.
-- **When the page opens:** it reads the fragment, checks the number (10 digits, US) and saves it. It does **not** clear the fragment. On iPhone a Home Screen app doesn't share Safari's storage, so the number has to travel in the link the icon is saved with. The manifest has an `id` and no `start_url`, so the icon keeps the address it was added from. The number in the link is the same one every family is given anyway.
+- **When the page opens:** it reads the fragment, checks the number (10 digits, US) and saves it. It does **not** clear the fragment. On iPhone a Home Screen app doesn't share Safari's storage, so the number has to travel in the link the icon is saved with. The manifest has an `id` and no `start_url`, so the icon keeps the address it was added from. The number in the link is the same one every family is given anyway. A number typed in Settings is written into the address the same way (`history.replaceState`), so Add to Home Screen carries it too.
 - **Opened with no number:** it asks the user to type one, or to scan the dispatcher's QR code. It never guesses.
 - **A new QR code** overwrites the saved number and week, which covers a different dispatcher in Week 2.
 - **Never commit a phone number** to this repo, in code, data or tests. Use `555-0100`-style test numbers.

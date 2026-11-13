@@ -1363,7 +1363,19 @@ function loadSettings() {
     settings = { tel: v.tel || "", group: v.group || "" };
   } catch (_) { /* ignore */ }
 }
-function saveSettings() { try { localStorage.setItem(SET_KEY, JSON.stringify(settings)); } catch (_) { /* ignore */ } }
+function saveSettings() {
+  try { localStorage.setItem(SET_KEY, JSON.stringify(settings)); } catch (_) { /* ignore */ }
+  syncLink();
+}
+// Keep the address in step with the saved number (…#tel=…), so Add to Home Screen from this page carries
+// it even when it was typed in Settings rather than scanned. replaceState: no reload, no Back step.
+function syncLink() {
+  const q = new URLSearchParams(location.hash.slice(1));
+  if (settings.tel) q.set("tel", settings.tel.slice(2)); else q.delete("tel");
+  const frag = q.toString();
+  if (frag === location.hash.slice(1)) return;
+  history.replaceState(history.state, "", location.pathname + location.search + (frag ? "#" + frag : ""));
+}
 // a US mobile number as +1 and 10 digits, or null
 function normTel(v) {
   let d = String(v || "").replace(/\D/g, "");
@@ -1604,6 +1616,7 @@ function start(data) {
   loadSegs();
   loadSettings();
   readLink();
+  syncLink();                            // a number saved earlier goes back into the address too
   renderSetupStatus();
   renderBanner();
   pick(ok(saved) ? saved : PACK, true);
