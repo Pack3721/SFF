@@ -8,6 +8,8 @@ Start with `PLAN.md`. The current job is the **day-of tracker**: a phone web pag
 
 - `PLAN.md`: the plan for the day-of tracker, including requirements, milestones and open questions.
 - `data/sff-2026.json`: the frozen 2026 segments, houses, outlines and streets as lat/lon. This is the app's only data source.
+- `app/`: the day-of tracker, a static page (`index.html`, `app.js`, `app.css`) that draws the map as SVG. `app/sff-2026.json` is a symlink to the data file. Test it with `python3 -m http.server -d app`.
+- `.github/workflows/`: `pages.yml` deploys `app/` to GitHub Pages, and `zizmor.yml` audits the workflows. Pin actions to commit SHAs, and run `zizmor .` before pushing workflow changes.
 - `planner/`: the Python scripts that made the printed 2026 map pack (matplotlib and pypdf).
   - `build.py` builds the 8-page colour PDF. Run it as `python3 build.py`, or `BW=1 python3 build.py` for black and white.
   - `booklet.py` builds the 11×17 saddle-stitch booklet from the colour PDF.
@@ -22,7 +24,7 @@ Start with `PLAN.md`. The current job is the **day-of tracker**: a phone web pag
 - **No phone numbers, email addresses or scout or family names in the repo.** The dispatcher's number reaches the app only through the QR link fragment (`#tel=…`). Use 555-01xx numbers in tests.
 - **No third-party scripts, fonts, analytics or online QR APIs** in the app. The page has to stay self-contained so the `#` fragment can't leak.
 - **Treat the MSD sidewalk data as information only.** It's missing sidewalks that are visible on satellite, so a missing line doesn't mean "no sidewalk". Don't draw it on maps.
-- **Text wording** matches page 1 of the paper pack: "Wolf A – W7 done", "Wolf A available", "W8 need bags".
+- **Text wording** matches page 1 of the paper pack, with the week in front: "Wk1 Wolf A – W7 done", "Wk1 Wolf A available", "Wk1 Wolf A – W8 need bags".
 
 ## Useful facts
 

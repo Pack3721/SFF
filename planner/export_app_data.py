@@ -41,8 +41,12 @@ for d in g["DENS"]:
         parts = s.get("parts") or [dict(street=s["street"], houses=s["houses"])]
         route = [ll(*p) for p in g["street_route"](s)]
         extra = [[ll(*p) for p in g["street_route"](p_)] for p_ in parts[1:]] if s.get("parts") else []
+        mx, my = g["mid_on"](g["street_route"](s))   # ID tag spot, same rule as draw_den_map
+        if s.get("main"):
+            odd = s["side"].startswith("odd"); mx += -22 if odd else 22; my += -40 if odd else 40
+        if s.get("tag_at"): mx, my = s["tag_at"]
         out["segments"].append({"id": s["id"], "den": d["key"], "color": colors[i], "houses": s["n"],
-                                "main_road": bool(s.get("main")), "lines": checklist_lines(s),
+                                "main_road": bool(s.get("main")), "lines": checklist_lines(s), "label": ll(mx, my),
                                 "route": route, "route_parts": extra})
         for p in parts:
             for h in p["houses"]:
@@ -55,6 +59,13 @@ for n, t, p in g["streets"]:
     if len(p) > 1: out["streets"].append({"name": n.title(), "type": t, "line": [ll(*q) for q in p]})
 for n, pts in g["ARTERIALS"].items():
     out["arterials"].append({"name": n, "line": [ll(int(a) * KX, int(b)) for a, b in (q.split(",") for q in pts.split())]})
+# faint grey buildings that aren't on any segment (background, as on the PDF)
+# (only those within ~90 m of a house we walk, to keep the file small)
+_hx = [h[1] for d in g["DENS"] for s in d["segs"] for p in (s.get("parts") or [s]) for h in p["houses"]]
+_hy = [h[2] for d in g["DENS"] for s in d["segs"] for p in (s.get("parts") or [s]) for h in p["houses"]]
+_x0, _x1, _y0, _y1 = min(_hx) - 80, max(_hx) + 80, min(_hy) - 80, max(_hy) + 80
+out["buildings"] = [[[round(v, 5) for v in ll(*q)] for q in r] for r in g["_other_bld"]()
+                    if any(_x0 < x < _x1 and _y0 < y < _y1 for x, y in r)]
 for k, R in g["ZONES"].items(): out["zones"][k] = [ll(*q) for q in R]
 for x, y, t in g["STOPS"]: out["stops"].append({"label": t, "lonlat": ll(x, y)})
 
