@@ -488,6 +488,7 @@ function status(text, bad) {
   gpsStatus.hidden = !text;
   gpsStatus.classList.toggle("bad", !!bad);
 }
+gpsStatus.addEventListener("click", () => { gpsStatus.hidden = true; });   // tap to close a message
 function remember(on) { try { on ? localStorage.setItem(GPS_KEY, "1") : localStorage.removeItem(GPS_KEY); } catch (_) { /* ignore */ } }
 
 function myScreen() { return { x: me.pos[0] * k + tx, y: me.pos[1] * k + ty }; }
@@ -539,10 +540,25 @@ function onFix(p) {
   else drawMe();
 }
 
+// iPhones refuse without asking when location is off for the browser, so say where to switch it on.
+function blockedHelp() {
+  const ua = navigator.userAgent;
+  const ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  if (ios && /CriOS/.test(ua))
+    return "Location is off for Chrome. iPhone Settings \u203a Privacy & Security \u203a Location Services \u203a Chrome \u203a While Using. Then reload.";
+  if (ios && /FxiOS/.test(ua))
+    return "Location is off for Firefox. iPhone Settings \u203a Privacy & Security \u203a Location Services \u203a Firefox \u203a While Using. Then reload.";
+  if (ios)
+    return "Location is off for Safari. iPhone Settings \u203a Privacy & Security \u203a Location Services \u203a Safari Websites \u203a While Using. Also Settings \u203a Apps \u203a Safari \u203a Location \u203a Ask. Then reload.";
+  if (/Android/.test(ua))
+    return "Location is blocked. Tap the icon left of the web address \u203a Permissions \u203a Location \u203a Allow, and check the phone's Location is on. Then reload.";
+  return "Location is blocked. Allow it for this site in your browser's settings, then reload.";
+}
+
 function onError(e) {
   if (e.code === 1) {                    // PERMISSION_DENIED
     stopGps(); me.wanted = false; me.centreNext = false; remember(false); follow(false);
-    status("Location is blocked. Allow it for this site in your browser settings to see your dot.", true);
+    status(blockedHelp(), true);
   } else if (e.code === 2) {             // POSITION_UNAVAILABLE
     status("Can't get a GPS fix yet. Try outside, away from buildings.", true);
   } else {                               // TIMEOUT: the watch keeps trying
