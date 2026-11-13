@@ -340,8 +340,8 @@ function layout() {
   fx.style.width = svg.style.width; fx.style.height = svg.style.height;
 }
 
-function fit() { fitBox(bbox); }
-function fitBox(box) {
+function fit(instant) { fitBox(bbox, instant); }
+function fitBox(box, instant) {
   stopGlide();
   follow(false);
   layout();
@@ -351,11 +351,34 @@ function fitBox(box) {
   const padBottom = Math.max(60, cardH + 16);                      // scale, buttons and the segment card
   const bw = box[2] - box[0], bh = box[3] - box[1];
   const W = r.width - 2 * padSide, H = r.height - padTop - padBottom;
-  k = Math.min(W / bw, H / bh, 4);
-  if (box === bbox) fitK = k;
-  tx = padSide + (W - bw * k) / 2 - box[0] * k;
-  ty = padTop + (H - bh * k) / 2 - box[1] * k;
-  commit();
+  const nk = Math.min(W / bw, H / bh, 4);
+  if (box === bbox) fitK = nk;
+  goTo(nk, padSide + (W - bw * nk) / 2 - box[0] * nk, padTop + (H - bh * nk) / 2 - box[1] * nk, instant);
+}
+
+// Move the view to (nk, ntx, nty): a short glide that zooms and pans together (the map point under the
+// middle of the screen slides, the zoom changes evenly), drawn with preview() and committed at the end.
+const GLIDE_MS = 400;
+let anim = 0;
+function stopAnim() { if (anim) { cancelAnimationFrame(anim); anim = 0; } }
+function goTo(nk, ntx, nty, instant) {
+  stopGlide(); stopAnim();
+  if (instant || calm) { k = nk; tx = ntx; ty = nty; commit(); return; }
+  const r = wrap.getBoundingClientRect(), sx = r.width / 2, sy = r.height / 2;
+  const lk0 = Math.log(k), lk1 = Math.log(nk);
+  const c0 = [(sx - tx) / k, (sy - ty) / k], c1 = [(sx - ntx) / nk, (sy - nty) / nk];
+  const start = performance.now();
+  const step = (now) => {
+    const t = Math.min(1, (now - start) / GLIDE_MS);
+    if (t >= 1) { anim = 0; k = nk; tx = ntx; ty = nty; commit(); return; }
+    const e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;   // ease in and out
+    k = Math.exp(lk0 + (lk1 - lk0) * e);
+    tx = sx - (c0[0] + (c1[0] - c0[0]) * e) * k;
+    ty = sy - (c0[1] + (c1[1] - c0[1]) * e) * k;
+    preview();
+    anim = requestAnimationFrame(step);
+  };
+  anim = requestAnimationFrame(step);
 }
 
 function preview() {                    // cheap: move the picture drawn at (k0, tx0, ty0) to (k, tx, ty)
@@ -469,7 +492,7 @@ function startGlide() {
 }
 
 wrap.addEventListener("pointerdown", (e) => {
-  if (glide) { stopGlide(); moved = true; }   // a touch catches the gliding map; redraw when it lifts
+  if (glide || anim) { stopGlide(); stopAnim(); moved = true; }   // a touch catches a moving map; redraw when it lifts
   samples = [];
   wrap.setPointerCapture(e.pointerId);
   pointers.set(e.pointerId, local(e));
@@ -504,7 +527,11 @@ const lift = (e) => {
   if (e.type === "pointerup" && now - lastTap >= 300) tapAt(local(e));   // one tap: pick the segment there
   if (e.type === "pointerup" && now - lastTap < 300) {
     const p = me.following ? myScreen() : local(e);   // while following, zoom in on yourself
-    zoomAt(p.x, p.y, 2); commit(); lastTap = 0;
+    const from = [k, tx, ty];
+    zoomAt(p.x, p.y, 2);
+    const to = [k, tx, ty];
+    [k, tx, ty] = from;
+    goTo(...to); lastTap = 0;
   }
   else lastTap = now;
 };
@@ -513,7 +540,7 @@ wrap.addEventListener("pointercancel", lift);
 let wheelTimer;
 wrap.addEventListener("wheel", (e) => {
   e.preventDefault();
-  stopGlide();
+  stopGlide(); stopAnim();
   follow(false);
   const p = local(e);
   zoomAt(p.x, p.y, Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.002)));
@@ -538,7 +565,7 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) unzo
 let resizeTimer;
 window.addEventListener("resize", () => {
   clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => { const f = me.following; fit(); if (f) centerOnMe(false); }, 150);
+  resizeTimer = setTimeout(() => { const f = me.following; fit(true); if (f) centerOnMe(false); }, 150);
 });
 
 // ---------- GPS dot ----------
@@ -589,13 +616,10 @@ function follow(on) {
 
 function centerOnMe(zoomIn) {
   if (!me.pos) { me.centerNext = true; startGps(); return; }
-  stopGlide();
   const r = wrap.getBoundingClientRect();
-  if (zoomIn && k < WALK_K) k = WALK_K;
-  tx = r.width / 2 - me.pos[0] * k;
-  ty = r.height / 2 - me.pos[1] * k;
-  commit();
+  const nk = zoomIn && k < WALK_K ? WALK_K : k;
   follow(true);
+  goTo(nk, r.width / 2 - me.pos[0] * nk, r.height / 2 - me.pos[1] * nk);
 }
 
 function onFix(p) {
@@ -989,7 +1013,7 @@ document.getElementById("sheet-close").addEventListener("click", closeSheet);
 
 // ---------- den picker ----------
 const picker = document.getElementById("den");
-function pick(key) {
+function pick(key, instant) {
   denKey = key;
   if (selected && !(denKey === PACK || DATA.dens.find((d) => d.key === key).segments.includes(selected) || isTracked(selected))) {
     selected = null; renderCard();
@@ -997,7 +1021,8 @@ function pick(key) {
   try { localStorage.setItem(STORE_KEY, key); } catch (_) { /* private mode: just don't remember */ }
   picker.value = key;
   draw();
-  fit();
+  if (!instant) commit();                // place the new den's labels at the current view, then glide to it
+  fit(instant);
 }
 // Picking a den shows all of it. Picking the den you're already on doesn't fire "change", so opening the
 // list and closing it without a change also zooms back out to the whole den (there's no separate button).
@@ -1021,7 +1046,7 @@ function start(data) {
   const ok = (key) => key === PACK || data.dens.some((d) => d.key === key);
   loadSegs();
   renderBanner();
-  pick(ok(saved) ? saved : PACK);
+  pick(ok(saved) ? saved : PACK, true);
   resumeGps();
 }
 
