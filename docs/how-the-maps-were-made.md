@@ -18,8 +18,8 @@ The files are in Google Drive at Pack 721 › Scouting For Food › 2026:
 ## Data sources
 
 - **Official pack boundaries**: AREA-C and AREA-F polygons from the pack's Google My Map. Only addresses inside these polygons are included.
-- **House addresses**: St. Louis County GIS *Address_Points* (ArcGIS FeatureServer). Current addresses only, with no apartment units.
-- **Street lines**: St. Louis County GIS *County_Streets* centerlines.
+- **House addresses**: St. Louis County GIS *Address_Points* (ArcGIS FeatureServer, [item page](https://www.arcgis.com/home/item.html?id=cf0a5470fca14004baee67da7746cdbf)). Current addresses only, with no apartment units.
+- **Street lines**: St. Louis County GIS *County_Streets* centerlines ([item page](https://www.arcgis.com/home/item.html?id=fa17bd6a02a84aeaa9e601b32b5e9c2a)).
 - **Den sizes**: the pack roster CSV, counting active scouts only. Lions 5, Tigers 10, Wolves 14, Bears 9, Webelos 8, AOL 6 (52 total). The roster has no den type for Den 5, so it was assumed to be AOL.
 - **Satellite / street-level checks**: Esri World Imagery, plus Apple Maps and Look Around screenshots supplied by Jay.
 - OpenStreetMap was tried first but had almost no house numbers for this area. It was used only to check sidewalk and stop-sign tags.

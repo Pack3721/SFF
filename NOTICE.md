@@ -21,7 +21,10 @@ House addresses (*Address Points*) and street lines (*County_Streets*), from the
 
 > St. Louis County makes no warranty for fitness of use for a particular purpose express or implied, with respect to this map product. Every reasonable effort has been made to assure the accuracy of the maps and data provided; nevertheless, some information may not be accurate. Any user of this map product accepts its faults and assumes all responsibility for the use thereof, and further agrees to hold St. Louis County Government harmless from and against any damage, loss or liability arising from any use of the map product. Do not make business decisions based on this data before validating your decision with the appropriate agency.
 
-Contact details for data requests are on the layers' item pages in the county's ArcGIS account.
+The county's terms and its contact for data requests are on each layer's ArcGIS page:
+
+- Address Points: <https://www.arcgis.com/home/item.html?id=cf0a5470fca14004baee67da7746cdbf>
+- County_Streets: <https://www.arcgis.com/home/item.html?id=fa17bd6a02a84aeaa9e601b32b5e9c2a>
 
 ### Microsoft Global ML Building Footprints
 
