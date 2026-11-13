@@ -742,17 +742,29 @@ const denOf = (s) => DATA.dens.find((d) => d.key === s.den);
 const segOrder = (a, b) => DATA.segments.indexOf(a) - DATA.segments.indexOf(b);
 const isTracked = (id) => mySegs.tracked.includes(id);
 
+// Tracking your first segment while looking at the whole pack switches the map to that segment's den
+// (that's your den). Only the first: after that, segments from other dens are just added.
+function joinDen(wasEmpty, id) {
+  if (!wasEmpty || denKey !== PACK || !mySegs.tracked.length) return false;
+  pick(segById(id).den);                 // redraws, relists and glides to the den
+  renderBanner(); renderCard();
+  return true;
+}
 function setTracked(id, on) {
+  const wasEmpty = !mySegs.tracked.length;
   mySegs.tracked = mySegs.tracked.filter((x) => x !== id);
   if (on) mySegs.tracked.push(id);
   if (!on && mySegs.target === id) mySegs.target = null;
   saveSegs();
+  if (on && joinDen(wasEmpty, id)) return;
   segmentsChanged(!on || !(id in segEls));
 }
 function setTarget(id) {
+  const wasEmpty = !mySegs.tracked.length;
   mySegs.target = mySegs.target === id ? null : id;
   if (mySegs.target && !isTracked(id)) mySegs.tracked.push(id);   // your target is always one of yours
   saveSegs();
+  if (mySegs.target && joinDen(wasEmpty, id)) return;
   segmentsChanged(!(id in segEls));
 }
 // a segment from another den has to be drawn (or removed) with a full redraw; otherwise just restyle
@@ -1033,11 +1045,14 @@ function addForm(body) {
     }
     addMsg = bad.length ? `No segment ${bad.join(", ")}` : "";
     if (!ids.length) { renderList(); return; }
+    const wasEmpty = !mySegs.tracked.length;
     for (const id of ids) if (!isTracked(id)) mySegs.tracked.push(id);
     saveSegs();
     if (ids.length === 1 && !bad.length) {  // one segment: go straight to it on the map
-      closeSheet(); segmentsChanged(true); select(ids[0], true);
-    } else { segmentsChanged(true); }
+      closeSheet();
+      if (!joinDen(wasEmpty, ids[0])) segmentsChanged(true);
+      select(ids[0], true);
+    } else if (!joinDen(wasEmpty, ids[0])) { segmentsChanged(true); }
   });
 }
 
