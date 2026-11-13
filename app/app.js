@@ -157,18 +157,19 @@ function draw() {
         Larrow = layer("arrows"), Lnum = layer("numbers"), Lid = layer("ids"),
         Lalabel = layer("arterial-labels"), Lstop = layer("stops");
 
-  // 1. streets: a grey casing and a near-white fill (type 3+ are the wider collectors)
+  // 1. streets: a grey casing and a near-white fill (type 3+ are the wider collectors). All casings go
+  // under all fills so crossings look joined. Drawn in grid pieces (see gridPaths).
   const streets = D.streets.filter((s) => !ARTERIAL_STREETS.has(s.name.toUpperCase()));
-  for (const wide of [false, true]) {
-    const d = streets.filter((s) => (s.type >= 3) === wide).map((s) => lineD(s.line.map(P))).join("");
-    el("path", { d, fill: "none", stroke: "#d4d4d4", "stroke-width": wide ? 15 : 10, "stroke-linecap": "round", "stroke-linejoin": "round" }, Lstreet);
-    el("path", { d, fill: "none", stroke: "#f7f7f7", "stroke-width": wide ? 11.3 : 6.3, "stroke-linecap": "round", "stroke-linejoin": "round" }, Lstreet);
+  const round = { fill: "none", "stroke-linecap": "round", "stroke-linejoin": "round" };
+  for (const [part, wide] of [["casing", false], ["casing", true], ["fill", false], ["fill", true]]) {
+    const attrs = part === "casing" ? { stroke: "#d4d4d4", "stroke-width": wide ? 15 : 10 }
+                                    : { stroke: "#f7f7f7", "stroke-width": wide ? 11.3 : 6.3 };
+    gridPaths(Lstreet, streets.filter((s) => (s.type >= 3) === wide).map((s) => s.line.map(P)), lineD, { ...round, ...attrs });
   }
-  // arterials: wider and tan, run on past the data so they leave the edge of the map
+  // arterials: wider and tan, run on past the data so they leave the edge of the map; one path each
   const arts = D.arterials.map((a) => ({ name: a.name, pts: extend(a.line.map(P), 4000) }));
-  const ad = arts.map((a) => lineD(a.pts)).join("");
-  el("path", { d: ad, fill: "none", stroke: "#c8c8c8", "stroke-width": 18 }, Lstreet);
-  el("path", { d: ad, fill: "none", stroke: "#fff6dc", "stroke-width": 14 }, Lstreet);
+  for (const a of arts) el("path", { d: lineD(a.pts), fill: "none", stroke: "#c8c8c8", "stroke-width": 18 }, Lstreet);
+  for (const a of arts) el("path", { d: lineD(a.pts), fill: "none", stroke: "#fff6dc", "stroke-width": 14 }, Lstreet);
 
   // street names: along every piece of street, about every 300 units on long ones. Declutter keeps
   // copies of one name well apart on screen, and drops a name where the street is too short for it.
@@ -205,8 +206,8 @@ function draw() {
   }
 
   // 2. buildings that aren't on any segment, then other dens' houses, both faint
-  el("path", { d: D.buildings.map((r) => ringD(r.map(P))).join(""), fill: "#efefef" }, Lbld);
-  el("path", { d: D.houses.filter((h) => !shown.has(h.seg)).map((h) => ringD(h.outline.map(P))).join(""), fill: "#dcdcdc" }, Lbld);
+  gridPaths(Lbld, D.buildings.map((r) => r.map(P)), ringD, { fill: "#efefef" });
+  gridPaths(Lbld, D.houses.filter((h) => !shown.has(h.seg)).map((h) => h.outline.map(P)), ringD, { fill: "#dcdcdc" });
 
   // 3. zone outlines, dashed
   for (const z in D.zones) {
@@ -314,6 +315,20 @@ function draw() {
   view.appendChild(me.g);               // the GPS dot stays on top of whichever den is drawn
   styleSegments();
   renderList();
+}
+
+// Many shapes as a grid of paths, ~300 units (330 m) a cell, instead of one giant path. The phone paints
+// the map in tiles, and a tile only has to paint the pieces that touch it, so redraws after a zoom
+// finish much sooner (fewer blank tiles if you pan straight away).
+const GRID = 300;
+function gridPaths(parent, shapes, toD, attrs) {
+  const cells = new Map();
+  for (const pts of shapes) {
+    const key = Math.floor(pts[0][0] / GRID) + "," + Math.floor(pts[0][1] / GRID);
+    if (!cells.has(key)) cells.set(key, []);
+    cells.get(key).push(toD(pts));
+  }
+  for (const ds of cells.values()) el("path", { ...attrs, d: ds.join("") }, parent);
 }
 
 function extend(pts, far) {             // build.py _ext: run a road on past both ends
