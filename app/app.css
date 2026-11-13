@@ -10,6 +10,9 @@
 
 * { box-sizing: border-box; }
 
+/* The page itself never zooms: the map does its own pinch, and the segment list only scrolls.
+   pan-y here (not none) so the list can still scroll; it also turns off double-tap zoom. */
+html, body { touch-action: pan-y; }
 html, body {
   margin: 0;
   height: 100%;

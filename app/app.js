@@ -520,7 +520,20 @@ wrap.addEventListener("wheel", (e) => {
   preview();
   clearTimeout(wheelTimer); wheelTimer = setTimeout(commit, 150);
 }, { passive: false });
-document.addEventListener("gesturestart", (e) => e.preventDefault());   // stop iOS zooming the page
+// Stop iOS zooming the page (the map has its own zoom). If the page does end up zoomed anyway, snap it
+// back: briefly capping the viewport's scale at 1 makes iOS undo the zoom.
+for (const ev of ["gesturestart", "gesturechange"]) document.addEventListener(ev, (e) => e.preventDefault());
+const vp = document.getElementById("viewport");
+let unzooming = false;
+function unzoomPage() {
+  if (unzooming || !window.visualViewport || visualViewport.scale <= 1.01) return;
+  unzooming = true;
+  const plain = vp.getAttribute("content");
+  vp.setAttribute("content", plain + ", maximum-scale=1");
+  setTimeout(() => { vp.setAttribute("content", plain); unzooming = false; }, 400);
+}
+if (window.visualViewport) visualViewport.addEventListener("resize", () => setTimeout(unzoomPage, 300));
+document.addEventListener("visibilitychange", () => { if (!document.hidden) unzoomPage(); });
 
 let resizeTimer;
 window.addEventListener("resize", () => {
