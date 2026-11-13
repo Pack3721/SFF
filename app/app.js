@@ -944,7 +944,7 @@ function renderCard() {
   });
   const hp = h("button", "", "Need help", texts); hp.type = "button";
   hp.addEventListener("click", () => sendText("help", s.id));
-  if (settings.wk !== 2) {               // bags only go out in Week 1
+  if (week() !== 2) {                    // bags only go out in Week 1
     const bg = h("button", "", "Need bags", texts); bg.type = "button";
     bg.addEventListener("click", () => sendText("bags", s.id));
   }
@@ -1120,7 +1120,15 @@ document.getElementById("sheet-close").addEventListener("click", closeSheet);
 // Wording matches page 1 of the paper pack, with the week in front: "Wk1 Wolf A – W7 done".
 const SINGULAR = { L: "Lion", T: "Tiger", W: "Wolf", B: "Bear", WB: "Webelos", A: "AOL" };
 const SET_KEY = "sff.settings";
-let settings = { tel: "", wk: null, groupDen: null, letter: "" };
+let settings = { tel: "", wk: null, wkDay: null, groupDen: null, letter: "" };
+
+// The 2026 walk: Week 1 (bags) is Saturday Nov 14, Week 2 (pickup) is Saturday Nov 21. The week comes
+// from the date (Week 1 up to Nov 14, Week 2 after). A week picked in Settings only counts on the day it
+// was picked, so a phone set on the 14th doesn't still say Wk1 on the 21st.
+const WEEK_DAYS = { 1: "2026-11-14", 2: "2026-11-21" };
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+const weekByDate = () => (today() <= WEEK_DAYS[1] ? 1 : 2);
+const week = () => (settings.wk && settings.wkDay === today() ? settings.wk : weekByDate());
 function loadSettings() {
   try { Object.assign(settings, JSON.parse(localStorage.getItem(SET_KEY) || "{}")); } catch (_) { /* ignore */ }
 }
@@ -1133,9 +1141,9 @@ function normTel(v) {
 }
 const showTel = (t) => t ? `(${t.slice(2, 5)}) ${t.slice(5, 8)}-${t.slice(8)}` : "";
 const groupName = () => SINGULAR[settings.groupDen] + (settings.letter ? " " + settings.letter : "");
-const textsReady = () => !!(settings.tel && settings.wk && settings.groupDen);
+const textsReady = () => !!(settings.tel && settings.groupDen);
 function textBody(kind, id) {
-  const who = `Wk${settings.wk} ${groupName()}`;
+  const who = `Wk${week()} ${groupName()}`;
   return { done: `${who} \u2013 ${id} done`, help: `${who} \u2013 ${id} need help`,
            bags: `${who} \u2013 ${id} need bags`, available: `${who} available` }[kind];
 }
@@ -1143,7 +1151,7 @@ function textBody(kind, id) {
 const smsHref = (body) => `sms:${settings.tel}${isIOS() ? "&" : "?"}body=${encodeURIComponent(body)}`;
 function sendText(kind, id) {
   if (!textsReady()) {
-    openSettings("To text the dispatcher, add their number, the week and your group.");
+    openSettings("To text the dispatcher, add their number and your group.");
     return false;
   }
   openSms(smsHref(textBody(kind, id)));
@@ -1197,8 +1205,8 @@ function renderSettings() {
   const wkF = h("fieldset", "field", null, f);
   h("legend", "field-label", "Week", wkF);
   const wkRow = h("div", "choice", null, wkF);
-  let wk = settings.wk;
-  const wkBtns = [[1, "Week 1 \u2013 bags"], [2, "Week 2 \u2013 pickup"]].map(([n, label]) => {
+  let wk = week();
+  const wkBtns = [[1, "Week 1 \u2013 bags\nSat Nov 14"], [2, "Week 2 \u2013 pickup\nSat Nov 21"]].map(([n, label]) => {
     const b = h("button", "", label, wkRow); b.type = "button";
     b.addEventListener("click", () => { wk = n; paint(); });
     return [n, b];
@@ -1234,10 +1242,11 @@ function renderSettings() {
     const t = normTel(tel.value);
     const problems = [];
     if (!t) problems.push("a 10-digit mobile number");
-    if (!wk) problems.push("the week");
     if (!den.value) problems.push("your den");
     if (problems.length) { err.textContent = "Please add " + problems.join(", ") + "."; return; }
-    Object.assign(settings, { tel: t, wk, groupDen: den.value, letter: letter.value.trim().toUpperCase() });
+    // a week that isn't the date's own only sticks for today
+    Object.assign(settings, { tel: t, wk: wk === weekByDate() ? null : wk, wkDay: wk === weekByDate() ? null : today(),
+                              groupDen: den.value, letter: letter.value.trim().toUpperCase() });
     saveSettings();
     closeSettings();
     renderCard();                        // Need bags comes and goes with the week

@@ -28,6 +28,7 @@ Start with `PLAN.md`. The current job is the **day-of tracker**: a phone web pag
 
 ## Useful facts
 
+- **2026 dates:** Week 1 (bags) is Saturday Nov 14, 2026. Week 2 (pickup) is Saturday Nov 21, 2026. The app picks the week from the date.
 - **The pack is "721" in everyday use.** 3721 is the technical unit number, which keeps it apart from the troop. Use 721 in anything people read, such as the app name "SFF 721 Map". Use 3721 where the official unit is meant.
 - The dens are Lions (L), Tigers (T), Wolves (W), Bears (B), Webelos (WB, with segment IDs starting WE) and AOL (A). There are 79 segments and 1,183 houses.
 - Main-road segments are marked ⚠: MW1–2, MB1–2, MWE1–2 and MA. The place to cross Baptist Church Rd is the all-way stop at Kingsmere.

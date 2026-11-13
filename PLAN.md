@@ -132,7 +132,7 @@ There are 79 segments and 1,183 houses. Den keys are L, T, W, B, WB (Webelos, wh
 ## Decisions
 
 - **One QR code for the whole pack,** with a den picker. Dens may need help, and the dispatcher sends free groups to other areas.
-- **The week goes in the text:** `Wk1 Wolf A – W7 done`.
+- **The week goes in the text:** `Wk1 Wolf A – W7 done`. Week 1 is Saturday Nov 14, 2026 and Week 2 is Saturday Nov 21, 2026. The app picks the week from the date. Choosing the other week in Settings only lasts that day.
 - **The dispatcher may be the same both weeks.** A new QR sheet is only needed if the number changes. The week can also be changed in settings.
 - **Hosting:** GitHub Pages, with the workflows checked by zizmor.
 - **iPhones: add to the Home Screen.** Safari tabs are often blocked from location by the phone's settings and never ask. The Home Screen app ("SFF 721 Map") asks for itself, so the app suggests it when Safari is blocked. Worth saying on the QR sheet too.
