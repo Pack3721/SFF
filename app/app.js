@@ -922,7 +922,8 @@ function renderBanner() {
     chip(s, row);
     const first = s.lines.find((l) => !l.warning);
     h("span", "what", first ? first.text : "", row);
-    h("span", "hses", s.houses + (s.houses === 1 ? " house" : " houses"), row);
+    const n = h("span", "hses", "\u25c9 " + s.houses, row);           // ◉ the target's houses
+    n.setAttribute("aria-label", s.houses + (s.houses === 1 ? " house" : " houses") + " on target");
   } else {
     h("span", "what", "No target \u2013 tap to pick one", row);
   }
@@ -944,7 +945,8 @@ function renderBanner() {
       next.style.background = tint(col, 0.35);
     }
   }
-  h("span", "count", `${done} of ${total} houses`, prog);
+  const count = h("span", "count", `\u2611\ufe0e ${done} of ${total}`, prog);   // ☑ as text, not an emoji
+  count.setAttribute("aria-label", `${done} of ${total} houses done`);
   bar.setAttribute("role", "progressbar");
   bar.setAttribute("aria-valuemin", 0); bar.setAttribute("aria-valuemax", total); bar.setAttribute("aria-valuenow", done);
 }
