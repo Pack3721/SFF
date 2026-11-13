@@ -45,14 +45,21 @@ html, body {
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
 }
 
-#map {
+#wrap {
   position: fixed; left: 0; right: 0; bottom: 0;
   top: calc(var(--bar-h) + env(safe-area-inset-top));
-  width: 100%; height: calc(100% - var(--bar-h) - env(safe-area-inset-top));
-  display: block;
+  overflow: hidden;
   touch-action: none;            /* we do our own pinch and pan */
   user-select: none; -webkit-user-select: none;
   background: #fff;
+}
+
+/* The SVG is a bit bigger than the screen (app.js sets its size), so a drag shows map, not blank,
+   while it's moved as one picture. */
+#map {
+  position: absolute; display: block;
+  transform-origin: 0 0;
+  will-change: transform;
 }
 
 /* labels: white halo behind the text, like the PDF */

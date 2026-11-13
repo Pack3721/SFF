@@ -17,6 +17,7 @@ const PACK = "ALL";
 const STORE_KEY = "sff.den";
 
 const svg = document.getElementById("map");
+const wrap = document.getElementById("wrap");
 const view = document.getElementById("view");
 const NS = "http://www.w3.org/2000/svg";
 
@@ -247,26 +248,44 @@ function extend(pts, far) {             // build.py _ext: run a road on past bot
 }
 
 // ---------- zoom and pan ----------
+// Redrawing thousands of shapes on every finger move is slow on a phone. So while a finger is down,
+// the whole SVG moves as one picture with a CSS transform (the GPU does it), and the real redraw,
+// with labels resized and decluttered, happens once when the gesture ends ("commit").
 let fitK = 1;
+let mx = 0, my = 0;                     // the SVG's extra margin past each edge of the screen, in px
+let k0 = 1, tx0 = 0, ty0 = 0;           // the view the SVG was last drawn at
+
+function layout() {
+  const r = wrap.getBoundingClientRect();
+  mx = Math.round(r.width * 0.25); my = Math.round(r.height * 0.25);
+  svg.style.left = -mx + "px"; svg.style.top = -my + "px";
+  svg.style.width = r.width + 2 * mx + "px"; svg.style.height = r.height + 2 * my + "px";
+}
+
 function fit() {
-  const r = svg.getBoundingClientRect();
+  layout();
+  const r = wrap.getBoundingClientRect();
   const padTop = 50, padBottom = 60, padSide = 12;     // room for the north arrow, scale and buttons
   const bw = bbox[2] - bbox[0], bh = bbox[3] - bbox[1];
   const W = r.width - 2 * padSide, H = r.height - padTop - padBottom;
   k = fitK = Math.min(W / bw, H / bh);
   tx = padSide + (W - bw * k) / 2 - bbox[0] * k;
   ty = padTop + (H - bh * k) / 2 - bbox[1] * k;
-  apply();
+  commit();
 }
 
-let pending = false;
-function apply() {
-  view.setAttribute("transform", `translate(${tx} ${ty}) scale(${k})`);
-  if (!pending) { pending = true; requestAnimationFrame(applyScale); }
+function preview() {                    // cheap: move the picture drawn at (k0, tx0, ty0) to (k, tx, ty)
+  const s = k / k0;
+  const dx = tx - tx0 * s + mx * (1 - s), dy = ty - ty0 * s + my * (1 - s);
+  svg.style.transform = `translate(${dx}px, ${dy}px) scale(${s})`;
+  scaleBar();
 }
+
 let placedK = 0;
-function applyScale() {
-  pending = false;
+function commit() {                     // the full redraw at the current view
+  k0 = k; tx0 = tx; ty0 = ty;
+  svg.style.transform = "";
+  view.setAttribute("transform", `translate(${tx + mx} ${ty + my}) scale(${k})`);
   const inv = 1 / k;
   const shrink = Math.min(Math.max(k / 0.8, 0.75), 1);   // labels a bit smaller when zoomed far out
   for (const s of scaled) {
@@ -278,7 +297,10 @@ function applyScale() {
     s.el.setAttribute("stroke-width", s.px * inv);
     if (s.dash) s.el.setAttribute("stroke-dasharray", s.dash.map((v) => v * inv).join(" "));
   }
-  // scale bar: the longest round number of metres that fits in 160 px
+  scaleBar();
+}
+
+function scaleBar() {                   // the longest round number of metres that fits in 160 px
   const mPerPx = M_PER_UNIT / k;
   const steps = [10, 20, 25, 50, 100, 200, 250, 500, 1000];
   const m = steps.filter((v) => v / mPerPx <= 160).pop() || 10;
@@ -307,11 +329,10 @@ function declutter(shrink) {
   }
 }
 
-function zoomAt(sx, sy, factor) {
+function zoomAt(sx, sy, factor) {       // changes the view; the caller previews or commits it
   const nk = Math.min(Math.max(k * factor, fitK * 0.5), 12);
-  const mx = (sx - tx) / k, my = (sy - ty) / k;
-  k = nk; tx = sx - mx * k; ty = sy - my * k;
-  apply();
+  const px = (sx - tx) / k, py = (sy - ty) / k;
+  k = nk; tx = sx - px * k; ty = sy - py * k;
 }
 
 const pointers = new Map();
@@ -323,39 +344,48 @@ function gesture() {
   return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, d: Math.hypot(a.x - b.x, a.y - b.y) };
 }
 function local(e) {
-  const r = svg.getBoundingClientRect();
+  const r = wrap.getBoundingClientRect();
   return { x: e.clientX - r.left, y: e.clientY - r.top };
 }
-svg.addEventListener("pointerdown", (e) => {
-  svg.setPointerCapture(e.pointerId);
+let moved = false;
+wrap.addEventListener("pointerdown", (e) => {
+  wrap.setPointerCapture(e.pointerId);
   pointers.set(e.pointerId, local(e));
   last = gesture();
 });
-svg.addEventListener("pointermove", (e) => {
+wrap.addEventListener("pointermove", (e) => {
   if (!pointers.has(e.pointerId)) return;
   pointers.set(e.pointerId, local(e));
   const g = gesture();
   if (last && pointers.size <= 2) {
     tx += g.x - last.x; ty += g.y - last.y;
-    if (g.d && last.d) zoomAt(g.x, g.y, g.d / last.d); else apply();
+    if (g.d && last.d) zoomAt(g.x, g.y, g.d / last.d);
+    moved = true;
+    preview();
   }
   last = g;
 });
-const lift = (e) => { pointers.delete(e.pointerId); last = pointers.size ? gesture() : null; };
-svg.addEventListener("pointerup", lift);
-svg.addEventListener("pointercancel", lift);
-svg.addEventListener("wheel", (e) => {
+let lastTap = 0;
+const lift = (e) => {
+  if (!pointers.delete(e.pointerId)) return;
+  last = pointers.size ? gesture() : null;
+  if (pointers.size) return;
+  if (moved) { moved = false; commit(); lastTap = 0; return; }
+  const now = Date.now();                // double-tap to zoom in
+  if (e.type === "pointerup" && now - lastTap < 300) { const p = local(e); zoomAt(p.x, p.y, 2); commit(); lastTap = 0; }
+  else lastTap = now;
+};
+wrap.addEventListener("pointerup", lift);
+wrap.addEventListener("pointercancel", lift);
+let wheelTimer;
+wrap.addEventListener("wheel", (e) => {
   e.preventDefault();
   const p = local(e);
   zoomAt(p.x, p.y, Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.002)));
+  preview();
+  clearTimeout(wheelTimer); wheelTimer = setTimeout(commit, 150);
 }, { passive: false });
 document.addEventListener("gesturestart", (e) => e.preventDefault());   // stop iOS zooming the page
-let lastTap = 0;
-svg.addEventListener("pointerup", (e) => {                               // double-tap to zoom in
-  const now = Date.now();
-  if (now - lastTap < 300 && pointers.size === 0) { const p = local(e); zoomAt(p.x, p.y, 2); lastTap = 0; }
-  else lastTap = now;
-});
 
 document.getElementById("fit").addEventListener("click", fit);
 let resizeTimer;
