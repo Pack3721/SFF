@@ -1952,7 +1952,7 @@ function renderLeader() {
   plus.addEventListener("click", () => setN(leader.n + 1));
   again.addEventListener("click", () => { splitGroups(); styleSegments(); renderLeader(); });
 
-  h("p", "hint", "Pick a group below, then tap a segment on the map to put that segment in the group.", leaderPanel);
+  h("p", "hint", "Pick a group below by tapping its colour, then tap a segment on the map to put that segment in the group.", leaderPanel);
   const list = h("div", "groups", null, leaderPanel);
   for (let i = 0; i < leader.n; i++) {
     const ids = groupSegs(i), hs = ids.reduce((a, id) => a + segById(id).houses, 0);
