@@ -13,4 +13,4 @@ Map data comes from:
 
 ## Licence
 
-Copyright 2026 Jay Tuley and contributors. The code is under the [PolyForm Noncommercial License 1.0.0](LICENSE): free for any noncommercial use, and for charities, schools and government bodies, but not for sale. The writing is under [CC BY-NC 4.0](LICENSES/CC-BY-NC-4.0.txt). Map data keeps its sources' terms. [NOTICE.md](NOTICE.md) has the details, credits and the Scouting America trademark note. This project isn't affiliated with or endorsed by Scouting America.
+Copyright 2026 Jay Tuley and contributors. The code is under the [PolyForm Noncommercial License 1.0.0](LICENSE): free for any noncommercial use, and for charities, schools and government bodies, but not for sale. The writing is under [CC BY-NC 4.0](LICENSES/CC-BY-NC-4.0.txt). Map data keeps its sources' terms. [NOTICE.md](NOTICE.md) has the details, credits and the Scouting America trademark note. It's a volunteer-made tool for the pack, not an official Scouting America product.

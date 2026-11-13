@@ -33,7 +33,7 @@ The planner also looked at MSD (Metropolitan St. Louis Sewer District) sidewalk 
 
 ## Trademarks
 
-Scouting America, Cub Scouts, Scouting for Food, and the den and rank names (Lion, Tiger, Wolf, Bear, Webelos, Arrow of Light) are names and marks of Scouting America. This is a volunteer project by Cub Scout Pack 721 (unit 3721). It isn't affiliated with, sponsored by or endorsed by Scouting America, and it doesn't use Scouting America's logos or emblems.
+Scouting America, Cub Scouts, Scouting for Food, and the den and rank names (Lion, Tiger, Wolf, Bear, Webelos, Arrow of Light) are names and marks of Scouting America. Pack 721 (unit 3721) is a Cub Scout pack chartered with Scouting America. This tool was made by pack volunteers for the pack's Scouting for Food walk. It isn't an official Scouting America product, isn't sponsored or endorsed by Scouting America, and doesn't use Scouting America's logos or emblems.
 
 ## No warranty
 

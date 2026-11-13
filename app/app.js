@@ -1587,7 +1587,7 @@ function renderSettings() {
 function about(body) {
   const p = h("p", "about", null, body);
   p.append("Map data: St. Louis County GIS Service Center. Building outlines: Microsoft Global ML Building Footprints (CDLA-Permissive-2.0). " +
-           "App \u00a9 2026 Jay Tuley and contributors, PolyForm Noncommercial 1.0.0. Not affiliated with Scouting America. ");
+           "App \u00a9 2026 Jay Tuley and contributors, PolyForm Noncommercial 1.0.0. Made by Pack 721 volunteers; not an official Scouting America product. ");
   const a = h("a", "", "Licences & credits", p);
   a.href = "https://github.com/Pack3721/SFF/blob/main/NOTICE.md";
   a.target = "_blank"; a.rel = "noopener noreferrer";
