@@ -455,7 +455,10 @@ function commit() {                     // the full redraw at the current view
 function scaleBar() {                   // the longest round number of metres that fits in 160 px
   const mPerPx = M_PER_UNIT / k;
   const steps = [10, 20, 25, 50, 100, 200, 250, 500, 1000];
-  const m = steps.filter((v) => v / mPerPx <= 160).pop() || 10;
+  // up to 160 px, but clear of the round buttons on narrow phones
+  const room = document.getElementById("tools").getBoundingClientRect().left - document.getElementById("scale").getBoundingClientRect().left - 12;
+  const most = Math.max(60, Math.min(160, room || 160));
+  const m = steps.filter((v) => v / mPerPx <= most).pop() || 10;
   document.getElementById("scale-bar").style.width = Math.round(m / mPerPx) + "px";
   document.getElementById("scale-text").textContent = `${m} m (~${Math.round(m * 3.281 / 10) * 10} ft)`;
 }
@@ -1273,6 +1276,55 @@ function askAvailable() {
   closeSheet();
   slideIn(availPanel);
 }
+// ---------- the dispatcher: a general text or a call ----------
+// The round button with a speech bubble and handset. A text starts with "Wk1: Wolf A – " so the
+// dispatcher knows who it is; the parent types the rest. Calling is for anything urgent.
+const callBtn = document.getElementById("call-btn");
+const contactPanel = document.getElementById("contact");
+const BUBBLE = "M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H10l-5 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z";
+const HANDSET = "M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z";
+function icon(paths, size) {
+  const svgEl = document.createElementNS(NS, "svg");
+  for (const [k_, v] of Object.entries({ viewBox: "0 0 24 24", width: size, height: size, "aria-hidden": "true" })) svgEl.setAttribute(k_, v);
+  for (const p of paths) el("path", p, svgEl);
+  return svgEl;
+}
+function renderCallBtn() {
+  callBtn.textContent = "";
+  const on = !!settings.tel;
+  callBtn.classList.toggle("off", !on);
+  const paths = [{ d: BUBBLE, fill: "none", stroke: "currentColor", "stroke-width": 2, "stroke-linejoin": "round" },
+                 { d: HANDSET, fill: "currentColor", transform: "translate(7.2 6.2) scale(.42)" }];
+  if (!on) paths.push({ d: "M3 3l18 18", stroke: "currentColor", "stroke-width": 2.4, "stroke-linecap": "round" });
+  callBtn.appendChild(icon(paths, 28));
+  callBtn.title = on ? "Text or call the dispatcher" : "Add the dispatcher\u2019s number in Settings to text or call";
+}
+function openContact() {
+  if (!settings.tel) { openSettings("To text or call the dispatcher, add their number."); return; }
+  contactPanel.textContent = "";
+  const top = h("div", "card-top", null, contactPanel);
+  h("h2", "", "Dispatcher", top);
+  h("span", "card-gap", null, top);
+  const x = h("button", "close", "\u2715", top); x.type = "button"; x.setAttribute("aria-label", "Close");
+  x.addEventListener("click", () => slideOut(contactPanel));
+  h("p", "contact-tel", showTel(settings.tel), contactPanel);
+  const row = h("div", "contact-row", null, contactPanel);
+  const tx = h("button", "text", null, row); tx.type = "button";
+  tx.appendChild(icon([{ d: BUBBLE, fill: "none", stroke: "currentColor", "stroke-width": 2, "stroke-linejoin": "round" }], 22));
+  h("span", "", "Text", tx);
+  tx.addEventListener("click", () => {
+    const who = `Wk${week()}:` + (settings.group ? ` ${settings.group} \u2013 ` : " ");
+    slideOut(contactPanel); openSms(smsHref(who));
+  });
+  const cl = h("button", "call", null, row); cl.type = "button";
+  cl.appendChild(icon([{ d: HANDSET, fill: "currentColor" }], 22));
+  h("span", "", "Call", cl);
+  cl.addEventListener("click", () => { slideOut(contactPanel); openSms("tel:" + settings.tel); });
+  closeSheet(); slideOut(availPanel);
+  slideIn(contactPanel);
+}
+callBtn.addEventListener("click", openContact);
+
 const allDone = () => mySegs.tracked.length > 0 && mySegs.tracked.every((id) => mySegs.done.includes(id));
 
 // the list: yours first, then the den's (or every den's, in the whole-pack view)
@@ -1557,7 +1609,7 @@ function renderSetupStatus() {
   h("span", "", `Texting off \u2013 ${say}`, setupStatus);
 }
 setupStatus.addEventListener("click", () => openSettings());
-function textingChanged() { renderSetupStatus(); renderCard(); renderBanner(); if (!sheet.hidden) renderList(); }
+function textingChanged() { renderCallBtn(); renderSetupStatus(); renderCard(); renderBanner(); if (!sheet.hidden) renderList(); }
 
 // Done marks the segment: faint on the map with a ✔ on its tag, ✔ in the list, the progress bar fills,
 // and if it was your target, the target is cleared.
@@ -1809,7 +1861,7 @@ function enterLeader(den) {
              edited: ok && saved.edited !== false };   // moved by hand since the last auto split (older saves: assume so)
   groupNames();
   if (!leader.assign) splitGroups();
-  selected = null; renderCard(); closeSheet(); slideOut(availPanel);
+  selected = null; renderCard(); closeSheet(); slideOut(availPanel); slideOut(contactPanel);
   document.body.classList.add("leader");
   denKey = den;
   draw();
@@ -2126,7 +2178,7 @@ function start(data) {
   let saved = null;
   try { saved = localStorage.getItem(STORE_KEY); } catch (_) { /* ignore */ }
   syncLink();                            // a number saved earlier goes back into the address too
-  renderSetupStatus();
+  renderSetupStatus(); renderCallBtn();
   renderBanner();
   pick(ok(saved) ? saved : PACK, true);
   resumeGps();

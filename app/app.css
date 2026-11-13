@@ -110,7 +110,7 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 4px); }
 #tools button:active { background: #eee; }
 #tools button.on { background: #1a73e8; border-color: #1a73e8; color: #fff; }
 /* Center on me: a round "locate me" crosshair; blue while the map follows you */
-#tools #me-btn, #tools #segs-btn { width: 52px; height: 52px; min-height: 0; padding: 0; display: grid; place-items: center; border-radius: 50%; color: #333; }
+#tools #me-btn, #tools #segs-btn, #tools #call-btn { width: 52px; height: 52px; min-height: 0; padding: 0; display: grid; place-items: center; border-radius: 50%; color: #333; }
 #tools #me-btn.on { color: #fff; }
 
 /* GPS dot: blue with a white rim; the pale ring is how sure the phone is */
@@ -182,14 +182,14 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 4px); }
 #banner .label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: #555; }
 #banner .what { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-#card, #sheet, #settings, #avail, #leader, #gqr {
+#card, #sheet, #settings, #avail, #contact, #leader, #gqr {
   position: fixed; z-index: 4; left: 0; right: 0; bottom: 0;
   background: #fff; border-radius: 16px 16px 0 0; box-shadow: 0 -2px 12px rgba(0, 0, 0, .3);
   padding: 8px 16px calc(16px + env(safe-area-inset-bottom));
 }
-#card, #sheet, #settings, #avail, #leader, #gqr { transform: translateY(105%); transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
-#card.open, #sheet.open, #settings.open, #avail.open, #leader.open, #gqr.open { transform: none; }
-@media (prefers-reduced-motion: reduce) { #card, #sheet, #settings, #avail, #leader, #gqr { transition: none; } }
+#card, #sheet, #settings, #avail, #contact, #leader, #gqr { transform: translateY(105%); transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
+#card.open, #sheet.open, #settings.open, #avail.open, #contact.open, #leader.open, #gqr.open { transform: none; }
+@media (prefers-reduced-motion: reduce) { #card, #sheet, #settings, #avail, #contact, #leader, #gqr { transition: none; } }
 .card-top { display: flex; align-items: center; gap: 4px; margin-left: -10px; }
 .card-gap { flex: 1; }
 .card-top .star { width: 44px; height: 44px; }
@@ -355,7 +355,7 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 4px); }
 .star:disabled { cursor: default; opacity: .6; }
 
 /* ---------- den leader ---------- */
-body.leader #banner, body.leader #setup-status, body.leader #segs-btn, body.leader #scale, body.leader #gps-status { display: none !important; }
+body.leader #banner, body.leader #setup-status, body.leader #segs-btn, body.leader #call-btn, body.leader #scale, body.leader #gps-status { display: none !important; }
 body.leader #tools { bottom: calc(var(--leader-h, 0px) + 4px); }
 #leader { max-height: 55vh; overflow-y: auto; }
 #leader h2, #gqr h2 { margin: 6px 0; font-size: 20px; }
@@ -395,3 +395,16 @@ body.leader #tools { bottom: calc(var(--leader-h, 0px) + 4px); }
 #leader .leader-warn { margin: 0 0 8px; padding: 8px 10px; border-radius: 10px; background: #fff4d6; color: #6b4b00; font-size: 13px; line-height: 1.35; }
 #leader .leader-count .share-btn { white-space: nowrap; padding: 0 12px; }
 #leader .leader-count .share-btn:disabled { color: #999; border-color: #ccc; }
+
+/* the dispatcher: text or call */
+#tools #call-btn.off { color: #888; }
+#contact { z-index: 5; }
+#contact .card-top { margin-left: 0; }
+#contact h2 { margin: 6px 0; font-size: 20px; }
+#contact .contact-tel { margin: 0 0 4px; font-size: 16px; color: #555; font-variant-numeric: tabular-nums; }
+#contact .contact-row { display: flex; gap: 10px; margin-top: 10px; }
+#contact .contact-row button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font: inherit; font-size: 17px; font-weight: 700; min-height: 54px; border-radius: 14px;
+  color: #111; background: #fff; border: 2px solid #333; }
+#contact .contact-row button.call { color: #fff; background: #1e7e34; border-color: #1e7e34; }
+#contact .contact-row svg { width: 22px; height: 22px; }
