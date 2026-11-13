@@ -1378,9 +1378,7 @@ function saveSettings() {
 // Keep the address in step with the saved number (…#tel=…), so Add to Home Screen from this page carries
 // it even when it was typed in Settings rather than scanned. replaceState: no reload, no Back step.
 function syncLink() {
-  const q = new URLSearchParams(location.hash.slice(1));
-  if (settings.tel) q.set("tel", settings.tel.slice(2)); else q.delete("tel");
-  const frag = q.toString();
+  const frag = settings.tel ? "tel=" + settings.tel.slice(2) : "";   // a setup link's other parts are applied, then dropped
   if (frag === location.hash.slice(1)) return;
   history.replaceState(history.state, "", location.pathname + location.search + (frag ? "#" + frag : ""));
 }
@@ -1397,12 +1395,52 @@ const textsReady = () => !!(settings.tel && settings.group);
 // after # never goes to the web server. The number is saved and left in the address on purpose, so a
 // Home Screen icon added from this page keeps it (an iPhone Home Screen app doesn't share Safari's storage).
 function readLink() {
-  const t = normTel(new URLSearchParams(location.hash.slice(1)).get("tel"));
+  const q = new URLSearchParams(location.hash.slice(1));
+  if (q.has("seg") || q.has("g")) { applySetup(q); return; }
+  const t = normTel(q.get("tel"));
   if (!t || t === settings.tel) return;
   settings.tel = t;
   saveSettings();
 }
-window.addEventListener("hashchange", () => { readLink(); textingChanged(); });
+window.addEventListener("hashchange", () => {
+  const full = /(^|&)(seg|g)=/.test(location.hash.slice(1));
+  readLink();
+  if (full) pick(localStorage.getItem(STORE_KEY) || denKey);   // a whole setup: redraw for its den and segments
+  textingChanged();
+});
+
+// "Move my setup": everything this phone knows (number, group, den, segments, target, done) as one map
+// link. Copy it here, paste it in the iPhone Home Screen app (which can't see Safari's storage) or send
+// it to the other parent in your group. It never goes in the shared "Share the map" link.
+function setupLink() {
+  const q = new URLSearchParams();
+  if (settings.tel) q.set("tel", settings.tel.slice(2));
+  if (settings.group) q.set("g", settings.group);
+  if (denKey) q.set("den", denKey);
+  q.set("seg", mySegs.tracked.join(","));
+  if (mySegs.target) q.set("t", mySegs.target);
+  if (mySegs.done.length) q.set("d", mySegs.done.join(","));
+  return new URL("./", location.href).href + "#" + q.toString().replace(/%2C/g, ",");
+}
+function applySetup(q) {                  // q: the parts after # of a setup link
+  const ok = new Set(DATA.segments.map((s) => s.id));
+  const ids = (v) => (v || "").split(",").map((x) => x.trim().toUpperCase()).filter((x) => ok.has(x));
+  const t = normTel(q.get("tel"));
+  if (t) settings.tel = t;
+  if (q.has("g")) settings.group = q.get("g").trim().replace(/\s+/g, " ").slice(0, 24);
+  saveSettings();
+  if (q.has("seg")) {
+    mySegs.tracked = ids(q.get("seg"));
+    mySegs.target = mySegs.tracked.includes((q.get("t") || "").toUpperCase()) ? q.get("t").toUpperCase() : null;
+    mySegs.done = ids(q.get("d")).filter((x) => mySegs.tracked.includes(x));
+    saveSegs();
+  }
+  const den = q.get("den");
+  if (den && (den === PACK || DATA.dens.some((d) => d.key === den))) {
+    try { localStorage.setItem(STORE_KEY, den); } catch (_) { /* ignore */ }
+  }
+  return mySegs.tracked.length;
+}
 function textBody(kind, id) {
   const who = `Wk${week()}: ${settings.group}`;
   return { done: `${who} \u2013 ${id} done`, coverage: `${who} \u2013 ${id} needs coverage`,
@@ -1542,6 +1580,7 @@ function renderSettings() {
     marks(bad);
   });
   f.addEventListener("submit", (e) => { e.preventDefault(); document.activeElement.blur(); });   // Return on the keyboard: done typing
+  moveSection(body);
   shareSection(body);
 }
 
@@ -1569,6 +1608,35 @@ function qrSvg(text) {
   for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += `M${c + quiet} ${r + quiet}h1v1h-1z`;
   el("path", { d, fill: "#000" }, svgEl);
   return svgEl;
+}
+function moveSection(body) {
+  const sec = h("section", "share move", null, body);
+  h("h3", "", "Move my setup", sec);
+  h("p", "hint", "Copy here, then Paste in the Home Screen app or on another phone: number, group, den and segments.", sec);
+  const row = h("div", "move-row", null, sec);
+  const say = h("p", "move-msg", null, sec);
+  const copy = h("button", "share-btn", "Copy my setup", row); copy.type = "button";
+  copy.addEventListener("click", () => {
+    const link = setupLink();
+    (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject())
+      .then(() => { say.textContent = "\u2714\ufe0e Copied. Now open the other app and tap Paste setup."; })
+      .catch(() => { say.textContent = link; });   // no clipboard: show it to copy by hand
+  });
+  const paste = h("button", "share-btn", "Paste setup", row); paste.type = "button";
+  paste.addEventListener("click", () => {
+    if (!navigator.clipboard || !navigator.clipboard.readText) { say.textContent = "This browser can\u2019t paste here. Paste the link into the address bar instead."; return; }
+    navigator.clipboard.readText().then((text) => {
+      const at = (text || "").indexOf("#");
+      const q = new URLSearchParams(at >= 0 ? text.slice(at + 1) : "");
+      if (!q.has("seg") && !q.has("g") && !q.has("tel")) { say.textContent = "That isn\u2019t a setup. Tap Copy my setup on the other one first."; return; }
+      const n = applySetup(q);
+      pick(localStorage.getItem(STORE_KEY) || denKey);
+      textingChanged();
+      renderSettings();
+      const msg = document.querySelector("#settings .move-msg");
+      if (msg) msg.textContent = `\u2714\ufe0e Set up: ${settings.group || "no group"}, ${n} segment${n === 1 ? "" : "s"}${settings.tel ? ", dispatcher\u2019s number" : ""}.`;
+    }).catch(() => { say.textContent = "Couldn\u2019t read the clipboard. Allow Paste when asked, then try again."; });
+  });
 }
 function shareSection(body) {
   const sec = h("section", "share", null, body);
@@ -1618,12 +1686,12 @@ function start(data) {
   const o = document.createElement("option");
   o.value = PACK; o.textContent = "Whole pack";
   picker.appendChild(o);
-  let saved = null;
-  try { saved = localStorage.getItem(STORE_KEY); } catch (_) { /* ignore */ }
   const ok = (key) => key === PACK || data.dens.some((d) => d.key === key);
   loadSegs();
   loadSettings();
-  readLink();
+  readLink();                            // may bring a whole setup, den included
+  let saved = null;
+  try { saved = localStorage.getItem(STORE_KEY); } catch (_) { /* ignore */ }
   syncLink();                            // a number saved earlier goes back into the address too
   renderSetupStatus();
   renderBanner();

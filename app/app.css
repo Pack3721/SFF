@@ -338,3 +338,6 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 4px); }
   font: inherit; font-size: 16px; font-weight: 700; min-height: 44px; padding: 0 20px; margin-top: 8px;
   color: #111; background: #fff; border: 2px solid #333; border-radius: 22px;
 }
+#settings .move-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+#settings .move-msg { margin: 8px 0 0; font-size: 14px; color: #1e7e34; font-weight: 700; overflow-wrap: anywhere; }
+#settings .move-msg:empty { display: none; }
