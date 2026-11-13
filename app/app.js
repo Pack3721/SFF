@@ -45,6 +45,14 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) chec
 window.addEventListener("pageshow", (e) => { if (e.persisted) checkForUpdate(); });   // restored from memory
 window.addEventListener("online", checkForUpdate);
 checkForUpdate();
+// Android needs the web manifest to install the app. iPhones get their icon and full screen from the
+// apple-* tags in index.html, and without a manifest they keep the page's own address (with #tel=…)
+// for the Home Screen icon, so the dispatcher's number comes along.
+if (!isIOS()) {
+  const ln = document.createElement("link");
+  ln.rel = "manifest"; ln.href = "manifest.webmanifest";
+  document.head.appendChild(ln);
+}
 const svg = document.getElementById("map");
 const wrap = document.getElementById("wrap");
 const fx = document.getElementById("fx");          // a thin layer over the map for the target's moving dashes
