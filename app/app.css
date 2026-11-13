@@ -255,8 +255,8 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 4px); }
 
 /* ---------- texts, done and settings ---------- */
 #settings-btn {
-  margin-left: auto; flex: none; width: 44px; height: 44px; font-size: 24px;
-  color: #333; background: transparent; border: 0;
+  margin-left: auto; margin-right: -6px; flex: none; width: 48px; height: 48px; padding: 0;
+  display: grid; place-items: center; color: #333; background: transparent; border: 0;
 }
 .card-texts { display: flex; gap: 6px; margin-top: 10px; }
 .card-texts button {
