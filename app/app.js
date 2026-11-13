@@ -645,8 +645,9 @@ const meEdgeArrow = document.createElementNS(NS, "svg");
 meEdgeArrow.setAttribute("viewBox", "-10 -10 20 20");
 el("path", { d: "M8 0 L-6 -6.5 L-3 0 L-6 6.5 Z", fill: "#fff" }, meEdgeArrow);
 meEdge.appendChild(meEdgeArrow);
+const EDGE_ARROW = false;                 // on hold for now; set true to bring the edge arrow back
 function edgeArrow() {
-  if (!me.pos || me.g.style.display === "none") { meEdge.hidden = true; return; }
+  if (!EDGE_ARROW || !me.pos || me.g.style.display === "none") { meEdge.hidden = true; return; }
   const r = wrap.getBoundingClientRect(), p = myScreen();
   if (p.x > 0 && p.x < r.width && p.y > 0 && p.y < r.height) { meEdge.hidden = true; return; }
   const above = setupStatus.hidden ? banner : setupStatus;
