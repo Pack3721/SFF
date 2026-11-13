@@ -612,6 +612,8 @@ if (!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matche
   el("animate", { attributeName: "r", values: "10;28", dur: "1.6s", repeatCount: "indefinite" }, pulse);
   el("animate", { attributeName: "opacity", values: "0.45;0", dur: "1.6s", repeatCount: "indefinite" }, pulse);
 }
+me.beam = el("path", { d: "M0 0 L-19 -46 A50 50 0 0 1 19 -46 Z", class: "beam" }, me.dot);   // points north; rotated
+me.beam.style.display = "none";
 el("circle", { r: 12, fill: "#fff", stroke: "rgba(0,0,0,.45)", "stroke-width": 1, class: "halo" }, me.dot);
 el("circle", { r: 8.5, class: "core" }, me.dot);
 const meEdge = document.getElementById("me-edge");
@@ -682,6 +684,8 @@ function centerOnMe(zoomIn) {
 
 function onFix(p) {
   const c = p.coords;
+  // while walking, GPS gives a direction of travel: use it when there's no compass
+  if (c.heading != null && !isNaN(c.heading) && (c.speed == null || c.speed > 0.5)) setHeading(c.heading, "gps");
   me.pos = P([c.longitude, c.latitude]);
   me.acc = c.accuracy;
   me.lastFix = Date.now();
@@ -732,6 +736,7 @@ function startGps() {
   if (!("geolocation" in navigator)) { status("This browser can't share location.", true); return; }
   me.wanted = true;
   if (me.watch !== null) return;
+  startCompass(false);                   // Android: no asking needed; iPhone waits for the Center on me tap
   if (!me.pos) status("Finding you…");
   me.watch = navigator.geolocation.watchPosition(onFix, onError,
     { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 });
@@ -755,17 +760,66 @@ function startDemo() {
     while (i < pts.length - 1 && along > m(pts[i], pts[i + 1])) { along -= m(pts[i], pts[i + 1]); i++; }
     if (i >= pts.length - 1) { i = 0; along = 0; }
     const a = pts[i], b = pts[i + 1], t = along / (m(a, b) || 1);
-    onFix({ coords: { longitude: a[0] + (b[0] - a[0]) * t, latitude: a[1] + (b[1] - a[1]) * t, accuracy: 8 } });
+    const course = (Math.atan2((b[0] - a[0]) * 87000, (b[1] - a[1]) * 111000) * 180 / Math.PI + 360) % 360;
+    onFix({ coords: { longitude: a[0] + (b[0] - a[0]) * t, latitude: a[1] + (b[1] - a[1]) * t, accuracy: 8,
+                      heading: course, speed: 1.4 } });
   };
   step();
   return setInterval(step, 1000);
 }
 
-meBtn.addEventListener("click", () => centerOnMe(true));
+meBtn.addEventListener("click", () => { startCompass(true); centerOnMe(true); });
+
+// ---------- compass: which way you're facing, as a beam on the dot ----------
+// The map stays north-up (like the paper map); only the beam turns. iPhones ask permission for motion &
+// orientation, so that's asked on the Center on me tap. Android's compass needs no asking. With no
+// compass, the beam uses GPS's direction of travel while you walk. Off while the page is in the background.
+let compassOn = false, heading = null, headingFrom = null, headingAt = 0;
+function setHeading(deg, from) {
+  if (from === "gps" && headingFrom === "compass" && Date.now() - headingAt < 3000) return;   // compass wins
+  if (heading == null) heading = deg;
+  else {                                  // smooth, the short way round
+    const d = ((deg - heading + 540) % 360) - 180;
+    heading = (heading + d * (from === "compass" ? 0.25 : 0.6) + 360) % 360;
+  }
+  headingFrom = from; headingAt = Date.now();
+  me.beam.style.display = "";
+  me.beam.setAttribute("transform", `rotate(${Math.round(heading)})`);
+}
+function onOrientation(e) {
+  let h = null;
+  if (e.webkitCompassHeading != null) h = e.webkitCompassHeading;              // iPhone: 0 = north, clockwise
+  else if (e.absolute && e.alpha != null) {                                    // Android: alpha is anticlockwise
+    const turn = (screen.orientation && screen.orientation.angle) || 0;
+    h = (360 - e.alpha + turn) % 360;
+  }
+  if (h != null && !isNaN(h)) setHeading(h, "compass");
+}
+function startCompass(asked) {
+  if (compassOn || DEMO) return;
+  const listen = () => {
+    compassOn = true;
+    window.addEventListener("ondeviceorientationabsolute" in window ? "deviceorientationabsolute" : "deviceorientation", onOrientation);
+  };
+  const D = window.DeviceOrientationEvent;
+  if (!D) return;
+  if (typeof D.requestPermission === "function") {                           // iPhone: only from a tap
+    if (!asked) return;
+    D.requestPermission().then((r) => { if (r === "granted") listen(); }).catch(() => { /* no compass: GPS course */ });
+  } else listen();
+}
+function stopCompass() {
+  if (!compassOn) return;
+  window.removeEventListener("deviceorientationabsolute", onOrientation);
+  window.removeEventListener("deviceorientation", onOrientation);
+  compassOn = false;
+}
+// hide the beam if nothing has said which way you face for a while
+setInterval(() => { if (heading != null && Date.now() - headingAt > 15000) { me.beam.style.display = "none"; heading = null; } }, 5000);
 // GPS off while the page is in the background, to save battery; back on when it returns.
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden) stopGps();
-  else if (me.wanted) startGps();
+  if (document.hidden) { stopGps(); stopCompass(); }
+  else if (me.wanted) { startGps(); startCompass(false); }
 });
 // If location already worked here and is still allowed, start the dot without asking again.
 function resumeGps() {

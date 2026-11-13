@@ -115,6 +115,8 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 12px); }
 #me .core { fill: #1a73e8; }
 #me .halo { filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .45)); }
 #me .pulse { fill: #1a73e8; }
+#me .beam { fill: #1a73e8; fill-opacity: .28; stroke: #1a73e8; stroke-opacity: .35; stroke-width: 1; }
+#me.stale .beam { display: none; }
 #me.stale .pulse { display: none; }
 /* arrow at the map's edge pointing to your dot when it's off screen */
 #me-edge {
