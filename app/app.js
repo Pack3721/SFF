@@ -862,6 +862,7 @@ function loadSegs() {
     mySegs.tracked = (v.tracked || []).filter((id) => ok.has(id));
     mySegs.target = ok.has(v.target) ? v.target : null;
     mySegs.done = (v.done || []).filter((id) => ok.has(id));
+    if (mySegs.done.includes(mySegs.target)) mySegs.target = null;
   } catch (_) { /* nothing saved, or no storage */ }
 }
 function saveSegs() { try { localStorage.setItem(SEG_KEY, JSON.stringify(mySegs)); } catch (_) { /* ignore */ } }
@@ -899,6 +900,7 @@ function setTracked(id, on) {
 }
 function setTarget(id) {
   const wasEmpty = !mySegs.tracked.length;
+  if (mySegs.target !== id && mySegs.done.includes(id)) return;   // a done segment can't be the target
   mySegs.target = mySegs.target === id ? null : id;
   if (mySegs.target && !isTracked(id)) mySegs.tracked.push(id);   // your target is always one of yours
   saveSegs();
@@ -1023,6 +1025,7 @@ function targetRadio(s, parent, before, label) {
   b.setAttribute("role", "radio"); b.setAttribute("aria-checked", on);
   b.setAttribute("aria-label", (on ? "Target: " : "Make target: ") + s.id);
   b.title = on ? "Your target \u2013 tap to clear" : "Make this your target";
+  b.disabled = !on && mySegs.done.includes(s.id);   // done: nothing left to walk there (undo Done first)
   parent.insertBefore(b, before || null);
   return b;
 }
