@@ -1369,7 +1369,7 @@ function normTel(v) {
 const showTel = (t) => t ? `(${t.slice(2, 5)}) ${t.slice(5, 8)}-${t.slice(8)}` : "";
 const textsReady = () => !!(settings.tel && settings.group);
 function textBody(kind, id) {
-  const who = `Wk${week()} ${settings.group}`;
+  const who = `Wk${week()}: ${settings.group}`;
   return { done: `${who} \u2013 ${id} done`, coverage: `${who} \u2013 ${id} needs coverage`,
            bags: `${who} \u2013 ${id} need bags`, available: `${who} available` }[kind];
 }
@@ -1470,7 +1470,7 @@ function renderSettings() {
   const preview = h("p", "preview", null, f);
 
   function paint() {
-    preview.textContent = `Texts will read: Wk${week()} ${group.value.trim() || "\u2026"} \u2013 ${mySegs.target || "W7"} done`;
+    preview.textContent = `Texts will read: Wk${week()}: ${group.value.trim() || "\u2026"} \u2013 ${mySegs.target || "W7"} done`;
   }
   paint();
 

@@ -24,7 +24,7 @@ Start with `PLAN.md`. The current job is the **day-of tracker**: a phone web pag
 - **No phone numbers, email addresses or scout or family names in the repo.** The dispatcher's number reaches the app only through the QR link fragment (`#tel=…`). Use 555-01xx numbers in tests.
 - **No third-party scripts, fonts, analytics or online QR APIs** in the app. The page has to stay self-contained so the `#` fragment can't leak.
 - **Treat the MSD sidewalk data as information only.** It's missing sidewalks that are visible on satellite, so a missing line doesn't mean "no sidewalk". Don't draw it on maps.
-- **Text wording** matches page 1 of the paper pack, with the week in front: "Wk1 Wolf A – W7 done", "Wk1 Wolf A available", "Wk1 Wolf A – W8 need bags".
+- **Text wording** matches page 1 of the paper pack, with the week in front: "Wk1: Wolf A – W7 done", "Wk1: Wolf A available", "Wk1: Wolf A – W8 need bags".
 
 ## Useful facts
 

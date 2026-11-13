@@ -34,10 +34,10 @@ These match the wording printed on page 1 of the map pack:
 
 | Button | Message |
 |---|---|
-| Done | `Wk1 Wolf A – W7 done` |
-| Available for more | `Wk1 Wolf A available` |
-| Need bags (Week 1 only) | `Wk1 Wolf A – W8 need bags` |
-| Needs coverage | `Wk1 Wolf A – W8 needs coverage` |
+| Done | `Wk1: Wolf A – W7 done` |
+| Available for more | `Wk1: Wolf A available` |
+| Need bags (Week 1 only) | `Wk1: Wolf A – W8 need bags` |
+| Needs coverage | `Wk1: Wolf A – W8 needs coverage` |
 
 The week (`Wk1` or `Wk2`) goes at the front, so the dispatcher can tell a late Week 1 text from a Week 2 one. The rest matches page 1.
 
@@ -118,8 +118,8 @@ There are 79 segments and 1,183 houses. Den keys are L, T, W, B, WB (Webelos, wh
    Built:
    - The list opens from a round list button in the bottom-right corner (the easiest spot to hit), with Center on me just to its left. It stays visible while a card is open. It has two tabs: **Segments** (the den's, or every den's in the pack view) and **Mine**. Tap ☆ to track the segments your group was given. Mine shows the total and has **Add by ID** for when the dispatcher sends a group elsewhere. Tracking your first segment from the pack view switches to that den.
    - One **target** segment, the one you're on or heading to. It's shown in a banner with progress ("◉ 10", "✔ 12 of 34") and on the map by white dashes that march along it in walking order.
-   - Each segment, in the list and on its **card**, has a target radio on the left (one target at a time; tap again to clear) and a ☆/★ track star on the right. Tap a segment for its card: all its lines, and the texts **Needs coverage** and **Need bags** (Week 1 only), plus **✔ Done** on your target's card. Each opens Messages with the text written (`Wk1 Wolf A – W7 done`). Done also marks the segment: it goes faint on the map with a green ✔ on its tag, gets a ✔ in the list, the bar fills, and the target is cleared. Undo is on the same button.
-   - When every tracked segment is done, the banner offers **"available"** (`Wk1 Wolf A available`). The Mine tab also has the button.
+   - Each segment, in the list and on its **card**, has a target radio on the left (one target at a time; tap again to clear) and a ☆/★ track star on the right. Tap a segment for its card: all its lines, and the texts **Needs coverage** and **Need bags** (Week 1 only), plus **✔ Done** on your target's card. Each opens Messages with the text written (`Wk1: Wolf A – W7 done`). Done also marks the segment: it goes faint on the map with a green ✔ on its tag, gets a ✔ in the list, the bar fills, and the target is cleared. Undo is on the same button.
+   - When every tracked segment is done, the banner offers **"available"** (`Wk1: Wolf A available`). The Mine tab also has the button.
    - **Swipe the banner to change target.** Dots under the progress bar show your unfinished segments in their colours, with the target's dot bigger. Swipe left for the next segment and right for the previous, in segment-number order, wrapping round and skipping done ones. The content slides inside the banner while the frame and dots stay put, and an open card follows the new target. The map glides to the new target unless Center on me is following.
    - **Settings** (⚙): the dispatcher's number (until milestone 4's link or QR fills it in) and the group's name, typed as people say it ("e.g. Wolf A"), since not everyone has the paper map. There's no week setting: the week comes from the date. There's no Save button: the group saves as you type, and the number saves once it's a good 10 digits. A number that doesn't look right is never saved; you're told when you leave the box, and the last good one stays. Everything is stored only on the phone.
    - **Works without texting set up.** Done still marks segments. A short amber line under the banner says what's missing ("Texting off – add dispatcher's number"); tap it to open Settings. Needs coverage and Need bags are greyed out until texting is set up. The Mine tab's Available button is greyed out until all your segments are done. Every button that sends a text has a speech-bubble icon, crossed out while texting is off.
@@ -134,7 +134,7 @@ There are 79 segments and 1,183 houses. Den keys are L, T, W, B, WB (Webelos, wh
 ## Decisions
 
 - **One QR code for the whole pack,** with a den picker. Dens may need help, and the dispatcher sends free groups to other areas.
-- **The week goes in the text:** `Wk1 Wolf A – W7 done`. Week 1 is Saturday Nov 14, 2026 and Week 2 is Saturday Nov 21, 2026. The app picks the week from the date; there's no setting.
+- **The week goes in the text:** `Wk1: Wolf A – W7 done`. Week 1 is Saturday Nov 14, 2026 and Week 2 is Saturday Nov 21, 2026. The app picks the week from the date; there's no setting.
 - **The dispatcher may be the same both weeks.** A new QR sheet is only needed if the number changes. The week can also be changed in settings.
 - **Hosting:** GitHub Pages, with the workflows checked by zizmor.
 - **iPhones: add to the Home Screen.** Safari tabs are often blocked from location by the phone's settings and never ask. The Home Screen app ("SFF 721 Map") asks for itself, so the app suggests it when Safari is blocked. Worth saying on the QR sheet too.
