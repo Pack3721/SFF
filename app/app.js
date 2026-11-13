@@ -1610,7 +1610,8 @@ function qrSvg(text) {
 }
 // Share: two tabs, both a link shown as a QR code to scan off this screen, or sent from the phone.
 //  Map & dispatcher: for any parent; the map and the dispatcher's number only.
-//  Group setup: for a parent in your group or your own Home Screen app; group, den, segments and number.
+//  Group setup: for a parent in your group or your own Home Screen app; group, den, segments and number
+//  (only offered once there's a group name; Restore from paste is always there).
 let shareTab = "map";
 function shareArea(body) {
   const sec = h("section", "share", null, body);
@@ -1646,37 +1647,36 @@ function mapPane(pane) {
   });
 }
 function groupPane(pane) {
-  h("p", "hint", "For a parent in your group, or your own Home Screen app: your group name" +
-    (settings.group ? ` (\u201c${settings.group}\u201d)` : "") + ", den, segments and the dispatcher\u2019s number. " +
-    "Scan it, send it, or Copy here and Paste on the other phone.", pane);
-  const link = setupLink();
-  qrBox(pane, link);
+  // With no group name yet there's nothing worth sharing: only offer to restore from someone else's copy.
+  const has = !!settings.group;
+  h("p", "hint", has
+    ? `For a parent in your group, or your own Home Screen app: \u201c${settings.group}\u201d, den, segments and the dispatcher\u2019s number. Scan it, or Copy settings and Restore from paste on the other phone.`
+    : "Got settings from someone in your group? Copy them, then tap Restore from paste. To share yours, add your group name above.", pane);
+  const link = has ? setupLink() : null;
+  if (has) qrBox(pane, link);
   const row = h("div", "move-row", null, pane);
   const say = h("p", "move-msg", null, pane);
-  if (navigator.share) {
-    const send = h("button", "share-btn", "Send to group\u2026", row); send.type = "button";
-    send.addEventListener("click", () => navigator.share({ title: "SFF 721 Map \u2013 " + (settings.group || "our group"),
-      text: "Our group's Scouting for Food segments", url: link }).catch(() => {}));
+  if (has) {
+    const copy = h("button", "share-btn", "Copy settings", row); copy.type = "button";
+    copy.addEventListener("click", () => {
+      (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject())
+        .then(() => { say.textContent = "\u2714\ufe0e Copied. On the other phone or app, tap Restore from paste."; })
+        .catch(() => { say.textContent = link; });   // no clipboard: show it to copy by hand
+    });
   }
-  const copy = h("button", "share-btn", "Copy", row); copy.type = "button";
-  copy.addEventListener("click", () => {
-    (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject())
-      .then(() => { say.textContent = "\u2714\ufe0e Copied. On the other phone or app, tap Paste here."; })
-      .catch(() => { say.textContent = link; });   // no clipboard: show it to copy by hand
-  });
-  const paste = h("button", "share-btn", "Paste", row); paste.type = "button";
+  const paste = h("button", "share-btn", "Restore from paste", row); paste.type = "button";
   paste.addEventListener("click", () => {
     if (!navigator.clipboard || !navigator.clipboard.readText) { say.textContent = "This browser can\u2019t paste here. Paste the link into the address bar instead."; return; }
     navigator.clipboard.readText().then((text) => {
       const at = (text || "").indexOf("#");
       const q = new URLSearchParams(at >= 0 ? text.slice(at + 1) : "");
-      if (!q.has("seg") && !q.has("g") && !q.has("tel")) { say.textContent = "That isn\u2019t a group setup. Tap Copy on the other phone first."; return; }
+      if (!q.has("seg") && !q.has("g") && !q.has("tel")) { say.textContent = "That isn\u2019t copied settings. Tap Copy settings on the other phone first."; return; }
       const n = applySetup(q);
       pick(localStorage.getItem(STORE_KEY) || denKey);
       textingChanged();
       renderSettings();
       const msg = document.querySelector("#settings .move-msg");
-      if (msg) msg.textContent = `\u2714\ufe0e Set up: ${settings.group || "no group"}, ${n} segment${n === 1 ? "" : "s"}${settings.tel ? ", dispatcher\u2019s number" : ""}.`;
+      if (msg) msg.textContent = `\u2714\ufe0e Restored: ${settings.group || "no group"}, ${n} segment${n === 1 ? "" : "s"}${settings.tel ? ", dispatcher\u2019s number" : ""}.`;
     }).catch(() => { say.textContent = "Couldn\u2019t read the clipboard. Allow Paste when asked, then try again."; });
   });
 }
