@@ -34,6 +34,14 @@ jobs:
           cp -RL app/. _site/
           test -s _site/sff-2026.json
 
+      # Cache busting: app.css, app.js and the data are loaded with ?v=dev; stamp in the commit SHA
+      # so a new deploy never mixes with an old cached file. Fails if a reference went missing.
+      - name: Stamp git SHA into resource URLs
+        run: |
+          sed -i "s/?v=dev/?v=${GITHUB_SHA::12}/g" _site/index.html _site/app.js
+          test "$(grep -o "?v=${GITHUB_SHA::12}" _site/index.html _site/app.js | wc -l)" -eq 3
+          ! grep -q "?v=dev" _site/index.html _site/app.js
+
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: _site

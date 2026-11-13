@@ -418,7 +418,7 @@ function start(data) {
   pick(ok(saved) ? saved : PACK);
 }
 
-fetch("sff-2026.json")
+fetch("sff-2026.json?v=dev")   // pages.yml swaps "dev" for the git SHA (cache busting)
   .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
   .then(start)
   .catch((err) => {
