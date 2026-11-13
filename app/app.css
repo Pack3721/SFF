@@ -392,3 +392,5 @@ body.leader #tools { bottom: calc(var(--leader-h, 0px) + 4px); }
 #gqr .share-btn, #leader .share-btn { font: inherit; font-size: 15px; font-weight: 700; min-height: 44px; padding: 0 16px; color: #111; background: #fff; border: 2px solid #333; border-radius: 22px; }
 #leader .group .group-qr { padding: 0; }   /* beats #leader .share-btn's side padding, so the icon is centred */
 #leader .leader-warn { margin: 0 0 8px; padding: 8px 10px; border-radius: 10px; background: #fff4d6; color: #6b4b00; font-size: 13px; line-height: 1.35; }
+#leader .leader-count .share-btn { white-space: nowrap; padding: 0 12px; }
+#leader .leader-count .share-btn:disabled { color: #999; border-color: #ccc; }

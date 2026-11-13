@@ -1791,7 +1791,7 @@ function leaderStore(den, value) {
   all[den] = value;
   try { localStorage.setItem(LEADER_KEY, JSON.stringify(all)); } catch (_) { /* ignore */ }
 }
-const saveLeader = () => leaderStore(leader.den, { n: leader.n, names: leader.names, assign: leader.assign });
+const saveLeader = () => leaderStore(leader.den, { n: leader.n, names: leader.names, assign: leader.assign, edited: leader.edited });
 function groupNames() {                  // fill in default names: Wolf A, Wolf B, …
   for (let i = 0; i < leader.n; i++) if (!leader.names[i]) leader.names[i] = `${SINGULAR[leader.den]} ${"ABCDEFGH"[i]}`;
   leader.names.length = leader.n;
@@ -1802,7 +1802,8 @@ function enterLeader(den) {
   const saved = leaderStore(den);
   const segIds = DATA.dens.find((d) => d.key === den).segments;
   const ok = saved && saved.assign && segIds.every((id) => id in saved.assign);
-  leader = { den, n: (saved && saved.n) || 2, names: (saved && saved.names) || [], assign: ok ? saved.assign : null, active: 0 };
+  leader = { den, n: (saved && saved.n) || 2, names: (saved && saved.names) || [], assign: ok ? saved.assign : null, active: 0,
+             edited: ok && saved.edited !== false };   // moved by hand since the last auto split (older saves: assume so)
   groupNames();
   if (!leader.assign) splitGroups();
   selected = null; renderCard(); closeSheet(); slideOut(availPanel);
@@ -1892,12 +1893,13 @@ function splitGroups() {
     }
     if (c < bestCost) { bestCost = c; best = { ...assign }; }
   }
-  leader.assign = best;
+  leader.assign = best; leader.edited = false;
   saveLeader();
 }
 
 function assignGroup(id) {
-  leader.assign[id] = leader.active;
+  if (leader.assign[id] === leader.active) return;
+  leader.assign[id] = leader.active; leader.edited = true;
   saveLeader();
   styleSegments();
   renderLeader();
@@ -1942,7 +1944,8 @@ function renderLeader() {
   const minus = h("button", "step", "\u2212", row); minus.type = "button"; minus.setAttribute("aria-label", "Fewer groups");
   h("b", "", String(leader.n), row);
   const plus = h("button", "step", "+", row); plus.type = "button"; plus.setAttribute("aria-label", "More groups");
-  const again = h("button", "share-btn", "Auto split", row); again.type = "button";
+  const again = h("button", "share-btn", "Auto re-split", row); again.type = "button";
+  again.disabled = !leader.edited;         // nothing moved by hand, so it would come out the same
   const setN = (n) => {
     leader.n = Math.max(1, Math.min(8, n)); leader.active = Math.min(leader.active, leader.n - 1);
     groupNames(); splitGroups(); styleSegments(); renderLeader();
