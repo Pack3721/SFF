@@ -928,20 +928,22 @@ function renderCard() {
   if (!s) { slideOut(card); return; }    // keep its content while it slides away
   slideIn(card);
   card.textContent = "";
+  // top row: the ID, then Track and Target as small pills (they're settings for this segment, not the main
+  // thing; the texts below are), then close
   const top = h("div", "card-top", null, card);
   chip(s, top);
-  h("span", "card-den", `${denOf(s).short} \u2022 ${s.houses} houses`, top);
+  const col = (segEls[s.id] && segEls[s.id].color) || s.color;   // the pills take a pale wash of the segment's colour
+  card.style.setProperty("--seg", col);
+  card.style.setProperty("--seg-pale", tint(col, 0.22));
+  const row = h("div", "card-actions", null, top);
   const x = h("button", "close", "\u2715", top); x.type = "button"; x.setAttribute("aria-label", "Close");
   x.addEventListener("click", () => select(null));
   linesOf(s, card, true);
-  const col = (segEls[s.id] && segEls[s.id].color) || s.color;   // the buttons take the segment's colour
-  card.style.setProperty("--seg", col);
-  card.style.setProperty("--seg-ink", inkOn(col));
-  const row = h("div", "card-actions", null, card);
+  h("div", "card-den", `${denOf(s).short} \u2022 ${s.houses} houses`, card);
   const tr = h("button", "track" + (isTracked(s.id) ? " on" : ""), isTracked(s.id) ? "\u2605 Tracking" : "\u2606 Track", row);
   tr.type = "button"; tr.setAttribute("aria-pressed", isTracked(s.id));
   tr.addEventListener("click", () => setTracked(s.id, !isTracked(s.id)));
-  const tg = h("button", "target" + (mySegs.target === s.id ? " on" : ""), mySegs.target === s.id ? "\u25c9 Target" : "\u25ce Make target", row);
+  const tg = h("button", "target" + (mySegs.target === s.id ? " on" : ""), mySegs.target === s.id ? "\u25c9 Target" : "\u25ce Target", row);
   tg.type = "button"; tg.setAttribute("aria-pressed", mySegs.target === s.id);
   tg.addEventListener("click", () => setTarget(s.id));
   // texts to the dispatcher about this segment. Done is offered on your target (and Undo on a done one);

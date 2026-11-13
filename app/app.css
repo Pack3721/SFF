@@ -175,22 +175,21 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 12px); }
 #card, #sheet, #settings { transform: translateY(105%); transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
 #card.open, #sheet.open, #settings.open { transform: none; }
 @media (prefers-reduced-motion: reduce) { #card, #sheet, #settings { transition: none; } }
-.card-top { display: flex; align-items: center; gap: 10px; }
-.card-den { color: #555; font-size: 14px; }
-#card .lines { margin: 6px 0 12px; }
-.card-actions { display: flex; gap: 10px; }
+.card-top { display: flex; align-items: center; gap: 8px; }
+#card .lines { margin: 8px 0 2px; }
+.card-den { color: #666; font-size: 13px; margin-bottom: 4px; }
+/* Track and Target: small pills. Off: white, light outline. On: a pale wash of the segment's colour;
+   Target also gets a thin still zebra border of the colour and white. */
+.card-actions { display: flex; gap: 6px; }
 .card-actions button {
-  font: inherit; font-size: 16px; font-weight: 700; flex: 1; min-height: 48px;
-  border: 2px solid #333; border-radius: 12px; background: #fff; color: #111;
+  font: inherit; font-size: 14px; font-weight: 700; min-height: 36px; padding: 0 12px; white-space: nowrap;
+  color: #333; background: #fff; border: 1.5px solid #c8c8c8; border-radius: 18px;
 }
-/* Off, both buttons keep the plain style above. On, they take the segment's colour:
-   Tracking is filled with it; Target is filled with it inside a still zebra border of the colour and white. */
-.card-actions button.track.on { background: var(--seg); border-color: var(--seg); color: var(--seg-ink); }
+.card-actions button.on { color: #111; background: var(--seg-pale); border-color: var(--seg); }
 .card-actions button.target.on {
-  border: 4px solid transparent; color: var(--seg-ink);
-  background: linear-gradient(var(--seg), var(--seg)) padding-box,
-              repeating-linear-gradient(45deg, var(--seg) 0 6px, #fff 6px 12px) border-box;
-  box-shadow: 0 0 0 1px var(--seg);
+  border: 3px solid transparent;
+  background: linear-gradient(var(--seg-pale), var(--seg-pale)) padding-box,
+              repeating-linear-gradient(45deg, var(--seg) 0 4px, #fff 4px 8px) border-box;
 }
 
 #sheet { top: calc(var(--bar-h) + env(safe-area-inset-top) + 24px); display: flex; flex-direction: column; padding-bottom: 0; }
