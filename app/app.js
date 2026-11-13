@@ -878,11 +878,19 @@ function joinDen(wasEmpty, id) {
   renderBanner(); renderCard();
   return true;
 }
+// With just one unfinished segment of yours there's nothing to choose: make it the target. Done after
+// tracking, untracking, Done, a restore and on start, but not after you clear the target yourself.
+function autoTarget() {
+  if (mySegs.target) return;
+  const left = mySegs.tracked.filter((x) => !mySegs.done.includes(x));
+  if (left.length === 1) mySegs.target = left[0];
+}
 function setTracked(id, on) {
   const wasEmpty = !mySegs.tracked.length;
   mySegs.tracked = mySegs.tracked.filter((x) => x !== id);
   if (on) mySegs.tracked.push(id);
   if (!on && mySegs.target === id) mySegs.target = null;
+  autoTarget();
   saveSegs();
   if (on && joinDen(wasEmpty, id)) return;
   segmentsChanged(!on || !(id in segEls));
@@ -1454,6 +1462,7 @@ function applySetup(q) {                  // q: the parts after # of a setup lin
     mySegs.tracked = ids(q.get("seg"));
     mySegs.target = mySegs.tracked.includes((q.get("t") || "").toUpperCase()) ? q.get("t").toUpperCase() : null;
     mySegs.done = ids(q.get("d")).filter((x) => mySegs.tracked.includes(x));
+    autoTarget();
     saveSegs();
   }
   const den = q.get("den");
@@ -1518,6 +1527,7 @@ function markDone(id, on) {
   if (on) {
     mySegs.done.push(id);
     if (mySegs.target === id || allDone()) mySegs.target = null;   // done with it: no target until you pick the next
+    autoTarget();                                                 // …unless only one is left
   }
   saveSegs();
   segmentsChanged(false);
@@ -1751,6 +1761,7 @@ function start(data) {
   picker.appendChild(o);
   const ok = (key) => key === PACK || data.dens.some((d) => d.key === key);
   loadSegs();
+  autoTarget();
   loadSettings();
   readLink();                            // may bring a whole setup, den included
   let saved = null;
