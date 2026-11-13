@@ -1524,13 +1524,20 @@ function textingChanged() { renderSetupStatus(); renderCard(); renderBanner(); i
 // and if it was your target, the target is cleared.
 function markDone(id, on) {
   mySegs.done = mySegs.done.filter((x) => x !== id);
+  let next = null;
   if (on) {
     mySegs.done.push(id);
     if (mySegs.target === id || allDone()) mySegs.target = null;   // done with it: no target until you pick the next
     autoTarget();                                                 // …unless only one is left
+    next = mySegs.target && mySegs.target !== id ? mySegs.target : null;
   }
   saveSegs();
   segmentsChanged(false);
+  // the last one became the target: the open card and the map move to it, as when swiping
+  if (next && selected === id) {
+    select(next, false);
+    if (!me.following) fitBox(segBox(segById(next)));
+  }
 }
 
 // ---------- settings: dispatcher's number, week and your group ----------
