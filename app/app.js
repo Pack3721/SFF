@@ -793,12 +793,22 @@ function styleSegments() {
     const e = segEls[id];
     e.faded = any && !isTracked(id) && id !== selected;
     for (const [part, attr, colour, grey] of e.paint) part.setAttribute(attr, e.faded ? grey : colour);
-    const done = !e.faded && mySegs.done.includes(id);       // done: paler, with a ✔ on its tag
-    e.route.setAttribute("opacity", e.faded ? 0.8 : done ? 0.45 : 0.9);
-    e.homes.setAttribute("opacity", done ? 0.5 : 1);
+    // done: faint line, houses and labels; the tag turns pale with dark text and a green ✔
+    const done = mySegs.done.includes(id);
+    e.route.setAttribute("opacity", done ? 0.3 : e.faded ? 0.8 : 0.9);
+    e.homes.setAttribute("opacity", done ? 0.35 : 1);
+    for (const g of e.extras) g.setAttribute("opacity", done && g.kind !== "tag" ? 0.35 : 1);
     if (e.tagText) {
       const w = e.tagW[done ? 1 : 0];
-      e.tagText.textContent = e.tagLabel + (done ? " \u2714\ufe0e" : "");
+      e.tagText.textContent = e.tagLabel;
+      e.tagText.style.fill = done ? "#333" : "";
+      if (done) {
+        const tick = document.createElementNS(NS, "tspan");
+        tick.textContent = " \u2714\ufe0e";
+        tick.style.fill = "#1e7e34";
+        e.tagText.appendChild(tick);
+        e.tagBox.setAttribute("fill", tint(e.faded ? "#9a9a9a" : e.color, 0.3));
+      }
       e.tagBox.setAttribute("x", -w / 2); e.tagBox.setAttribute("width", w);
     }
     const glow = id === mySegs.target || id === selected;   // a soft glow in the segment's own colour
@@ -1205,17 +1215,13 @@ function renderSetupStatus() {
 setupStatus.addEventListener("click", () => openSettings());
 function textingChanged() { renderSetupStatus(); renderCard(); renderBanner(); if (!sheet.hidden) renderList(); }
 
-// Done marks the segment: ✔ on the map and list, the progress bar fills, and if it was your target,
-// the target moves on to your next segment that isn't done.
+// Done marks the segment: faint on the map with a ✔ on its tag, ✔ in the list, the progress bar fills,
+// and if it was your target, the target is cleared.
 function markDone(id, on) {
   mySegs.done = mySegs.done.filter((x) => x !== id);
   if (on) {
     mySegs.done.push(id);
-    if (mySegs.target === id) {
-      const left = mySegs.tracked.map(segById).sort(segOrder).filter((x) => !mySegs.done.includes(x.id));
-      const after = left.find((x) => segOrder(x, segById(id)) > 0) || left[0];
-      mySegs.target = after ? after.id : null;
-    }
+    if (mySegs.target === id) mySegs.target = null;   // done with it: no target until you pick the next one
   }
   saveSegs();
   segmentsChanged(false);
