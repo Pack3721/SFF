@@ -800,8 +800,10 @@ function renderBanner() {
 banner.addEventListener("click", () => mySegs.target && select(mySegs.target, true));
 
 // the list: yours first, then the den's (or every den's, in the whole-pack view)
+let listAnchor = null;                   // {id, group, top}: the row just tapped, kept still on screen
 function renderList() {
   const body = document.getElementById("sheet-body");
+  const keepScroll = body.scrollTop;
   body.textContent = "";
   const pack = denKey === PACK;
   const den = !pack && DATA.dens.find((d) => d.key === denKey);
@@ -815,6 +817,7 @@ function renderList() {
     if (title) h("h3", "", title, body);
     for (const s of list) {
       const row = h("div", "seg-row" + (mySegs.target === s.id ? " is-target" : ""), null, body);
+      row.dataset.id = s.id; row.dataset.group = title;
       const main = h("button", "seg-main", null, row); main.type = "button";
       chip(s, main);
       linesOf(s, main, false);
@@ -826,8 +829,19 @@ function renderList() {
       star.type = "button";
       star.setAttribute("aria-label", (isTracked(s.id) ? "Stop tracking " : "Track ") + s.id);
       star.setAttribute("aria-pressed", isTracked(s.id));
-      star.addEventListener("click", () => setTracked(s.id, !isTracked(s.id)));
+      star.addEventListener("click", () => {
+        listAnchor = { id: s.id, group: title, top: row.getBoundingClientRect().top };
+        setTracked(s.id, !isTracked(s.id));
+      });
     }
+  }
+  // put the scroll back, then nudge so the row you tapped hasn't moved (rows above it may have come or gone)
+  body.scrollTop = keepScroll;
+  if (listAnchor) {
+    const a = listAnchor; listAnchor = null;
+    const rows = [...body.querySelectorAll(".seg-row")].filter((r) => r.dataset.id === a.id);
+    const same = rows.find((r) => r.dataset.group === a.group) || rows[rows.length - 1];
+    if (same) body.scrollTop += same.getBoundingClientRect().top - a.top;
   }
 }
 function openSheet() { renderList(); sheet.hidden = false; }
