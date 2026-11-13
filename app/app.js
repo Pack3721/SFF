@@ -882,6 +882,27 @@ function segDist(p, a, b) {               // distance from p to the line piece a
   return Math.hypot(p[0] - a[0] - t * vx, p[1] - a[1] - t * vy);
 }
 
+// the two per-segment controls, the same in the list and on the card: a target radio on the left
+// (only one segment is the target; tap it again to clear) and a track star on the right
+function targetRadio(s, parent, before) {
+  const on = mySegs.target === s.id;
+  const b = h("button", "radio" + (on ? " on" : ""), null, null);
+  b.type = "button";
+  b.setAttribute("role", "radio"); b.setAttribute("aria-checked", on);
+  b.setAttribute("aria-label", (on ? "Target: " : "Make target: ") + s.id);
+  b.title = on ? "Your target \u2013 tap to clear" : "Make this your target";
+  parent.insertBefore(b, before || null);
+  return b;
+}
+function trackStar(s, parent) {
+  const on = isTracked(s.id);
+  const b = h("button", "star" + (on ? " on" : ""), on ? "\u2605" : "\u2606", parent);
+  b.type = "button";
+  b.setAttribute("aria-label", (on ? "Stop tracking " : "Track ") + s.id);
+  b.setAttribute("aria-pressed", on);
+  return b;
+}
+
 // small DOM helper for the list, card and banner
 function h(tag, cls, text, parent) {
   const e = document.createElement(tag);
@@ -928,24 +949,18 @@ function renderCard() {
   if (!s) { slideOut(card); return; }    // keep its content while it slides away
   slideIn(card);
   card.textContent = "";
-  // top row: the ID, then Track and Target as small pills (they're settings for this segment, not the main
-  // thing; the texts below are), then close
+  // top row, like a row of the segment list: target radio, ID, then the track star and close
   const top = h("div", "card-top", null, card);
+  const rd = targetRadio(s, top);
+  rd.addEventListener("click", () => setTarget(s.id));
   chip(s, top);
-  const col = (segEls[s.id] && segEls[s.id].color) || s.color;   // the pills take a pale wash of the segment's colour
-  card.style.setProperty("--seg", col);
-  card.style.setProperty("--seg-pale", tint(col, 0.22));
-  const row = h("div", "card-actions", null, top);
+  h("span", "card-gap", null, top);
+  const st = trackStar(s, top);
+  st.addEventListener("click", () => setTracked(s.id, !isTracked(s.id)));
   const x = h("button", "close", "\u2715", top); x.type = "button"; x.setAttribute("aria-label", "Close");
   x.addEventListener("click", () => select(null));
   linesOf(s, card, true);
   h("div", "card-den", `${denOf(s).short} \u2022 ${s.houses} houses`, card);
-  const tr = h("button", "track" + (isTracked(s.id) ? " on" : ""), isTracked(s.id) ? "\u2605 Tracking" : "\u2606 Track", row);
-  tr.type = "button"; tr.setAttribute("aria-pressed", isTracked(s.id));
-  tr.addEventListener("click", () => setTracked(s.id, !isTracked(s.id)));
-  const tg = h("button", "target" + (mySegs.target === s.id ? " on" : ""), mySegs.target === s.id ? "\u25c9 Target" : "\u25ce Target", row);
-  tg.type = "button"; tg.setAttribute("aria-pressed", mySegs.target === s.id);
-  tg.addEventListener("click", () => setTarget(s.id));
   // texts to the dispatcher about this segment. Done is offered on your target (and Undo on a done one);
   // Needs coverage and Need bags only work once texting is set up, so they're greyed out until then.
   const texts = h("div", "card-texts", null, card);
@@ -1079,10 +1094,12 @@ function renderList() {
       if (mySegs.target === s.id) h("span", "badge", "Target", meta);
       if (mySegs.done.includes(s.id)) { row.classList.add("is-done"); h("span", "badge done", "\u2714\ufe0e Done", meta); }
       main.addEventListener("click", () => { closeSheet(); select(s.id, true); });
-      const star = h("button", "star" + (isTracked(s.id) ? " on" : ""), isTracked(s.id) ? "\u2605" : "\u2606", row);
-      star.type = "button";
-      star.setAttribute("aria-label", (isTracked(s.id) ? "Stop tracking " : "Track ") + s.id);
-      star.setAttribute("aria-pressed", isTracked(s.id));
+      const radio = targetRadio(s, row, main);
+      radio.addEventListener("click", () => {
+        listAnchor = { id: s.id, top: row.getBoundingClientRect().top };
+        setTarget(s.id);
+      });
+      const star = trackStar(s, row);
       star.addEventListener("click", () => {
         listAnchor = { id: s.id, top: row.getBoundingClientRect().top };
         setTracked(s.id, !isTracked(s.id));

@@ -175,22 +175,19 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 12px); }
 #card, #sheet, #settings { transform: translateY(105%); transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
 #card.open, #sheet.open, #settings.open { transform: none; }
 @media (prefers-reduced-motion: reduce) { #card, #sheet, #settings { transition: none; } }
-.card-top { display: flex; align-items: center; gap: 8px; }
-#card .lines { margin: 8px 0 2px; }
+.card-top { display: flex; align-items: center; gap: 4px; margin-left: -10px; }
+.card-gap { flex: 1; }
+.card-top .star { width: 44px; height: 44px; }
+#card .lines { margin: 6px 0 2px; }
 .card-den { color: #666; font-size: 13px; margin-bottom: 4px; }
-/* Track and Target: small pills. Off: white, light outline. On: a pale wash of the segment's colour;
-   Target also gets a thin still zebra border of the colour and white. */
-.card-actions { display: flex; gap: 6px; }
-.card-actions button {
-  font: inherit; font-size: 14px; font-weight: 700; min-height: 36px; padding: 0 12px; white-space: nowrap;
-  color: #333; background: #fff; border: 1.5px solid #c8c8c8; border-radius: 18px;
+
+/* target radio: a grey ring; the target is a dark ring with a dark dot */
+.radio { flex: none; width: 44px; min-height: 44px; padding: 0; border: 0; background: transparent; display: grid; place-items: center; }
+.radio::before {
+  content: ""; width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid #9a9a9a; background: #fff; box-sizing: border-box;
 }
-.card-actions button.on { color: #111; background: var(--seg-pale); border-color: var(--seg); }
-.card-actions button.target.on {
-  border: 3px solid transparent;
-  background: linear-gradient(var(--seg-pale), var(--seg-pale)) padding-box,
-              repeating-linear-gradient(45deg, var(--seg) 0 4px, #fff 4px 8px) border-box;
-}
+.radio.on::before { border-color: #111; background: #111; box-shadow: inset 0 0 0 4px #fff; }
 
 #sheet { top: calc(var(--bar-h) + env(safe-area-inset-top) + 24px); display: flex; flex-direction: column; padding-bottom: 0; }
 #sheet[hidden] { display: none; }
@@ -205,6 +202,7 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 12px); }
 #sheet-body { overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
 #sheet h3 { margin: 14px 0 4px; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: #555; }
 .seg-row { display: flex; align-items: stretch; border-top: 1px solid #e3e3e3; }
+.seg-row .radio { margin-left: -10px; align-self: center; }
 .seg-row.is-target { background: #eef4fe; }
 .seg-main {
   flex: 1; display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; align-items: start;
