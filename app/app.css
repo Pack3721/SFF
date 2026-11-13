@@ -94,10 +94,10 @@ html, body {
 #build { display: block; font-size: 10px; color: #999; font-family: ui-monospace, Menlo, monospace; }
 
 body.card-open #scale, body.card-open #gps-status { display: none; }
-body.card-open #tools { bottom: calc(var(--card-h, 0px) + 58px); }   /* above the list tab */
+body.card-open #tools { bottom: calc(var(--card-h, 0px) + 4px); }
 #tools {
   position: fixed; right: 12px; z-index: 1;
-  bottom: calc(62px + env(safe-area-inset-bottom));   /* above the list tab's row */
+  bottom: calc(6px + env(safe-area-inset-bottom));    /* same row as the list tab */
   display: flex; flex-direction: column; gap: 10px;
 }
 #tools button {
@@ -109,6 +109,9 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 58px); }   /* above th
 }
 #tools button:active { background: #eee; }
 #tools button.on { background: #1a73e8; border-color: #1a73e8; color: #fff; }
+/* Center on me: a round "locate me" crosshair; blue while the map follows you */
+#tools #me-btn { width: 52px; height: 52px; min-height: 0; padding: 0; display: grid; place-items: center; border-radius: 50%; color: #333; }
+#tools #me-btn.on { color: #fff; }
 
 /* GPS dot: blue with a white rim; the pale ring is how sure the phone is */
 #me .acc { fill: #1a73e8; fill-opacity: .15; stroke: #1a73e8; stroke-opacity: .5; }
