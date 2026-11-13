@@ -1942,7 +1942,7 @@ function renderLeader() {
   const minus = h("button", "step", "\u2212", row); minus.type = "button"; minus.setAttribute("aria-label", "Fewer groups");
   h("b", "", String(leader.n), row);
   const plus = h("button", "step", "+", row); plus.type = "button"; plus.setAttribute("aria-label", "More groups");
-  const again = h("button", "share-btn", "Split again", row); again.type = "button";
+  const again = h("button", "share-btn", "Auto split", row); again.type = "button";
   const setN = (n) => {
     leader.n = Math.max(1, Math.min(8, n)); leader.active = Math.min(leader.active, leader.n - 1);
     groupNames(); splitGroups(); styleSegments(); renderLeader();
