@@ -945,7 +945,7 @@ function renderBanner() {
       next.style.background = tint(col, 0.35);
     }
   }
-  const count = h("span", "count", `\u2611\ufe0e ${done} of ${total}`, prog);   // ☑ as text, not an emoji
+  const count = h("span", "count", `\u2714\ufe0e ${done} of ${total}`, prog);   // ✔ heavy check, as text, not an emoji
   count.setAttribute("aria-label", `${done} of ${total} houses done`);
   bar.setAttribute("role", "progressbar");
   bar.setAttribute("aria-valuemin", 0); bar.setAttribute("aria-valuemax", total); bar.setAttribute("aria-valuenow", done);
