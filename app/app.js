@@ -1581,6 +1581,16 @@ function renderSettings() {
   });
   f.addEventListener("submit", (e) => { e.preventDefault(); document.activeElement.blur(); });   // Return on the keyboard: done typing
   shareArea(body);                       // tabs: the map & number for anyone, or the whole group setup
+  about(body);
+}
+// credits and licences (the map data's sources ask for them; NOTICE.md on GitHub has the full terms)
+function about(body) {
+  const p = h("p", "about", null, body);
+  p.append("Map data: St. Louis County GIS Service Center. Building outlines: Microsoft Global ML Building Footprints (CDLA-Permissive-2.0). " +
+           "App \u00a9 2026 Jay Tuley and contributors, PolyForm Noncommercial 1.0.0. Not affiliated with Scouting America. ");
+  const a = h("a", "", "Licences & credits", p);
+  a.href = "https://github.com/Pack3721/SFF/blob/main/NOTICE.md";
+  a.target = "_blank"; a.rel = "noopener noreferrer";
 }
 
 // "Share the map": a QR code another parent can scan off this screen, and the phone's own share sheet.
