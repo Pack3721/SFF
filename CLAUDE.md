@@ -8,7 +8,7 @@ Start with `PLAN.md`. The current job is the **day-of tracker**: a phone web pag
 
 - `PLAN.md`: the plan for the day-of tracker, including requirements, milestones and open questions.
 - `data/sff-2026.json`: the frozen 2026 segments, houses, outlines and streets as lat/lon. This is the app's only data source.
-- `app/`: the day-of tracker, a static page (`index.html`, `app.js`, `app.css`) that draws the map as SVG. `app/sff-2026.json` is a symlink to the data file. Test it with `python3 -m http.server -d app`.
+- `app/`: the day-of tracker, a static page (`index.html`, `app.js`, `app.css`) that draws the map as SVG. `dispatcher.html` makes the dispatcher's QR code. `vendor/` holds third-party code served from this site; `vendor/README.md` lists where each file came from and its integrity hash. `app/sff-2026.json` is a symlink to the data file. Test it with `python3 -m http.server -d app`.
 - `.github/workflows/`: `pages.yml` deploys `app/` to GitHub Pages, and `zizmor.yml` audits the workflows. Pin actions to commit SHAs, and run `zizmor .` before pushing workflow changes.
 - `planner/`: the Python scripts that made the printed 2026 map pack (matplotlib and pypdf).
   - `build.py` builds the 8-page colour PDF. Run it as `python3 build.py`, or `BW=1 python3 build.py` for black and white.

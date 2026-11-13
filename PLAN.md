@@ -45,8 +45,8 @@ The week (`Wk1` or `Wk2`) goes at the front, so the dispatcher can tell a late W
 
 ## Dispatcher number
 
-- **QR link format:** `https://<host>/#tel=3145550123&wk=1&den=W`. The `#` part (the fragment) is never sent to the web server, so it isn't in server logs and isn't in the Referer header.
-- **When the page opens:** it reads the fragment, checks the number (10 digits, US), saves `tel`, `wk` and the group to `localStorage`, then clears the fragment with `history.replaceState`. That way the number doesn't travel if someone copies or screen-shares the link.
+- **QR link format:** `https://pack3721.github.io/SFF/#tel=3145550123`. The week comes from the date, and there's one code for the whole pack. The `#` part (the fragment) is never sent to the web server, so it isn't in server logs and isn't in the Referer header.
+- **When the page opens:** it reads the fragment, checks the number (10 digits, US) and saves it. It does **not** clear the fragment. On iPhone a Home Screen app doesn't share Safari's storage, so the number has to travel in the link the icon is saved with. The manifest has an `id` and no `start_url`, so the icon keeps the address it was added from. The number in the link is the same one every family is given anyway.
 - **Opened with no number:** it asks the user to type one, or to scan the dispatcher's QR code. It never guesses.
 - **A new QR code** overwrites the saved number and week, which covers a different dispatcher in Week 2.
 - **Never commit a phone number** to this repo, in code, data or tests. Use `555-0100`-style test numbers.
@@ -127,7 +127,7 @@ There are 79 segments and 1,183 houses. Den keys are L, T, W, B, WB (Webelos, wh
    - `sms:` links use `&body=` on iPhone and `?body=` elsewhere.
 
    **Still to do:** try real texts on an iPhone and an Android phone.
-4. **QR flow.** Build the dispatcher QR page, the fragment handling and `localStorage`, and clear the fragment after reading.
+4. **QR flow.** Build the dispatcher QR page, the fragment handling and `localStorage`. Built: `dispatcher.html` (not linked from the map). The dispatcher types their number and gets one QR code plus a printable sheet with steps for families. The QR code is made on the device by the vendored `qrcode-generator` (MIT) and drawn as SVG, and the page saves and sends nothing. The map reads `#tel=` on every start and when the link changes. **Still to do:** check on an iPhone that Add to Home Screen keeps the `#tel=` part.
 5. **Offline and polish.** Add caching, the sunlight check and the den picker.
 6. **Dry run.** A den leader walks a segment with the page before Week 2.
 

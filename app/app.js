@@ -1372,6 +1372,17 @@ function normTel(v) {
 }
 const showTel = (t) => t ? `(${t.slice(2, 5)}) ${t.slice(5, 8)}-${t.slice(8)}` : "";
 const textsReady = () => !!(settings.tel && settings.group);
+
+// The dispatcher's QR code opens the map with their number after the # (…/SFF/#tel=3145550123). The part
+// after # never goes to the web server. The number is saved and left in the address on purpose, so a
+// Home Screen icon added from this page keeps it (an iPhone Home Screen app doesn't share Safari's storage).
+function readLink() {
+  const t = normTel(new URLSearchParams(location.hash.slice(1)).get("tel"));
+  if (!t || t === settings.tel) return;
+  settings.tel = t;
+  saveSettings();
+}
+window.addEventListener("hashchange", () => { readLink(); textingChanged(); });
 function textBody(kind, id) {
   const who = `Wk${week()}: ${settings.group}`;
   return { done: `${who} \u2013 ${id} done`, coverage: `${who} \u2013 ${id} needs coverage`,
@@ -1550,6 +1561,7 @@ function start(data) {
   const ok = (key) => key === PACK || data.dens.some((d) => d.key === key);
   loadSegs();
   loadSettings();
+  readLink();
   renderSetupStatus();
   renderBanner();
   pick(ok(saved) ? saved : PACK, true);

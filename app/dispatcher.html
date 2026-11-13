@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Everything comes from this host; the QR code is made right here, never by an online service. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<title>SFF 721 Dispatcher QR</title>
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="dispatcher.css?v=dev">
+<script src="vendor/qrcode-generator-2.0.4.js?v=dev" defer></script>
+<script src="dispatcher.js?v=dev" defer></script>
+</head>
+<body>
+<main>
+  <section class="setup">
+    <h1>Dispatcher QR code</h1>
+    <p>Type your mobile number. You'll get one QR code for the whole pack: families scan it and their texts come to you.</p>
+    <label class="field">
+      <span>Your mobile number</span>
+      <input id="tel" type="tel" inputmode="tel" autocomplete="off" placeholder="10 digits">
+    </label>
+    <p id="err" class="err" hidden>Needs 10 digits, like (314) 555-0100.</p>
+    <p class="small">This page doesn't save or send your number. The QR code is made on this device.</p>
+  </section>
+
+  <section id="sheet" class="sheet" hidden>
+    <h2>Scouting for Food &ndash; Pack 721</h2>
+    <p class="lead">Scan with your phone's camera to open the walking map.</p>
+    <div id="qr" class="qr"></div>
+    <p class="link"><span id="link"></span></p>
+    <ol class="steps">
+      <li><b>iPhone:</b> tap Share, then <b>Add to Home Screen</b>, and open <b>SFF 721 Map</b> from there.</li>
+      <li>Pick your den, star (&#9734;) the segments your group was given, and tap one to make it your target.</li>
+      <li>Tap the gear and type your group's name, like &ldquo;Wolf A&rdquo;.</li>
+      <li>Texts to the dispatcher go to <b id="tel-shown"></b>.</li>
+    </ol>
+    <button id="print" type="button" class="print">Print this sheet</button>
+  </section>
+</main>
+</body>
+</html>
