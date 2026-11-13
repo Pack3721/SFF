@@ -68,7 +68,7 @@ The week (`Wk1` or `Wk2`) goes at the front, so the dispatcher can tell a late W
   9. segment ID labels
   10. stop signs
   11. the GPS dot with an accuracy circle
-- Pinch to zoom and pan. Add a "center on me" button (a round crosshair, blue while the map follows you). Choosing a den in the picker (or opening it and closing it again) shows the whole den.
+- Pinch to zoom and pan. Add a "center on me" button (a round crosshair, blue while the map follows you; press again to stop following). Choosing a den in the picker (or opening it and closing it again) shows the whole den.
 - Make it readable in sunlight: high contrast and big tap targets.
 - A heading beam on the GPS dot shows which way you're facing, and the map stays north-up like the paper map. The beam uses the iPhone compass (permission asked on the Center on me tap) or Android's compass. Without one, it uses GPS's direction of travel while walking. Rotating the map itself isn't planned.
 

@@ -768,7 +768,11 @@ function startDemo() {
   return setInterval(step, 1000);
 }
 
-meBtn.addEventListener("click", () => { startCompass(true); centerOnMe(true); });
+// Center on me toggles: on = center and follow you; pressed again = stop following (the dot stays)
+meBtn.addEventListener("click", () => {
+  if (me.following) { follow(false); return; }
+  startCompass(true); centerOnMe(true);
+});
 
 // ---------- compass: which way you're facing, as a beam on the dot ----------
 // The map stays north-up (like the paper map); only the beam turns. iPhones ask permission for motion &
