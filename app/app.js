@@ -1018,9 +1018,16 @@ function renderBanner() {
 }
 banner.addEventListener("click", () => {
   if (mySegs.target) select(mySegs.target, true);
-  else if (allDone()) sendText("available");
+  else if (allDone()) sendAvailable();
   else openSheet();
 });
+// "available for more": you've finished, so let go of the last segment (close its card, no target)
+function sendAvailable() {
+  if (!sendText("available")) return;
+  mySegs.target = null; saveSegs();
+  closeSheet();
+  if (selected) select(null); else segmentsChanged(false);
+}
 const allDone = () => mySegs.tracked.length > 0 && mySegs.tracked.every((id) => mySegs.done.includes(id));
 
 // the list: yours first, then the den's (or every den's, in the whole-pack view)
@@ -1051,7 +1058,7 @@ function renderList() {
       // "available for more" is for when you've finished: greyed out until every tracked segment is done
       const av = h("button", "available", "Text \u201cavailable for more\u201d", body); av.type = "button"; msgIcon(av);
       av.disabled = !allDone() || !textsReady();
-      av.addEventListener("click", () => sendText("available"));
+      av.addEventListener("click", sendAvailable);
       if (!allDone()) h("p", "available-note", "Once all your segments are done", body);
     }
     groups.push(["", mine]);
@@ -1221,7 +1228,7 @@ function markDone(id, on) {
   mySegs.done = mySegs.done.filter((x) => x !== id);
   if (on) {
     mySegs.done.push(id);
-    if (mySegs.target === id) mySegs.target = null;   // done with it: no target until you pick the next one
+    if (mySegs.target === id || allDone()) mySegs.target = null;   // done with it: no target until you pick the next
   }
   saveSegs();
   segmentsChanged(false);
