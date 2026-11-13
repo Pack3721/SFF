@@ -274,9 +274,13 @@ function draw() {
     const box = el("rect", { fill: c, stroke: s.main_road ? "#222" : "#fff", "stroke-width": 1.5, rx: 4 }, g);
     extra(g, "tag", box, "fill");
     const t = el("text", { class: "segid", "text-anchor": "middle", "dominant-baseline": "central" }, g);
-    t.textContent = s.id + (s.main_road ? " ⚠" : "");
+    const label = s.id + (s.main_road ? " ⚠" : "");
+    t.textContent = label + " \u2714\ufe0e";
+    const wDone = t.getComputedTextLength() + 10;   // measured now, while it's on screen
+    t.textContent = label;
     const w = t.getComputedTextLength() + 10;
     box.setAttribute("x", -w / 2); box.setAttribute("y", -11); box.setAttribute("width", w); box.setAttribute("height", 22);
+    Object.assign(segEls[s.id], { tagText: t, tagBox: box, tagLabel: label, tagW: [w, wDone] });
   }
 
   // in the pack view, each den's name over the middle of its houses
@@ -659,9 +663,13 @@ function onFix(p) {
 }
 
 // iPhones refuse without asking when location is off for the browser, so say where to switch it on.
+function isIOS() {
+  const ua = navigator.userAgent;
+  return /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+}
 function blockedHelp() {
   const ua = navigator.userAgent;
-  const ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  const ios = isIOS();
   if (ios && /CriOS/.test(ua))
     return "Location is off for Chrome. iPhone Settings \u203a Privacy & Security \u203a Location Services \u203a Chrome \u203a While Using. Then reload.";
   if (ios && /FxiOS/.test(ua))
@@ -719,7 +727,7 @@ function resumeGps() {
 // Tracked = the segments your group was given. Target = the one you're on or heading to.
 // Both live only on this phone (localStorage).
 const SEG_KEY = "sff.segments";
-let mySegs = { tracked: [], target: null, done: [] };   // done: filled in by the Done text (milestone 3)
+let mySegs = { tracked: [], target: null, done: [] };   // done: segments you've texted Done for
 let segEls = {};                         // id -> drawn pieces, rebuilt by draw()
 let selected = null;                     // the segment shown in the card
 const card = document.getElementById("card");
@@ -784,7 +792,14 @@ function styleSegments() {
     const e = segEls[id];
     e.faded = any && !isTracked(id) && id !== selected;
     for (const [part, attr, colour, grey] of e.paint) part.setAttribute(attr, e.faded ? grey : colour);
-    e.route.setAttribute("opacity", e.faded ? 0.8 : 0.9);
+    const done = !e.faded && mySegs.done.includes(id);       // done: paler, with a ✔ on its tag
+    e.route.setAttribute("opacity", e.faded ? 0.8 : done ? 0.45 : 0.9);
+    e.homes.setAttribute("opacity", done ? 0.5 : 1);
+    if (e.tagText) {
+      const w = e.tagW[done ? 1 : 0];
+      e.tagText.textContent = e.tagLabel + (done ? " \u2714\ufe0e" : "");
+      e.tagBox.setAttribute("x", -w / 2); e.tagBox.setAttribute("width", w);
+    }
     const glow = id === mySegs.target || id === selected;   // a soft glow in the segment's own colour
     e.halo.style.display = glow ? "" : "none";
     if (glow) { e.halo.setAttribute("stroke", e.color); e.halo.setAttribute("stroke-opacity", id === mySegs.target ? 0.45 : 0.3); }
@@ -918,6 +933,21 @@ function renderCard() {
   const tg = h("button", "target" + (mySegs.target === s.id ? " on" : ""), mySegs.target === s.id ? "\u25c9 Target" : "\u25ce Make target", row);
   tg.type = "button"; tg.setAttribute("aria-pressed", mySegs.target === s.id);
   tg.addEventListener("click", () => setTarget(s.id));
+  // texts to the dispatcher about this segment
+  const texts = h("div", "card-texts", null, card);
+  const isDone = mySegs.done.includes(s.id);
+  const dn = h("button", "done" + (isDone ? " on" : ""), isDone ? "\u2714\ufe0e Done \u2013 undo" : "\u2714\ufe0e Done", texts);
+  dn.type = "button";
+  dn.addEventListener("click", () => {
+    if (isDone) markDone(s.id, false);   // undo: no text
+    else if (sendText("done", s.id)) markDone(s.id, true);
+  });
+  const hp = h("button", "", "Need help", texts); hp.type = "button";
+  hp.addEventListener("click", () => sendText("help", s.id));
+  if (settings.wk !== 2) {               // bags only go out in Week 1
+    const bg = h("button", "", "Need bags", texts); bg.type = "button";
+    bg.addEventListener("click", () => sendText("bags", s.id));
+  }
   document.body.style.setProperty("--card-h", card.getBoundingClientRect().height + "px");
 }
 
@@ -927,6 +957,7 @@ function renderBanner() {
   const s = mySegs.target && segById(mySegs.target);
   banner.hidden = false;
   banner.classList.toggle("empty", !s);
+  banner.classList.remove("alldone");
   banner.textContent = "";
   const row = h("span", "row", null, banner);
   if (s) {
@@ -936,6 +967,9 @@ function renderBanner() {
     h("span", "what", first ? first.text : "", row);
     const n = h("span", "hses", "\u25c9 " + s.houses, row);           // ◉ the target's houses
     n.setAttribute("aria-label", s.houses + (s.houses === 1 ? " house" : " houses") + " on target");
+  } else if (allDone()) {
+    banner.classList.add("alldone");
+    h("span", "what", "\u2714\ufe0e All done \u2013 tap to text \u201cavailable\u201d", row);
   } else {
     h("span", "what", "No target \u2013 tap to pick one", row);
   }
@@ -964,8 +998,10 @@ function renderBanner() {
 }
 banner.addEventListener("click", () => {
   if (mySegs.target) select(mySegs.target, true);
+  else if (allDone()) sendText("available");
   else openSheet();
 });
+const allDone = () => mySegs.tracked.length > 0 && mySegs.tracked.every((id) => mySegs.done.includes(id));
 
 // the list: yours first, then the den's (or every den's, in the whole-pack view)
 // the list has two tabs: Segments (the den's, or every den's in the pack view) and Mine (tracked ones)
@@ -992,6 +1028,8 @@ function renderList() {
     } else {                             // the total for your group
       const n = mine.reduce((t, x) => t + x.houses, 0);
       h("p", "total", `${mine.length} segment${mine.length === 1 ? "" : "s"} \u2022 ${n} house${n === 1 ? "" : "s"}`, body);
+      const av = h("button", "available", "Text \u201cavailable for more\u201d", body); av.type = "button";
+      av.addEventListener("click", () => sendText("available"));
     }
     groups.push(["", mine]);
   } else if (pack) for (const d of DATA.dens) groups.push([d.short, d.segments.map(segById)]);
@@ -1007,6 +1045,7 @@ function renderList() {
       const meta = h("span", "meta", s.houses + (s.houses === 1 ? " house" : " houses"), main);
       if (s.den !== denKey && denKey !== PACK) meta.textContent += " \u2022 " + denOf(s).short;
       if (mySegs.target === s.id) h("span", "badge", "Target", meta);
+      if (mySegs.done.includes(s.id)) { row.classList.add("is-done"); h("span", "badge done", "\u2714\ufe0e Done", meta); }
       main.addEventListener("click", () => { closeSheet(); select(s.id, true); });
       const star = h("button", "star" + (isTracked(s.id) ? " on" : ""), isTracked(s.id) ? "\u2605" : "\u2606", row);
       star.type = "button";
@@ -1076,6 +1115,137 @@ function closeSheet() { slideOut(sheet); }
 document.getElementById("segs-btn").addEventListener("click", openSheet);
 document.getElementById("sheet-close").addEventListener("click", closeSheet);
 
+// ---------- texts to the dispatcher ----------
+// Each button opens the phone's own Messages app with the text written; the parent presses Send.
+// Wording matches page 1 of the paper pack, with the week in front: "Wk1 Wolf A – W7 done".
+const SINGULAR = { L: "Lion", T: "Tiger", W: "Wolf", B: "Bear", WB: "Webelos", A: "AOL" };
+const SET_KEY = "sff.settings";
+let settings = { tel: "", wk: null, groupDen: null, letter: "" };
+function loadSettings() {
+  try { Object.assign(settings, JSON.parse(localStorage.getItem(SET_KEY) || "{}")); } catch (_) { /* ignore */ }
+}
+function saveSettings() { try { localStorage.setItem(SET_KEY, JSON.stringify(settings)); } catch (_) { /* ignore */ } }
+// a US mobile number as +1 and 10 digits, or null
+function normTel(v) {
+  let d = String(v || "").replace(/\D/g, "");
+  if (d.length === 11 && d[0] === "1") d = d.slice(1);
+  return /^[2-9]\d{2}[2-9]\d{6}$/.test(d) ? "+1" + d : null;
+}
+const showTel = (t) => t ? `(${t.slice(2, 5)}) ${t.slice(5, 8)}-${t.slice(8)}` : "";
+const groupName = () => SINGULAR[settings.groupDen] + (settings.letter ? " " + settings.letter : "");
+const textsReady = () => !!(settings.tel && settings.wk && settings.groupDen);
+function textBody(kind, id) {
+  const who = `Wk${settings.wk} ${groupName()}`;
+  return { done: `${who} \u2013 ${id} done`, help: `${who} \u2013 ${id} need help`,
+           bags: `${who} \u2013 ${id} need bags`, available: `${who} available` }[kind];
+}
+// iPhones want sms:NUMBER&body=…, Android sms:NUMBER?body=…
+const smsHref = (body) => `sms:${settings.tel}${isIOS() ? "&" : "?"}body=${encodeURIComponent(body)}`;
+function sendText(kind, id) {
+  if (!textsReady()) {
+    openSettings("To text the dispatcher, add their number, the week and your group.");
+    return false;
+  }
+  openSms(smsHref(textBody(kind, id)));
+  return true;
+}
+function openSms(href) { location.href = href; }   // its own function so tests can catch it
+
+// Done marks the segment: ✔ on the map and list, the progress bar fills, and if it was your target,
+// the target moves on to your next segment that isn't done.
+function markDone(id, on) {
+  mySegs.done = mySegs.done.filter((x) => x !== id);
+  if (on) {
+    mySegs.done.push(id);
+    if (mySegs.target === id) {
+      const left = mySegs.tracked.map(segById).sort(segOrder).filter((x) => !mySegs.done.includes(x.id));
+      const after = left.find((x) => segOrder(x, segById(id)) > 0) || left[0];
+      mySegs.target = after ? after.id : null;
+    }
+  }
+  saveSegs();
+  segmentsChanged(false);
+}
+
+// ---------- settings: dispatcher's number, week and your group ----------
+// Milestone 4's QR code will fill these in; until then they're typed here. Saved only on this phone.
+const setPanel = document.getElementById("settings");
+let setNote = "";
+function openSettings(note) {
+  setNote = note || "";
+  if (!settings.groupDen) {               // a good guess: the den of your first segment, or the den on screen
+    const first = mySegs.tracked[0] && segById(mySegs.tracked[0]);
+    settings.groupDen = first ? first.den : denKey !== PACK ? denKey : null;
+  }
+  renderSettings();
+  closeSheet();
+  slideIn(setPanel);
+}
+function closeSettings() { slideOut(setPanel); }
+function renderSettings() {
+  const body = document.getElementById("settings-body");
+  body.textContent = "";
+  if (setNote) h("p", "note", setNote, body);
+  const f = h("form", "", null, body);
+
+  const telL = h("label", "field", null, f);
+  h("span", "field-label", "Dispatcher\u2019s mobile number", telL);
+  const tel = h("input", "", null, telL);
+  Object.assign(tel, { type: "tel", value: showTel(settings.tel), placeholder: "10 digits", autocomplete: "off" });
+  tel.setAttribute("inputmode", "tel");
+
+  const wkF = h("fieldset", "field", null, f);
+  h("legend", "field-label", "Week", wkF);
+  const wkRow = h("div", "choice", null, wkF);
+  let wk = settings.wk;
+  const wkBtns = [[1, "Week 1 \u2013 bags"], [2, "Week 2 \u2013 pickup"]].map(([n, label]) => {
+    const b = h("button", "", label, wkRow); b.type = "button";
+    b.addEventListener("click", () => { wk = n; paint(); });
+    return [n, b];
+  });
+
+  const gF = h("fieldset", "field", null, f);
+  h("legend", "field-label", "Your group", gF);
+  const gRow = h("div", "group", null, gF);
+  const den = h("select", "", null, gRow);
+  den.setAttribute("aria-label", "Your den");
+  h("option", "", "Den\u2026", den).value = "";
+  for (const d of DATA.dens) { const o = h("option", "", SINGULAR[d.key], den); o.value = d.key; }
+  den.value = settings.groupDen || "";
+  const letter = h("input", "", null, gRow);
+  Object.assign(letter, { type: "text", value: settings.letter, maxLength: 2, placeholder: "A", autocomplete: "off" });
+  letter.setAttribute("aria-label", "Group letter"); letter.setAttribute("autocapitalize", "characters");
+  h("span", "hint", "Same as \u201cYour group\u201d on page 1 of the paper map.", gF);
+
+  const preview = h("p", "preview", null, f);
+  const err = h("p", "err", null, f);
+  const save = h("button", "save", "Save", f); save.type = "submit";
+
+  function paint() {
+    for (const [n, b] of wkBtns) { b.classList.toggle("on", wk === n); b.setAttribute("aria-pressed", wk === n); }
+    const g = den.value ? SINGULAR[den.value] + (letter.value.trim() ? " " + letter.value.trim().toUpperCase() : "") : "\u2026";
+    preview.textContent = `Texts will read: Wk${wk || "?"} ${g} \u2013 ${mySegs.target || "W7"} done`;
+  }
+  for (const e of [den, letter]) e.addEventListener("input", paint);
+  paint();
+
+  f.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const t = normTel(tel.value);
+    const problems = [];
+    if (!t) problems.push("a 10-digit mobile number");
+    if (!wk) problems.push("the week");
+    if (!den.value) problems.push("your den");
+    if (problems.length) { err.textContent = "Please add " + problems.join(", ") + "."; return; }
+    Object.assign(settings, { tel: t, wk, groupDen: den.value, letter: letter.value.trim().toUpperCase() });
+    saveSettings();
+    closeSettings();
+    renderCard();                        // Need bags comes and goes with the week
+  });
+}
+document.getElementById("settings-btn").addEventListener("click", () => openSettings());
+document.getElementById("settings-close").addEventListener("click", closeSettings);
+
 // ---------- den picker ----------
 const picker = document.getElementById("den");
 function pick(key, instant) {
@@ -1110,6 +1280,7 @@ function start(data) {
   try { saved = localStorage.getItem(STORE_KEY); } catch (_) { /* ignore */ }
   const ok = (key) => key === PACK || data.dens.some((d) => d.key === key);
   loadSegs();
+  loadSettings();
   renderBanner();
   pick(ok(saved) ? saved : PACK, true);
   resumeGps();

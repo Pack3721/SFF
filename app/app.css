@@ -167,14 +167,14 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 12px); }
 #banner .label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: #555; }
 #banner .what { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-#card, #sheet {
+#card, #sheet, #settings {
   position: fixed; z-index: 4; left: 0; right: 0; bottom: 0;
   background: #fff; border-radius: 16px 16px 0 0; box-shadow: 0 -2px 12px rgba(0, 0, 0, .3);
   padding: 8px 16px calc(16px + env(safe-area-inset-bottom));
 }
-#card, #sheet { transform: translateY(105%); transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
-#card.open, #sheet.open { transform: none; }
-@media (prefers-reduced-motion: reduce) { #card, #sheet { transition: none; } }
+#card, #sheet, #settings { transform: translateY(105%); transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
+#card.open, #sheet.open, #settings.open { transform: none; }
+@media (prefers-reduced-motion: reduce) { #card, #sheet, #settings { transition: none; } }
 .card-top { display: flex; align-items: center; gap: 10px; }
 .card-den { color: #555; font-size: 14px; }
 #card .lines { margin: 6px 0 12px; }
@@ -233,3 +233,56 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 12px); }
 .add-msg { flex-basis: 100%; margin: 0; color: #b00000; font-weight: 700; }
 #sheet .add input::placeholder { text-transform: none; }
 #sheet .total { margin: 4px 0 8px; font-size: 16px; font-weight: 800; }
+
+/* ---------- texts, done and settings ---------- */
+#settings-btn {
+  margin-left: auto; flex: none; width: 44px; height: 44px; font-size: 24px;
+  color: #333; background: transparent; border: 0;
+}
+.card-texts { display: flex; gap: 8px; margin-top: 10px; }
+.card-texts button {
+  font: inherit; font-size: 15px; font-weight: 700; flex: 1; min-height: 48px; padding: 0 6px;
+  color: #111; background: #f1f1f1; border: 2px solid #f1f1f1; border-radius: 12px;
+}
+.card-texts button.done { flex: 1.3; color: #fff; background: #1e7e34; border-color: #1e7e34; }
+.card-texts button.done.on { color: #1e7e34; background: #fff; }
+
+.seg-row.is-done .lines { color: #777; }
+.seg-main .badge.done { color: #1e7e34; }
+#sheet .available {
+  font: inherit; font-size: 16px; font-weight: 700; width: 100%; min-height: 48px; margin: 0 0 10px;
+  color: #fff; background: #1e7e34; border: 0; border-radius: 12px;
+}
+#banner.alldone { color: #1e7e34; font-weight: 800; border: 2px solid #1e7e34; background: #eef8f0; }
+
+#settings { top: calc(var(--bar-h) + env(safe-area-inset-top) + 24px); display: flex; flex-direction: column; }
+#settings[hidden] { display: none; }
+#settings header { display: flex; align-items: center; }
+#settings h2 { margin: 0; font-size: 20px; }
+#settings-body { overflow-y: auto; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+#settings form { display: flex; flex-direction: column; gap: 16px; }
+#settings .note { margin: 8px 0 0; padding: 10px 12px; border-radius: 10px; background: #fff4d6; font-weight: 600; }
+#settings .field { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; border: 0; min-width: 0; }
+#settings .field-label { padding: 0; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: #555; }
+#settings input, #settings select {
+  font: inherit; font-size: 18px; min-height: 48px; padding: 0 12px;
+  color: #111; background: #fff; border: 2px solid #333; border-radius: 12px;
+}
+#settings .choice { display: flex; gap: 8px; }
+#settings .choice button {
+  font: inherit; font-size: 16px; font-weight: 700; flex: 1; min-height: 48px;
+  color: #111; background: #fff; border: 2px solid #333; border-radius: 12px;
+}
+#settings .choice button.on { color: #fff; background: #111; }
+#settings .group { display: flex; gap: 8px; }
+#settings .group select { flex: 1; }
+#settings .group input { width: 72px; text-align: center; text-transform: uppercase; }
+#settings .hint { font-size: 13px; color: #555; }
+#settings .preview { margin: 0; font-size: 15px; color: #333; }
+#settings .err { margin: 0; color: #b00000; font-weight: 700; }
+#settings .err:empty { display: none; }
+#settings .save {
+  font: inherit; font-size: 17px; font-weight: 800; min-height: 52px;
+  color: #fff; background: #111; border: 0; border-radius: 12px;
+}
+#banner.alldone .fill { background: #1e7e34; }
