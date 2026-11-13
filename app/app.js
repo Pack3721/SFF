@@ -884,9 +884,10 @@ function segDist(p, a, b) {               // distance from p to the line piece a
 
 // the two per-segment controls, the same in the list and on the card: a target radio on the left
 // (only one segment is the target; tap it again to clear) and a track star on the right
-function targetRadio(s, parent, before) {
+function targetRadio(s, parent, before, label) {
   const on = mySegs.target === s.id;
-  const b = h("button", "radio" + (on ? " on" : ""), null, null);
+  const b = h("button", "radio" + (on ? " on" : "") + (label ? " labeled" : ""), null, null);
+  if (label) h("span", "", "Target", b);   // on the card a lone radio needs saying what it is
   b.type = "button";
   b.setAttribute("role", "radio"); b.setAttribute("aria-checked", on);
   b.setAttribute("aria-label", (on ? "Target: " : "Make target: ") + s.id);
@@ -951,7 +952,7 @@ function renderCard() {
   card.textContent = "";
   // top row, like a row of the segment list: target radio, ID, then the track star and close
   const top = h("div", "card-top", null, card);
-  const rd = targetRadio(s, top);
+  const rd = targetRadio(s, top, null, true);
   rd.addEventListener("click", () => setTarget(s.id));
   chip(s, top);
   h("span", "card-gap", null, top);
