@@ -886,6 +886,7 @@ function autoTarget() {
   if (left.length === 1) mySegs.target = left[0];
 }
 function setTracked(id, on) {
+  if (!on && mySegs.done.includes(id)) return;   // done segments can't be removed (undo Done first)
   const wasEmpty = !mySegs.tracked.length;
   mySegs.tracked = mySegs.tracked.filter((x) => x !== id);
   if (on) mySegs.tracked.push(id);
@@ -1028,6 +1029,10 @@ function trackStar(s, parent) {
   b.type = "button";
   b.setAttribute("aria-label", (on ? "Stop tracking " : "Track ") + s.id);
   b.setAttribute("aria-pressed", on);
+  if (on && mySegs.done.includes(s.id)) {   // a done segment stays yours (it counts in your progress)
+    b.disabled = true;
+    b.title = "Done segments stay in your list. Undo Done first to remove it.";
+  }
   return b;
 }
 
@@ -1495,11 +1500,17 @@ function applySetup(q) {                  // q: the parts after # of a setup lin
 function textBody(kind, id, extra) {
   const who = `Wk${week()}: ${settings.group}`;
   return { done: `${who} \u2013 ${id} done`, coverage: `${who} \u2013 ${id} needs coverage`,
-           bags: `${who} \u2013 ${id} need bags`,
+           bags: `${who} \u2013 send bags to ${id}${bagsWhere(id)}`,
            available: `${who} available` + (extra ? ` \u2013 ${extra}` : "") }[kind];
 }
 // iPhones want sms:NUMBER&body=…, Android sms:NUMBER?body=…
 const smsHref = (body) => `sms:${settings.tel}${isIOS() ? "&" : "?"}body=${encodeURIComponent(body)}`;
+// where bags should go: the segment's first street line, e.g. ", Fawnhaven Dr, N side"
+function bagsWhere(id) {
+  const s = id && segById(id);
+  const line = s && s.lines.find((l) => !l.warning);
+  return line ? ", " + line.text : "";
+}
 function sendText(kind, id, extra) {
   if (!textsReady()) {
     openSettings(settings.group ? "To text the dispatcher, add their number." : settings.tel ? "To text the dispatcher, add your group\u2019s name."

@@ -25,7 +25,7 @@ Start with `PLAN.md`. The current job is the **day-of tracker**: a phone web pag
 - **No third-party scripts, fonts, analytics or online QR APIs** in the app. The page has to stay self-contained so the `#` fragment can't leak.
 - **Treat the MSD sidewalk data as information only.** It's missing sidewalks that are visible on satellite, so a missing line doesn't mean "no sidewalk". Don't draw it on maps, and **don't commit MSD sidewalk or contour data**: its terms don't allow sharing.
 - **Licences:** code is PolyForm Noncommercial 1.0.0 (`LICENSE`), writing is CC BY-NC 4.0, and map data keeps its sources' terms. `NOTICE.md` lists them. Credit new data sources there, and don't use Scouting America logos or emblems.
-- **Text wording** matches page 1 of the paper pack, with the week in front: "Wk1: Wolf A – W7 done", "Wk1: Wolf A available", "Wk1: Wolf A – W8 need bags".
+- **Text wording** matches page 1 of the paper pack, with the week in front: "Wk1: Wolf A – W7 done", "Wk1: Wolf A available", "Wk1: Wolf A – send bags to W8, …".
 
 ## Useful facts
 

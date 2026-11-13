@@ -351,3 +351,4 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 4px); }
 #avail h2 { margin: 6px 0; font-size: 20px; color: #1e7e34; }
 #avail .avail-q { margin: 2px 0 6px; font-size: 16px; }
 #avail .card-top { margin-left: 0; }
+.star:disabled { cursor: default; opacity: .6; }

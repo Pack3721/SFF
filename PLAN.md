@@ -36,7 +36,7 @@ These match the wording printed on page 1 of the map pack:
 |---|---|
 | Done | `Wk1: Wolf A – W7 done` |
 | Available for more | `Wk1: Wolf A available` |
-| Need bags (Week 1 only) | `Wk1: Wolf A – W8 need bags` |
+| Need bags (Week 1 only) | `Wk1: Wolf A – send bags to W8, Havelock Ct, both sides (court)` |
 | Needs coverage | `Wk1: Wolf A – W8 needs coverage` |
 
 The week (`Wk1` or `Wk2`) goes at the front, so the dispatcher can tell a late Week 1 text from a Week 2 one. The rest matches page 1.
