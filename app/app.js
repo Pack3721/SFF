@@ -1102,7 +1102,14 @@ function renderCard() {
   const x = h("button", "close", "\u2715", top); x.type = "button"; x.setAttribute("aria-label", "Close");
   x.addEventListener("click", () => select(null));
   linesOf(s, card, true);
-  h("div", "card-den", `${denOf(s).short} \u2022 ${s.houses} houses`, card);
+  const cd = h("div", "card-den", `${denOf(s).short} \u2022 ${s.houses} houses`, card);
+  // Directions to where the walk starts, in the phone's own maps app (for a far-off segment, or the first one)
+  const [lon, lat] = s.route[0];
+  const go = h("a", "directions", "Directions \u203a", cd);
+  go.href = isIOS() ? `https://maps.apple.com/?daddr=${lat},${lon}&dirflg=d`
+                    : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving`;
+  go.rel = "noreferrer"; go.target = "_blank";
+  go.setAttribute("aria-label", `Driving directions to the start of ${s.id}`);
   // texts to the dispatcher about this segment. Done is offered on your target (and Undo on a done one);
   // Needs coverage and Need bags only work once texting is set up, so they're greyed out until then.
   const texts = h("div", "card-texts", null, card);

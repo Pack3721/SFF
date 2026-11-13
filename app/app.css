@@ -194,7 +194,8 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 4px); }
 .card-gap { flex: 1; }
 .card-top .star { width: 44px; height: 44px; }
 #card .lines { margin: 6px 0 2px; }
-.card-den { color: #666; font-size: 13px; margin-bottom: 4px; }
+.card-den { color: #666; font-size: 13px; margin-bottom: 4px; display: flex; align-items: baseline; }
+.card-den .directions { margin-left: auto; padding: 4px 0 4px 12px; color: #1a5fb4; font-weight: 600; text-decoration: none; }
 
 /* target radio: a grey ring; the target is a dark ring with a dark dot */
 .radio { flex: none; width: 44px; min-height: 44px; padding: 0; border: 0; background: transparent; display: grid; place-items: center; }
