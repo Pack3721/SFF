@@ -311,7 +311,6 @@ function draw() {
   info.textContent = pack
     ? `${D.houses.length} houses • ${D.segments.length} segments`
     : `Zone ${den.area} • ${den.houses} houses • ${den.segments.length} segments`;
-  document.getElementById("fit").textContent = pack ? "Whole pack" : "Whole den";
   view.appendChild(me.g);               // the GPS dot stays on top of whichever den is drawn
   styleSegments();
   renderList();
@@ -433,7 +432,7 @@ function zoomAt(sx, sy, factor) {       // changes the view; the caller previews
 }
 
 const pointers = new Map();
-let last = null;                         // {x, y, d} of the previous move: centre and finger spread
+let last = null;                         // {x, y, d} of the previous move: center and finger spread
 function gesture() {
   const ps = [...pointers.values()];
   if (ps.length === 1) return { x: ps[0].x, y: ps[0].y, d: 0 };
@@ -523,20 +522,19 @@ wrap.addEventListener("wheel", (e) => {
 }, { passive: false });
 document.addEventListener("gesturestart", (e) => e.preventDefault());   // stop iOS zooming the page
 
-document.getElementById("fit").addEventListener("click", fit);
 let resizeTimer;
 window.addEventListener("resize", () => {
   clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => { const f = me.following; fit(); if (f) centreOnMe(false); }, 150);
+  resizeTimer = setTimeout(() => { const f = me.following; fit(); if (f) centerOnMe(false); }, 150);
 });
 
 // ---------- GPS dot ----------
 // The phone's location is only used to draw the dot. It is never stored or sent anywhere.
-const WALK_K = 1.6;                      // "Centre on me" zooms in to at least this: about 250 m across a phone
+const WALK_K = 1.6;                      // "Center on me" zooms in to at least this: about 250 m across a phone
 const STALE_MS = 30000;                  // no fix for this long: the dot goes grey
 const GPS_KEY = "sff.gps";               // "1" once location has worked, so it can restart by itself
 const me = { g: el("g", { id: "me" }), pos: null, acc: 0, lastFix: 0, watch: null, wanted: false,
-             following: false, centreNext: false };
+             following: false, centerNext: false };
 me.g.style.display = "none";
 me.ring = el("circle", { class: "acc" }, me.g);
 me.dot = el("g", {}, me.g);
@@ -576,8 +574,8 @@ function follow(on) {
   meBtn.setAttribute("aria-pressed", on);
 }
 
-function centreOnMe(zoomIn) {
-  if (!me.pos) { me.centreNext = true; startGps(); return; }
+function centerOnMe(zoomIn) {
+  if (!me.pos) { me.centerNext = true; startGps(); return; }
   stopGlide();
   const r = wrap.getBoundingClientRect();
   if (zoomIn && k < WALK_K) k = WALK_K;
@@ -597,8 +595,8 @@ function onFix(p) {
   const area = DATA && DATA.houses.map((h) => P(h.lonlat));
   const far = area && area.every((q) => dist(q, me.pos) > 900);   // ~1 km from every house on the walk
   status(far ? "You're away from the walk area" : `GPS ±${Math.round(c.accuracy)} m`);
-  if (me.centreNext) { me.centreNext = false; centreOnMe(true); }
-  else if (me.following) centreOnMe(false);
+  if (me.centerNext) { me.centerNext = false; centerOnMe(true); }
+  else if (me.following) centerOnMe(false);
   else drawMe();
 }
 
@@ -621,7 +619,7 @@ function blockedHelp() {
 
 function onError(e) {
   if (e.code === 1) {                    // PERMISSION_DENIED
-    stopGps(); me.wanted = false; me.centreNext = false; remember(false); follow(false);
+    stopGps(); me.wanted = false; me.centerNext = false; remember(false); follow(false);
     status(blockedHelp(), true);
   } else if (e.code === 2) {             // POSITION_UNAVAILABLE
     status("Can't get a GPS fix yet. Try outside, away from buildings.", true);
@@ -643,7 +641,7 @@ function stopGps() {
   me.watch = null;
 }
 
-meBtn.addEventListener("click", () => centreOnMe(true));
+meBtn.addEventListener("click", () => centerOnMe(true));
 // GPS off while the page is in the background, to save battery; back on when it returns.
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) stopGps();
@@ -962,7 +960,12 @@ function pick(key) {
   draw();
   fit();
 }
-picker.addEventListener("change", () => pick(picker.value));
+// Picking a den shows all of it. Picking the den you're already on doesn't fire "change", so opening the
+// list and closing it without a change also zooms back out to the whole den (there's no separate button).
+let pickerChanged = false;
+picker.addEventListener("focus", () => { pickerChanged = false; });
+picker.addEventListener("change", () => { pickerChanged = true; pick(picker.value); });
+picker.addEventListener("blur", () => { if (!pickerChanged) fit(); });
 
 function start(data) {
   DATA = data;
