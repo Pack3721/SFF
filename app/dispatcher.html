@@ -23,7 +23,7 @@
       <input id="tel" type="tel" inputmode="tel" autocomplete="off" placeholder="10 digits">
     </label>
     <p id="err" class="err" hidden>Needs 10 digits, like (314) 555-0100.</p>
-    <p class="small">This page doesn't save or send your number. The QR code is made on this device.</p>
+    <p class="small">Your number is remembered on this device only and never sent anywhere. The QR codes are made right here. <button id="forget" type="button" class="linkish" hidden>Forget this number</button></p>
   </section>
 
   <fieldset id="mode" class="mode" hidden>
@@ -33,6 +33,7 @@
   </fieldset>
   <div id="sheets"></div>
   <button id="print" type="button" class="print" hidden>Print</button>
+  <p class="version">Version <span id="build">dev</span></p>
 </main>
 </body>
 </html>

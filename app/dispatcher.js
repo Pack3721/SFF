@@ -1,6 +1,7 @@
 // The dispatcher's QR codes: their number goes after the # in the map's link (…/SFF/#tel=3145550123), and
 // a den's page adds the den (…&den=W) so the map opens on it. The part after # never reaches the web server.
-// The QR codes are made here, by the vendored qrcode-generator (MIT), and drawn as SVG. Nothing is saved or sent.
+// The QR codes are made here, by the vendored qrcode-generator (MIT), and drawn as SVG. The number is
+// remembered on this device (localStorage) and never sent.
 "use strict";
 
 const $ = (id) => document.getElementById(id);
@@ -11,7 +12,14 @@ const digits = (v) => {                  // a US mobile number as 10 digits, or 
 };
 const pretty = (d) => `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
 const NS = "http://www.w3.org/2000/svg";
-let DENS = [];                           // from the map's data: key, short name, colour, area, houses, segments
+let DENS = [];
+const KEY = "sff.dispatcher";             // { tel, mode } remembered on this device only
+const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (_) { return {}; } };
+const save = (v) => { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch (_) { /* private mode */ } };
+
+// the version is the ?v= on this script's own URL: the git SHA once deployed, "dev" locally
+const BUILD = new URL(document.currentScript.src).searchParams.get("v") || "dev";
+$("build").textContent = BUILD === "dev" ? "dev" : BUILD.slice(0, 7);                           // from the map's data: key, short name, colour, area, houses, segments
 
 function qrSvg(text) {
   const q = qrcode(0, "M");             // smallest version that fits, medium error correction
@@ -67,6 +75,11 @@ function sheet(d, den) {
 
 function update() {
   const d = digits($("tel").value);
+  const mem = load();
+  if (d) mem.tel = d;                    // remember a good number
+  mem.mode = $("mode-dens").checked ? "dens" : "pack";
+  save(mem);
+  $("forget").hidden = !mem.tel;
   $("err").hidden = !!d || $("tel").value.replace(/\D/g, "").length < 10;
   $("mode").hidden = $("print").hidden = !d;
   const box = $("sheets");
@@ -79,6 +92,15 @@ function update() {
 }
 
 $("tel").addEventListener("input", update);
+$("forget").addEventListener("click", () => {
+  const mem = load(); delete mem.tel; save(mem);
+  $("tel").value = ""; update(); $("tel").focus();
+});
+{                                        // fill in what was remembered
+  const mem = load();
+  if (mem.tel) $("tel").value = pretty(mem.tel);
+  if (mem.mode === "dens") $("mode-dens").checked = true;
+}
 for (const r of document.querySelectorAll("input[name=mode]")) r.addEventListener("change", update);
 $("print").addEventListener("click", () => window.print());
 fetch("sff-2026.json?v=dev")
