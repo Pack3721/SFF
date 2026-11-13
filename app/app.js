@@ -667,9 +667,9 @@ function blockedHelp() {
   if (ios && /FxiOS/.test(ua))
     return "Location is off for Firefox. iPhone Settings \u203a Privacy & Security \u203a Location Services \u203a Firefox \u203a While Using. Then reload.";
   if (ios && navigator.standalone)      // already opened from the Home Screen
-    return "Location is blocked for SFF Map. Check iPhone Settings \u203a Privacy & Security \u203a Location Services is on, then close and reopen SFF Map and allow location when asked.";
+    return "Location is blocked for SFF 721 Map. Check iPhone Settings \u203a Privacy & Security \u203a Location Services is on, then close and reopen SFF 721 Map and allow location when asked.";
   if (ios)                               // a Safari tab: the Home Screen app asks for itself, even when Safari can't
-    return "Safari is blocking location. Add the map to your Home Screen instead: tap Share \u203a Add to Home Screen, open SFF Map from there, and tap Allow when it asks for your location.";
+    return "Safari is blocking location. Add the map to your Home Screen instead: tap Share \u203a Add to Home Screen, open SFF 721 Map from there, and tap Allow when it asks for your location.";
   if (/Android/.test(ua))
     return "Location is blocked. Tap the icon left of the web address \u203a Permissions \u203a Location \u203a Allow, and check the phone's Location is on. Then reload.";
   return "Location is blocked. Allow it for this site in your browser's settings, then reload.";
