@@ -1609,7 +1609,7 @@ function qrSvg(text) {
   return svgEl;
 }
 // Share: two tabs, both a link shown as a QR code to scan off this screen, or sent from the phone.
-//  Map & number: for any parent; the map and the dispatcher's number only.
+//  Map & dispatcher: for any parent; the map and the dispatcher's number only.
 //  Group setup: for a parent in your group or your own Home Screen app; group, den, segments and number.
 let shareTab = "map";
 function shareArea(body) {
@@ -1623,7 +1623,7 @@ function shareArea(body) {
     b.setAttribute("role", "tab"); b.setAttribute("aria-selected", key === shareTab);
     b.addEventListener("click", () => { shareTab = key; sec.remove(); shareArea(body); });
   };
-  tabBtn("map", "Map & number");
+  tabBtn("map", "Map & dispatcher");
   tabBtn("group", "Group setup");
   if (shareTab === "map") mapPane(pane); else groupPane(pane);
 }
