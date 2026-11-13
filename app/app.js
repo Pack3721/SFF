@@ -80,6 +80,12 @@ function lineD(pts, hop) {              // polyline -> path data, lifting the pe
 }
 function ringD(pts) { return lineD(pts) + "Z"; }
 
+function inkOn(hex) {                   // black or white text, whichever reads better on this colour
+  const n = parseInt(hex.slice(1), 16);
+  const lin = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  const L = 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+  return (L + 0.05) / 0.05 > 1.05 / (L + 0.05) ? "#111" : "#fff";
+}
 function tint(hex, a) {                 // build.py _tint: mix with white
   const n = parseInt(hex.slice(1), 16);
   const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => Math.round(255 * (1 - a) + v * a));
@@ -889,11 +895,15 @@ function renderCard() {
   const x = h("button", "close", "\u2715", top); x.type = "button"; x.setAttribute("aria-label", "Close");
   x.addEventListener("click", () => select(null));
   linesOf(s, card, true);
+  const col = (segEls[s.id] && segEls[s.id].color) || s.color;   // the buttons take the segment's colour
+  card.style.setProperty("--seg", col);
+  card.style.setProperty("--seg-ink", inkOn(col));
+  card.style.setProperty("--seg-pale", tint(col, 0.22));
   const row = h("div", "card-actions", null, card);
-  const tr = h("button", isTracked(s.id) ? "on" : "", isTracked(s.id) ? "\u2605 Tracking" : "\u2606 Track", row);
+  const tr = h("button", "track" + (isTracked(s.id) ? " on" : ""), isTracked(s.id) ? "\u2605 Tracking" : "\u2606 Track", row);
   tr.type = "button"; tr.setAttribute("aria-pressed", isTracked(s.id));
   tr.addEventListener("click", () => setTracked(s.id, !isTracked(s.id)));
-  const tg = h("button", mySegs.target === s.id ? "on target" : "", mySegs.target === s.id ? "\u25c9 Target" : "\u25ce Make target", row);
+  const tg = h("button", "target" + (mySegs.target === s.id ? " on" : ""), mySegs.target === s.id ? "\u25c9 Target" : "\u25ce Make target", row);
   tg.type = "button"; tg.setAttribute("aria-pressed", mySegs.target === s.id);
   tg.addEventListener("click", () => setTarget(s.id));
   document.body.style.setProperty("--card-h", card.getBoundingClientRect().height + "px");
