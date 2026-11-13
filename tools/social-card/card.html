@@ -1,0 +1,34 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+  html, body { margin: 0; }
+  .card { width: 1200px; height: 630px; position: relative; overflow: hidden;
+    background: linear-gradient(135deg, #f4f7fc 0%, #e3ecf9 100%);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif; color: #10233f; }
+  .text { position: absolute; left: 64px; top: 0; bottom: 0; width: 500px; display: flex; flex-direction: column; justify-content: center; gap: 22px; }
+  .brand { display: flex; align-items: center; gap: 22px; }
+  .brand img { width: 88px; height: 88px; border-radius: 20px; box-shadow: 0 6px 18px rgba(26,115,232,.25); }
+  h1 { margin: 0; font-size: 64px; white-space: nowrap; line-height: 1; letter-spacing: -1.5px; font-weight: 800; }
+  .sub { margin: 0; font-size: 30px; line-height: 1.25; color: #2c4466; font-weight: 600; }
+  ul { margin: 6px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; }
+  li { font-size: 24px; color: #34496a; display: flex; align-items: center; gap: 14px; }
+  li::before { content: ""; width: 12px; height: 12px; border-radius: 50%; background: #1a73e8; flex: none; }
+  .phone { position: absolute; width: 300px; border-radius: 38px; background: #10141a; padding: 9px;
+    box-shadow: 0 24px 50px rgba(16,35,63,.28), 0 4px 10px rgba(16,35,63,.15); }
+  .phone img { display: block; width: 100%; border-radius: 30px; }
+  .back { right: 290px; top: 74px; transform: rotate(-5deg); }
+  .front { right: 60px; top: 40px; transform: rotate(4deg); }
+</style></head>
+<body><div class="card">
+  <div class="text">
+    <div class="brand"><img src="icon.png" alt=""><h1>SFF 721 Map</h1></div>
+    <p class="sub">Scouting for Food walking map for Pack 721</p>
+    <ul>
+      <li>Your den’s segments, house by house</li>
+      <li>GPS dot and compass on the walk</li>
+      <li>One tap to text the dispatcher</li>
+    </ul>
+  </div>
+  <div class="phone back"><img src="map.png" alt=""></div>
+  <div class="phone front"><img src="card.png" alt=""></div>
+</div></body></html>
