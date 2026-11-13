@@ -1522,6 +1522,48 @@ function renderSettings() {
     marks(bad);
   });
   f.addEventListener("submit", (e) => { e.preventDefault(); document.activeElement.blur(); });   // Return on the keyboard: done typing
+  shareSection(body);
+}
+
+// "Share the map": a QR code another parent can scan off this screen, and the phone's own share sheet.
+// The link carries the dispatcher's number (when this phone has it), never your group or segments.
+function shareLink() {
+  const base = new URL("./", location.href).href;
+  return settings.tel ? base + "#tel=" + settings.tel.slice(2) : base;
+}
+function loadQr() {                       // the QR library loads only when it's needed
+  if (window.qrcode) return Promise.resolve();
+  return new Promise((ok, fail) => {
+    const sc = document.createElement("script");
+    sc.src = "vendor/qrcode-generator-2.0.4.js?v=" + BUILD;
+    sc.onload = ok; sc.onerror = fail;
+    document.head.appendChild(sc);
+  });
+}
+function qrSvg(text) {
+  const q = qrcode(0, "M"); q.addData(text); q.make();
+  const n = q.getModuleCount(), quiet = 4, size = n + quiet * 2;
+  const svgEl = el("svg", { viewBox: `0 0 ${size} ${size}`, role: "img", "aria-label": "QR code for the map", "shape-rendering": "crispEdges" });
+  el("rect", { width: size, height: size, fill: "#fff" }, svgEl);
+  let d = "";
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += `M${c + quiet} ${r + quiet}h1v1h-1z`;
+  el("path", { d, fill: "#000" }, svgEl);
+  return svgEl;
+}
+function shareSection(body) {
+  const sec = h("section", "share", null, body);
+  h("h3", "", "Share the map", sec);
+  h("p", "hint", settings.tel ? "Another parent can scan this. It includes the dispatcher\u2019s number, not your group."
+                              : "Another parent can scan this to open the map.", sec);
+  const box = h("div", "share-qr", null, sec);
+  const link = shareLink();
+  loadQr().then(() => { box.textContent = ""; box.appendChild(qrSvg(link)); })
+          .catch(() => { box.textContent = "QR code needs a signal the first time."; });
+  const btn = h("button", "share-btn", navigator.share ? "Share link\u2026" : "Copy link", sec); btn.type = "button";
+  btn.addEventListener("click", () => {
+    if (navigator.share) navigator.share({ title: "SFF 721 Map", text: "Scouting for Food walking map", url: link }).catch(() => {});
+    else if (navigator.clipboard) navigator.clipboard.writeText(link).then(() => { btn.textContent = "\u2714\ufe0e Copied"; });
+  });
 }
 document.getElementById("settings-btn").addEventListener("click", () => openSettings());
 document.getElementById("settings-close").addEventListener("click", closeSettings);

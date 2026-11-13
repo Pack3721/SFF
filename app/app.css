@@ -327,3 +327,14 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 4px); }
 #banner { overflow: hidden; }
 #banner .content { display: flex; flex-direction: column; gap: 4px; min-width: 0; will-change: transform; }
 
+
+/* Settings: share the map with another parent */
+#settings .share { margin-top: 22px; padding-top: 16px; border-top: 1px solid #e3e3e3; text-align: center; }
+#settings .share h3 { margin: 0 0 4px; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: #555; text-align: left; }
+#settings .share .hint { display: block; text-align: left; margin: 0 0 8px; }
+#settings .share-qr { display: flex; justify-content: center; min-height: 40px; color: #777; font-size: 13px; }
+#settings .share-qr svg { width: 200px; height: 200px; }
+#settings .share-btn {
+  font: inherit; font-size: 16px; font-weight: 700; min-height: 44px; padding: 0 20px; margin-top: 8px;
+  color: #111; background: #fff; border: 2px solid #333; border-radius: 22px;
+}
