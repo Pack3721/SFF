@@ -1969,7 +1969,12 @@ function renderLeader() {
     name.addEventListener("focus", () => { if (leader.active !== i) { leader.active = i; for (const el2 of list.children) el2.classList.toggle("on", el2 === g); } });
     name.addEventListener("input", () => { leader.names[i] = name.value.trim() || leader.names[i]; saveLeader(); });
     const st = h("span", "group-stats", null, g);
-    h("b", "", `${hs} houses`, st); h("small", "", `${ids.length} seg`, st);
+    h("b", "", String(hs), st); h("small", "", "houses", st);
+    const ls = h("button", "share-btn group-qr", null, g); ls.type = "button";
+    ls.appendChild(listIcon());
+    ls.setAttribute("aria-label", "Segment list for " + leader.names[i]);
+    ls.disabled = !ids.length;
+    ls.addEventListener("click", () => showGroupList(i));
     const qr = h("button", "share-btn group-qr", null, g); qr.type = "button";
     qr.appendChild(qrIcon());
     qr.setAttribute("aria-label", "QR code for " + leader.names[i]);
@@ -1995,6 +2000,54 @@ function groupLink(i) {                  // a group setup link: name, den, segme
   q.set("seg", groupSegs(i).join(","));
   return new URL("./", location.href).href + "#" + q.toString().replace(/%2C/g, ",");
 }
+function listIcon() {                    // same picture as the segments-list button
+  const svgEl = document.createElementNS(NS, "svg");
+  for (const [k_, v] of Object.entries({ viewBox: "0 0 24 24", width: 24, height: 24, "aria-hidden": "true" })) svgEl.setAttribute(k_, v);
+  for (const cy of [6.5, 12, 17.5]) el("circle", { cx: 5, cy, r: 1.8, fill: "currentColor" }, svgEl);
+  el("path", { d: "M9.5 6.5h11M9.5 12h11M9.5 17.5h11", stroke: "currentColor", "stroke-width": 2.2, "stroke-linecap": "round" }, svgEl);
+  return svgEl;
+}
+
+// A group's segments written out, for families walking from the paper map.
+function showGroupList(i) {
+  const ids = groupSegs(i);
+  groupPanel.textContent = "";
+  const top = h("div", "card-top", null, groupPanel);
+  const t = h("h2", "", leader.names[i], top); t.style.color = GROUP_COLORS[i];
+  h("span", "card-gap", null, top);
+  const x = h("button", "close", "\u2715", top); x.type = "button"; x.setAttribute("aria-label", "Close");
+  x.addEventListener("click", () => slideOut(groupPanel));
+  const segList = h("ol", "gqr-segs", null, groupPanel);
+  let total = 0;
+  const text = [leader.names[i]];
+  for (const id of ids) {
+    const sg = segById(id); total += sg.houses;
+    const li = h("li", "", null, segList);
+    const head = h("div", "gqr-seg", null, li);
+    h("b", "", (sg.main_road ? "\u26a0 " : "") + id, head); h("span", "", sg.houses + " houses", head);
+    text.push(`${id} (${sg.houses} houses)`);
+    for (const ln of sg.lines) {
+      const line = ln.text + (ln.numbers ? " " + ln.numbers : "");
+      h("div", "gqr-line", line, li); text.push("  " + line);
+    }
+  }
+  const tot = h("li", "gqr-total", null, segList);
+  h("b", "", "Total", tot); h("span", "", total + " houses", tot);
+  text.push(`Total: ${total} houses`);
+  const row = h("div", "move-row", null, groupPanel);
+  const body = text.join("\n");
+  if (navigator.share) {
+    const sh = h("button", "share-btn", "Share list\u2026", row); sh.type = "button";
+    sh.addEventListener("click", () => navigator.share({ title: leader.names[i], text: body }).catch(() => {}));
+  }
+  const cp = h("button", "share-btn", "Copy list", row); cp.type = "button";
+  cp.addEventListener("click", () => {
+    (navigator.clipboard ? navigator.clipboard.writeText(body) : Promise.reject())
+      .then(() => { cp.textContent = "\u2714\ufe0e Copied"; }).catch(() => { cp.textContent = "Couldn\u2019t copy"; });
+  });
+  slideIn(groupPanel);
+}
+
 function showGroupQr(i) {
   const link = groupLink(i);
   groupPanel.textContent = "";
@@ -2003,22 +2056,9 @@ function showGroupQr(i) {
   h("span", "card-gap", null, top);
   const x = h("button", "close", "\u2715", top); x.type = "button"; x.setAttribute("aria-label", "Close");
   x.addEventListener("click", () => slideOut(groupPanel));
-  h("p", "hint", "A parent scans this to set up their phone for this group" +
-    (settings.tel ? ", with the dispatcher\u2019s number." : ". (Add the dispatcher\u2019s number in settings to include it.)") +
-    " The list is for anyone using the paper map.", groupPanel);
-  const pair = h("div", "gqr-pair", null, groupPanel);
-  const box = h("div", "share-qr", null, pair);
-  const segList = h("ol", "gqr-segs", null, pair);
-  let total = 0;
-  for (const id of groupSegs(i)) {
-    const sg = segById(id); total += sg.houses;
-    const li = h("li", "", null, segList);
-    const head = h("div", "gqr-seg", null, li);
-    h("b", "", (sg.main_road ? "\u26a0 " : "") + id, head); h("span", "", sg.houses + " hses", head);
-    for (const ln of sg.lines) h("div", "gqr-line", ln.text + (ln.numbers ? " " + ln.numbers : ""), li);
-  }
-  const tot = h("li", "gqr-total", null, segList);
-  h("b", "", "Total", tot); h("span", "", total + " houses", tot);
+  h("p", "hint", `${groupSegs(i).join(", ")}. A parent scans this to set up their phone for this group` +
+    (settings.tel ? ", with the dispatcher\u2019s number." : ". (Add the dispatcher\u2019s number in settings to include it.)"), groupPanel);
+  const box = h("div", "share-qr", null, groupPanel);
   loadQr().then(() => { box.textContent = ""; box.appendChild(qrSvg(link)); })
           .catch(() => { box.textContent = "QR code needs a signal the first time."; });
   const row = h("div", "move-row", null, groupPanel);
