@@ -1952,6 +1952,7 @@ function renderLeader() {
   plus.addEventListener("click", () => setN(leader.n + 1));
   again.addEventListener("click", () => { splitGroups(); styleSegments(); renderLeader(); });
 
+  h("p", "hint", "Pick a group below, then tap a segment on the map to put that segment in the group.", leaderPanel);
   const list = h("div", "groups", null, leaderPanel);
   for (let i = 0; i < leader.n; i++) {
     const ids = groupSegs(i), hs = ids.reduce((a, id) => a + segById(id).houses, 0);
@@ -1972,7 +1973,6 @@ function renderLeader() {
     qr.disabled = !ids.length;
     qr.addEventListener("click", () => showGroupQr(i));
   }
-  h("p", "hint", "Tap a group, then tap segments on the map to move them into it.", leaderPanel);
   document.body.style.setProperty("--leader-h", leaderPanel.getBoundingClientRect().height + "px");
 }
 
