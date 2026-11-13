@@ -16,6 +16,9 @@ const PEN_LIFT = 115;                   // a gap this long in a route is a walk,
 const PACK = "ALL";
 const STORE_KEY = "sff.den";
 
+// The version is the ?v= on this script's own URL: the git SHA once deployed (pages.yml), "dev" locally.
+const BUILD = new URL(document.currentScript.src).searchParams.get("v") || "dev";
+document.getElementById("build").textContent = BUILD === "dev" ? "dev" : BUILD.slice(0, 7);
 const svg = document.getElementById("map");
 const wrap = document.getElementById("wrap");
 const view = document.getElementById("view");
