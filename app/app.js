@@ -263,6 +263,7 @@ function layout() {
 }
 
 function fit() {
+  stopGlide();
   layout();
   const r = wrap.getBoundingClientRect();
   const padTop = 50, padBottom = 60, padSide = 12;     // room for the north arrow, scale and buttons
@@ -347,8 +348,34 @@ function local(e) {
   const r = wrap.getBoundingClientRect();
   return { x: e.clientX - r.left, y: e.clientY - r.top };
 }
-let moved = false;
+// Fling: after a one-finger drag, the map keeps gliding at the finger's last speed and slows down,
+// like other phone maps. `samples` holds recent finger positions to measure that speed.
+let moved = false, samples = [], glide = 0;
+const FRICTION_MS = 325;                 // speed falls to about a third every 325 ms
+function stopGlide() { if (glide) { cancelAnimationFrame(glide); glide = 0; } }
+function startGlide() {
+  const now = performance.now();
+  const recent = samples.filter((s) => now - s.t < 100);
+  if (recent.length < 2 || now - recent[recent.length - 1].t > 50) return false;   // finger had stopped
+  const a = recent[0], b = recent[recent.length - 1], dt = b.t - a.t || 1;
+  let vx = (b.x - a.x) / dt, vy = (b.y - a.y) / dt;                                 // px per ms
+  if (Math.hypot(vx, vy) < 0.25) return false;
+  let prev = now;
+  const step = (t) => {
+    const dt = Math.min(t - prev, 50); prev = t;
+    tx += vx * dt; ty += vy * dt;
+    const f = Math.exp(-dt / FRICTION_MS); vx *= f; vy *= f;
+    if (Math.hypot(vx, vy) < 0.02) { glide = 0; commit(); return; }
+    preview();
+    glide = requestAnimationFrame(step);
+  };
+  glide = requestAnimationFrame(step);
+  return true;
+}
+
 wrap.addEventListener("pointerdown", (e) => {
+  if (glide) { stopGlide(); moved = true; }   // a touch catches the gliding map; redraw when it lifts
+  samples = [];
   wrap.setPointerCapture(e.pointerId);
   pointers.set(e.pointerId, local(e));
   last = gesture();
@@ -362,6 +389,8 @@ wrap.addEventListener("pointermove", (e) => {
     if (g.d && last.d) zoomAt(g.x, g.y, g.d / last.d);
     moved = true;
     preview();
+    if (pointers.size === 1) samples.push({ t: performance.now(), x: g.x, y: g.y });
+    if (samples.length > 20) samples.shift();
   }
   last = g;
 });
@@ -369,8 +398,12 @@ let lastTap = 0;
 const lift = (e) => {
   if (!pointers.delete(e.pointerId)) return;
   last = pointers.size ? gesture() : null;
-  if (pointers.size) return;
-  if (moved) { moved = false; commit(); lastTap = 0; return; }
+  if (pointers.size) { samples = []; return; }   // a finger count change isn't a fling
+  if (moved) {
+    moved = false; lastTap = 0;
+    if (!(e.type === "pointerup" && startGlide())) commit();
+    return;
+  }
   const now = Date.now();                // double-tap to zoom in
   if (e.type === "pointerup" && now - lastTap < 300) { const p = local(e); zoomAt(p.x, p.y, 2); commit(); lastTap = 0; }
   else lastTap = now;
@@ -380,6 +413,7 @@ wrap.addEventListener("pointercancel", lift);
 let wheelTimer;
 wrap.addEventListener("wheel", (e) => {
   e.preventDefault();
+  stopGlide();
   const p = local(e);
   zoomAt(p.x, p.y, Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.002)));
   preview();
