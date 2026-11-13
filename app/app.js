@@ -1,4 +1,4 @@
-// SFF day-of tracker, milestone 1: draw a den's walking map from data/sff-2026.json.
+// SFF day-of tracker: a den's walking map from data/sff-2026.json, a GPS dot, and your segments.
 // It draws the same layers as the den pages of the printed pack (planner/build.py, draw_den_map),
 // with labels kept at a readable screen size as you pinch and zoom.
 "use strict";
@@ -136,7 +136,10 @@ function draw() {
   const pack = denKey === PACK;
   const den = pack ? null : D.dens.find((d) => d.key === denKey);
   const mine = new Set(pack ? D.segments.map((s) => s.id) : den.segments);
-  const segs = D.segments.filter((s) => mine.has(s.id));
+  // also draw segments you track from other dens (when the dispatcher sends you to help)
+  const shown = new Set([...mine, ...mySegs.tracked]);
+  const segs = D.segments.filter((s) => shown.has(s.id));
+  segEls = {};
   const denColor = Object.fromEntries(D.dens.map((d) => [d.key, d.color]));
   const colorOf = (s) => (pack ? denColor[s.den] : s.color);
 
@@ -147,7 +150,7 @@ function draw() {
 
   const layer = (name) => el("g", { id: "l-" + name }, view);
   const Lstreet = layer("streets"), Lbld = layer("buildings"), Lzone = layer("zones"),
-        Lslabel = layer("street-labels"), Lroute = layer("routes"), Lhouse = layer("houses"),
+        Lslabel = layer("street-labels"), Lhalo = layer("halos"), Lroute = layer("routes"), Lhouse = layer("houses"),
         Larrow = layer("arrows"), Lnum = layer("numbers"), Lid = layer("ids"),
         Lalabel = layer("arterial-labels"), Lstop = layer("stops");
 
@@ -200,7 +203,7 @@ function draw() {
 
   // 2. buildings that aren't on any segment, then other dens' houses, both faint
   el("path", { d: D.buildings.map((r) => ringD(r.map(P))).join(""), fill: "#efefef" }, Lbld);
-  el("path", { d: D.houses.filter((h) => !mine.has(h.seg)).map((h) => ringD(h.outline.map(P))).join(""), fill: "#dcdcdc" }, Lbld);
+  el("path", { d: D.houses.filter((h) => !shown.has(h.seg)).map((h) => ringD(h.outline.map(P))).join(""), fill: "#dcdcdc" }, Lbld);
 
   // 3. zone outlines, dashed
   for (const z in D.zones) {
@@ -214,12 +217,17 @@ function draw() {
   for (const s of segs) {
     const c = colorOf(s);
     const routes = [s.route, ...s.route_parts].map((r) => r.map(P));
-    const re = el("path", { d: routes.map((r) => lineD(r, PEN_LIFT)).join(""), fill: "none", stroke: c, opacity: 0.85,
+    const rd = routes.map((r) => lineD(r, PEN_LIFT)).join("");
+    // a wide halo under the target and the selected segment (hidden until styleSegments shows it)
+    const halo = el("path", { d: rd, fill: "none", stroke: "#111", "stroke-linecap": "round", "stroke-linejoin": "round" }, Lhalo);
+    screenStroke(halo, 14, null);
+    const re = el("path", { d: rd, fill: "none", stroke: c, opacity: 0.85,
                             "stroke-linecap": "round", "stroke-linejoin": "round" }, Lroute);
     screenStroke(re, 5, s.main_road ? [11, 6] : null);   // dash 2.2 and gap 1.2 line widths, as the PDF
 
     const hh = housesOf[s.id] || [];
-    el("path", { d: hh.map((h) => ringD(h.outline.map(P))).join(""), fill: tint(c, 0.45) }, Lhouse);
+    const he = el("path", { d: hh.map((h) => ringD(h.outline.map(P))).join(""), fill: tint(c, 0.45) }, Lhouse);
+    segEls[s.id] = { seg: s, color: c, routes, houses: hh, halo, route: re, homes: he, extras: [] };
 
     // start arrow: from the first route point toward the first point at least 12 units on
     const rt = routes[0];
@@ -228,6 +236,7 @@ function draw() {
       while (j < rt.length - 1 && dist(rt[0], rt[j]) < 12) j++;
       const ang = Math.atan2(rt[j][1] - rt[0][1], rt[j][0] - rt[0][0]) * 180 / Math.PI;
       const g = screenGroup(Larrow, rt[j][0], rt[j][1], ang, ALWAYS);
+      segEls[s.id].extras.push(g);
       el("path", { d: "M2 0 L-12 -6.5 L-9 0 L-12 6.5 Z", fill: c, stroke: "#fff", "stroke-width": 1.2, "stroke-linejoin": "round" }, g);
     }
 
@@ -237,6 +246,7 @@ function draw() {
       for (const h of ends) {
         const [x, y] = P(h.lonlat);
         const g = screenGroup(Lnum, x, y, 0, NUMBER);
+        segEls[s.id].extras.push(g);
         el("text", { class: "endnum", fill: c, "text-anchor": "middle", y: -5 }, g).textContent = h.num;
       }
     }
@@ -244,6 +254,7 @@ function draw() {
     // segment ID tag, where the PDF puts it
     const [lx, ly] = P(s.label);
     const g = screenGroup(Lid, lx, ly, 0, pack ? NUMBER : ALWAYS);   // in the pack view IDs give way to each other
+    segEls[s.id].tag = [lx, ly]; segEls[s.id].extras.push(g);
     const box = el("rect", { fill: c, stroke: s.main_road ? "#222" : "#fff", "stroke-width": 1.5, rx: 4 }, g);
     const t = el("text", { class: "segid", "text-anchor": "middle", "dominant-baseline": "central" }, g);
     t.textContent = s.id + (s.main_road ? " ⚠" : "");
@@ -292,6 +303,8 @@ function draw() {
     : `Zone ${den.area} • ${den.houses} houses • ${den.segments.length} segments`;
   document.getElementById("fit").textContent = pack ? "Whole pack" : "Whole den";
   view.appendChild(me.g);               // the GPS dot stays on top of whichever den is drawn
+  styleSegments();
+  renderList();
 }
 
 function extend(pts, far) {             // build.py _ext: run a road on past both ends
@@ -316,17 +329,21 @@ function layout() {
   svg.style.width = r.width + 2 * mx + "px"; svg.style.height = r.height + 2 * my + "px";
 }
 
-function fit() {
+function fit() { fitBox(bbox); }
+function fitBox(box) {
   stopGlide();
   follow(false);
   layout();
   const r = wrap.getBoundingClientRect();
-  const padTop = 50, padBottom = 60, padSide = 12;     // room for the north arrow, scale and buttons
-  const bw = bbox[2] - bbox[0], bh = bbox[3] - bbox[1];
+  const cardH = card.hidden ? 0 : card.getBoundingClientRect().height;
+  const padTop = banner.hidden ? 50 : 100, padSide = 12;           // room for the north arrow, banner,
+  const padBottom = Math.max(60, cardH + 16);                      // scale, buttons and the segment card
+  const bw = box[2] - box[0], bh = box[3] - box[1];
   const W = r.width - 2 * padSide, H = r.height - padTop - padBottom;
-  k = fitK = Math.min(W / bw, H / bh);
-  tx = padSide + (W - bw * k) / 2 - bbox[0] * k;
-  ty = padTop + (H - bh * k) / 2 - bbox[1] * k;
+  k = Math.min(W / bw, H / bh, 4);
+  if (box === bbox) fitK = k;
+  tx = padSide + (W - bw * k) / 2 - box[0] * k;
+  ty = padTop + (H - bh * k) / 2 - box[1] * k;
   commit();
 }
 
@@ -467,6 +484,7 @@ const lift = (e) => {
     return;
   }
   const now = Date.now();                // double-tap to zoom in
+  if (e.type === "pointerup" && now - lastTap >= 300) tapAt(local(e));   // one tap: pick the segment there
   if (e.type === "pointerup" && now - lastTap < 300) {
     const p = me.following ? myScreen() : local(e);   // while following, zoom in on yourself
     zoomAt(p.x, p.y, 2); commit(); lastTap = 0;
@@ -623,10 +641,207 @@ function resumeGps() {
     .catch(() => { /* no permissions API: wait for a tap */ });
 }
 
+// ---------- segments: your tracked ones, the current target, the list and the card ----------
+// Tracked = the segments your group was given. Target = the one you're on or heading to.
+// Both live only on this phone (localStorage).
+const SEG_KEY = "sff.segments";
+let mySegs = { tracked: [], target: null };
+let segEls = {};                         // id -> drawn pieces, rebuilt by draw()
+let selected = null;                     // the segment shown in the card
+const card = document.getElementById("card");
+const sheet = document.getElementById("sheet");
+const banner = document.getElementById("banner");
+
+function loadSegs() {
+  try {
+    const v = JSON.parse(localStorage.getItem(SEG_KEY) || "{}");
+    const ok = new Set(DATA.segments.map((s) => s.id));
+    mySegs.tracked = (v.tracked || []).filter((id) => ok.has(id));
+    mySegs.target = ok.has(v.target) ? v.target : null;
+  } catch (_) { /* nothing saved, or no storage */ }
+}
+function saveSegs() { try { localStorage.setItem(SEG_KEY, JSON.stringify(mySegs)); } catch (_) { /* ignore */ } }
+
+const segById = (id) => DATA.segments.find((s) => s.id === id);
+const denOf = (s) => DATA.dens.find((d) => d.key === s.den);
+const segOrder = (a, b) => DATA.segments.indexOf(a) - DATA.segments.indexOf(b);
+const isTracked = (id) => mySegs.tracked.includes(id);
+
+function setTracked(id, on) {
+  mySegs.tracked = mySegs.tracked.filter((x) => x !== id);
+  if (on) mySegs.tracked.push(id);
+  if (!on && mySegs.target === id) mySegs.target = null;
+  saveSegs();
+  segmentsChanged(!on || !(id in segEls));
+}
+function setTarget(id) {
+  mySegs.target = mySegs.target === id ? null : id;
+  if (mySegs.target && !isTracked(id)) mySegs.tracked.push(id);   // your target is always one of yours
+  saveSegs();
+  segmentsChanged(!(id in segEls));
+}
+// a segment from another den has to be drawn (or removed) with a full redraw; otherwise just restyle
+function segmentsChanged(redraw) {
+  const outside = (id) => denKey !== PACK && !DATA.dens.find((d) => d.key === denKey).segments.includes(id);
+  if (redraw && mySegs.tracked.concat(Object.keys(segEls)).some(outside)) { const keep = { k, tx, ty }; draw(); ({ k, tx, ty } = keep); commit(); }
+  else { styleSegments(); renderList(); }
+  renderBanner(); renderCard();
+}
+
+// map styling: once you track anything, the rest fades; the target and the selected segment get a halo
+function styleSegments() {
+  const any = mySegs.tracked.length > 0;
+  for (const id in segEls) {
+    const e = segEls[id];
+    const mineSeg = !any || isTracked(id);
+    e.route.setAttribute("opacity", mineSeg ? 0.9 : 0.3);
+    e.homes.setAttribute("opacity", mineSeg ? 1 : 0.4);
+    for (const x of e.extras) x.setAttribute("opacity", mineSeg ? 1 : 0.45);
+    const halo = id === mySegs.target ? "#111" : id === selected ? e.color : null;
+    e.halo.style.display = halo ? "" : "none";
+    if (halo) { e.halo.setAttribute("stroke", halo); e.halo.setAttribute("stroke-opacity", id === mySegs.target ? 0.8 : 0.35); }
+  }
+}
+
+function segBox(s) {
+  const pts = DATA.houses.filter((h) => h.seg === s.id).map((h) => P(h.lonlat))
+    .concat([s.route, ...s.route_parts].flat().map(P));
+  return [Math.min(...pts.map((p) => p[0])) - 40, Math.min(...pts.map((p) => p[1])) - 40,
+          Math.max(...pts.map((p) => p[0])) + 40, Math.max(...pts.map((p) => p[1])) + 40];
+}
+
+function select(id, zoom) {
+  selected = id;
+  const s = id && segById(id);
+  if (s && !(id in segEls)) { pick(s.den); }      // on another den's map: switch to that den
+  styleSegments(); renderCard();
+  if (s && zoom) fitBox(segBox(s));
+}
+
+// one tap on the map: the nearest segment line or ID tag within about 22 px
+function tapAt(p) {
+  const x = (p.x - tx) / k, y = (p.y - ty) / k, reach = 22 / k;
+  let best = null, bestD = reach;
+  for (const id in segEls) {
+    const e = segEls[id];
+    if (e.tag && dist(e.tag, [x, y]) < bestD + 6 / k) { best = id; bestD = dist(e.tag, [x, y]) - 6 / k; }
+    for (const r of e.routes) for (let i = 1; i < r.length; i++) {
+      const d = segDist([x, y], r[i - 1], r[i]);
+      if (d < bestD) { best = id; bestD = d; }
+    }
+  }
+  if (best) select(best, false);
+  else if (selected) select(null);
+}
+function segDist(p, a, b) {               // distance from p to the line piece a-b
+  const vx = b[0] - a[0], vy = b[1] - a[1], L = vx * vx + vy * vy;
+  const t = L ? Math.max(0, Math.min(1, ((p[0] - a[0]) * vx + (p[1] - a[1]) * vy) / L)) : 0;
+  return Math.hypot(p[0] - a[0] - t * vx, p[1] - a[1] - t * vy);
+}
+
+// small DOM helper for the list, card and banner
+function h(tag, cls, text, parent) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function chip(s, parent) {
+  const c = h("span", "chip" + (s.main_road ? " main" : ""), s.id + (s.main_road ? " \u26a0" : ""), parent);
+  c.style.background = (segEls[s.id] && segEls[s.id].color) || s.color;
+  return c;
+}
+function linesOf(s, parent, all) {
+  const box = h("div", "lines", null, parent);
+  for (const ln of all ? s.lines : s.lines.filter((l) => !l.warning).slice(0, 2)) {
+    const row = h("div", ln.warning ? "warn" : "", null, box);
+    h("span", "street", ln.text, row);
+    if (ln.numbers) h("span", "nums", " " + ln.numbers, row);
+  }
+  return box;
+}
+
+// the card for one segment: all its lines and the Track / Target buttons
+function renderCard() {
+  const s = selected && segById(selected);
+  card.hidden = !s;
+  document.body.classList.toggle("card-open", !!s);
+  if (!s) return;
+  card.textContent = "";
+  const top = h("div", "card-top", null, card);
+  chip(s, top);
+  h("span", "card-den", `${denOf(s).short} \u2022 ${s.houses} houses`, top);
+  const x = h("button", "close", "\u2715", top); x.type = "button"; x.setAttribute("aria-label", "Close");
+  x.addEventListener("click", () => select(null));
+  linesOf(s, card, true);
+  const row = h("div", "card-actions", null, card);
+  const tr = h("button", isTracked(s.id) ? "on" : "", isTracked(s.id) ? "\u2605 Tracking" : "\u2606 Track", row);
+  tr.type = "button"; tr.setAttribute("aria-pressed", isTracked(s.id));
+  tr.addEventListener("click", () => setTracked(s.id, !isTracked(s.id)));
+  const tg = h("button", mySegs.target === s.id ? "on target" : "", mySegs.target === s.id ? "\u25c9 Target" : "\u25ce Make target", row);
+  tg.type = "button"; tg.setAttribute("aria-pressed", mySegs.target === s.id);
+  tg.addEventListener("click", () => setTarget(s.id));
+  document.body.style.setProperty("--card-h", card.getBoundingClientRect().height + "px");
+}
+
+// the banner: your target segment, tap to go to it
+function renderBanner() {
+  const s = mySegs.target && segById(mySegs.target);
+  banner.hidden = !s;
+  document.body.classList.toggle("has-banner", !!s);
+  if (!s) return;
+  banner.textContent = "";
+  h("span", "label", "Target", banner);
+  chip(s, banner);
+  const first = s.lines.find((l) => !l.warning);
+  h("span", "what", first ? first.text : "", banner);
+}
+banner.addEventListener("click", () => mySegs.target && select(mySegs.target, true));
+
+// the list: yours first, then the den's (or every den's, in the whole-pack view)
+function renderList() {
+  const body = document.getElementById("sheet-body");
+  body.textContent = "";
+  const pack = denKey === PACK;
+  const den = !pack && DATA.dens.find((d) => d.key === denKey);
+  document.getElementById("sheet-title").textContent = pack ? "Segments" : den.short + " segments";
+  const groups = [];
+  const mine = mySegs.tracked.map(segById).sort(segOrder);
+  if (mine.length) groups.push(["Mine", mine]);
+  if (pack) for (const d of DATA.dens) groups.push([d.short, d.segments.map(segById)]);
+  else groups.push([mine.length ? "All " + den.short : "", den.segments.map(segById)]);
+  for (const [title, list] of groups) {
+    if (title) h("h3", "", title, body);
+    for (const s of list) {
+      const row = h("div", "seg-row" + (mySegs.target === s.id ? " is-target" : ""), null, body);
+      const main = h("button", "seg-main", null, row); main.type = "button";
+      chip(s, main);
+      linesOf(s, main, false);
+      const meta = h("span", "meta", s.houses + (s.houses === 1 ? " house" : " houses"), main);
+      if (s.den !== denKey && denKey !== PACK) meta.textContent += " \u2022 " + denOf(s).short;
+      if (mySegs.target === s.id) h("span", "badge", "Target", meta);
+      main.addEventListener("click", () => { closeSheet(); select(s.id, true); });
+      const star = h("button", "star" + (isTracked(s.id) ? " on" : ""), isTracked(s.id) ? "\u2605" : "\u2606", row);
+      star.type = "button";
+      star.setAttribute("aria-label", (isTracked(s.id) ? "Stop tracking " : "Track ") + s.id);
+      star.setAttribute("aria-pressed", isTracked(s.id));
+      star.addEventListener("click", () => setTracked(s.id, !isTracked(s.id)));
+    }
+  }
+}
+function openSheet() { renderList(); sheet.hidden = false; }
+function closeSheet() { sheet.hidden = true; }
+document.getElementById("segs-btn").addEventListener("click", openSheet);
+document.getElementById("sheet-close").addEventListener("click", closeSheet);
+
 // ---------- den picker ----------
 const picker = document.getElementById("den");
 function pick(key) {
   denKey = key;
+  if (selected && !(denKey === PACK || DATA.dens.find((d) => d.key === key).segments.includes(selected) || isTracked(selected))) {
+    selected = null; renderCard();
+  }
   try { localStorage.setItem(STORE_KEY, key); } catch (_) { /* private mode: just don't remember */ }
   picker.value = key;
   draw();
@@ -647,6 +862,8 @@ function start(data) {
   let saved = null;
   try { saved = localStorage.getItem(STORE_KEY); } catch (_) { /* ignore */ }
   const ok = (key) => key === PACK || data.dens.some((d) => d.key === key);
+  loadSegs();
+  renderBanner();
   pick(ok(saved) ? saved : PACK);
   resumeGps();
 }

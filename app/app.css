@@ -89,6 +89,8 @@ html, body {
 #scale-bar { height: 4px; background: #333; margin-bottom: 2px; }
 #build { display: block; font-size: 10px; color: #999; font-family: ui-monospace, Menlo, monospace; }
 
+body.card-open #segs-btn, body.card-open #fit, body.card-open #scale, body.card-open #gps-status { display: none; }
+body.card-open #tools { bottom: calc(var(--card-h, 0px) + 12px); }
 #tools {
   position: fixed; right: 12px; z-index: 1;
   bottom: calc(14px + env(safe-area-inset-bottom));
@@ -125,3 +127,64 @@ html, body {
   padding: 16px; text-align: center; font-size: 16px;
   background: #fff; border: 2px solid #333; border-radius: 12px;
 }
+
+/* ---------- segments: banner, card and list ---------- */
+.chip {
+  display: inline-block; min-width: 40px; padding: 3px 8px; border-radius: 6px;
+  color: #fff; font-weight: 800; font-size: 15px; text-align: center;
+  border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, .15); white-space: nowrap;
+}
+.chip.main { border-color: #222; }
+.lines { font-size: 15px; line-height: 1.35; }
+.lines .nums { color: #444; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lines .warn { color: #b00000; font-weight: 700; }
+.close {
+  font: inherit; font-size: 20px; width: 44px; height: 44px; margin-left: auto;
+  border: 0; background: transparent; color: #333;
+}
+
+#banner {
+  position: fixed; z-index: 2; left: 12px; right: 48px;
+  top: calc(var(--bar-h) + env(safe-area-inset-top) + 8px);
+  display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 4px 10px;
+  font: inherit; font-size: 15px; text-align: left; color: #111;
+  background: #fff; border: 2px solid #111; border-radius: 10px; box-shadow: 0 1px 4px rgba(0, 0, 0, .3);
+}
+#banner .label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: #555; }
+#banner .what { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+#card, #sheet {
+  position: fixed; z-index: 4; left: 0; right: 0; bottom: 0;
+  background: #fff; border-radius: 16px 16px 0 0; box-shadow: 0 -2px 12px rgba(0, 0, 0, .3);
+  padding: 8px 16px calc(16px + env(safe-area-inset-bottom));
+}
+.card-top { display: flex; align-items: center; gap: 10px; }
+.card-den { color: #555; font-size: 14px; }
+#card .lines { margin: 6px 0 12px; }
+.card-actions { display: flex; gap: 10px; }
+.card-actions button {
+  font: inherit; font-size: 16px; font-weight: 700; flex: 1; min-height: 48px;
+  border: 2px solid #333; border-radius: 12px; background: #fff; color: #111;
+}
+.card-actions button.on { background: #111; color: #fff; }
+.card-actions button.on.target { background: #1a73e8; border-color: #1a73e8; }
+
+#sheet { top: calc(var(--bar-h) + env(safe-area-inset-top) + 24px); display: flex; flex-direction: column; padding-bottom: 0; }
+#sheet[hidden] { display: none; }
+#sheet header { display: flex; align-items: center; }
+#sheet h2 { margin: 0; font-size: 20px; }
+#sheet-body { overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+#sheet h3 { margin: 14px 0 4px; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: #555; }
+.seg-row { display: flex; align-items: stretch; border-top: 1px solid #e3e3e3; }
+.seg-row.is-target { background: #eef4fe; }
+.seg-main {
+  flex: 1; display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; align-items: start;
+  padding: 10px 0; font: inherit; text-align: left; color: #111; background: transparent; border: 0;
+}
+.seg-main .chip { grid-row: span 2; margin-top: 2px; }
+.seg-main .lines .street { display: block; }
+.seg-main .lines .nums { display: block; font-size: 14px; }
+.seg-main .meta { font-size: 13px; color: #555; }
+.seg-main .badge { margin-left: 8px; font-weight: 800; color: #1a73e8; }
+.star { width: 52px; font-size: 26px; border: 0; background: transparent; color: #999; }
+.star.on { color: #e6a700; }

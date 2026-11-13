@@ -37,12 +37,22 @@
 <div id="north" aria-hidden="true"><svg viewBox="0 0 24 34" width="24" height="34"><path d="M12 2 L20 16 L12 12 L4 16 Z" fill="#333"/><text x="12" y="31" text-anchor="middle">N</text></svg></div>
 <div id="scale" aria-hidden="true"><div id="scale-bar"></div><span id="scale-text"></span><span id="build" title="Version"></span></div>
 
+<button id="banner" type="button" hidden></button>
+
 <div id="gps-status" role="status" hidden></div>
 
 <nav id="tools">
   <button id="me-btn" type="button" aria-pressed="false"><span aria-hidden="true">&#9673;</span> Centre on me</button>
+  <button id="segs-btn" type="button">Segments</button>
   <button id="fit" type="button">Whole den</button>
 </nav>
+
+<section id="card" aria-label="Segment" hidden></section>
+
+<section id="sheet" aria-labelledby="sheet-title" hidden>
+  <header><h2 id="sheet-title">Segments</h2><button id="sheet-close" type="button" class="close" aria-label="Close">&#10005;</button></header>
+  <div id="sheet-body"></div>
+</section>
 
 <div id="msg" hidden></div>
 </body>

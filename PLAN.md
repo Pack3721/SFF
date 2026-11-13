@@ -114,7 +114,7 @@ There are 79 segments and 1,183 houses. Den keys are L, T, W, B, WB (Webelos, wh
 
 1. **Map only.** ✅ Render one den from the JSON and compare it against that den's page in the PDF. All six dens and a whole-pack view, with a den picker, pinch and zoom, and labels that give way to each other on a small screen.
 2. **GPS dot.** Add location, accuracy and "centre on me". Test while walking a real segment. Built: the first tap asks for location, then the map follows you until you drag it. The dot goes grey after 30 s without a fix. GPS stops while the page is in the background and restarts on its own once allowed. Street names repeat along streets at walking zoom. **Still to do:** a walk on a real segment.
-3. **Segment sheet and texts.** Tap a segment, see its lines, tap Done and get a pre-filled text. Test on iPhone and Android.
+3. **Segment sheet and texts.** Tap a segment, see its lines, tap Done and get a pre-filled text. Test on iPhone and Android. Built so far: a Segments list (yours first, then the den's), ☆ to track the segments your group was given, and one **target** segment (the one you're on or heading to), shown in a banner. Tap a segment on the map or in the list for its card: all its lines, Track and Make target. Once you track any, the rest of the den fades. Segments tracked from another den are drawn on your den's map. All of it is saved on the phone. **Still to do:** the text buttons on the card.
 4. **QR flow.** Build the dispatcher QR page, the fragment handling and `localStorage`, and clear the fragment after reading.
 5. **Offline and polish.** Add caching, the sunlight check and the den picker.
 6. **Dry run.** A den leader walks a segment with the page before Week 2.
