@@ -1,0 +1,31 @@
+# Pack 3721 Scouting for Food (SFF)
+
+These are the tools for Cub Scout Pack 3721's Scouting for Food walk in south St. Louis County, MO (around Baptist Church Rd and Musick Rd).
+
+Start with `PLAN.md`. The current job is the **day-of tracker**: a phone web page with the den map, a GPS dot, and tap-to-text the dispatcher.
+
+## Layout
+
+- `PLAN.md`: the plan for the day-of tracker, including requirements, milestones and open questions.
+- `data/sff-2026.json`: the frozen 2026 segments, houses, outlines and streets as lat/lon. This is the app's only data source.
+- `planner/`: the Python scripts that made the printed 2026 map pack (matplotlib and pypdf).
+  - `build.py` builds the 8-page colour PDF. Run it as `python3 build.py`, or `BW=1 python3 build.py` for black and white.
+  - `booklet.py` builds the 11×17 saddle-stitch booklet from the colour PDF.
+  - `export_app_data.py` regenerates `data/sff-2026.json`.
+  - `addr.txt` and `streets.txt` hold the county address points and street lines, in local units: x = (lon + 90.4) × 1e5, y = (lat − 38.49) × 1e5.
+  - `layers/ms.txt` holds Microsoft building outlines for the area, in the same units, with each row as `height|x,y x,y …`.
+- `docs/how-the-maps-were-made.md`: data sources, how the dens were balanced and the segments built, the hand checks, and lessons for next year.
+
+## Rules
+
+- **The 2026 segments are frozen** because the maps are printed. Don't change segment IDs, membership or house numbers. Cosmetic changes to the PDFs are fine.
+- **No phone numbers, email addresses or scout or family names in the repo.** The dispatcher's number reaches the app only through the QR link fragment (`#tel=…`). Use 555-01xx numbers in tests.
+- **No third-party scripts, fonts, analytics or online QR APIs** in the app. The page has to stay self-contained so the `#` fragment can't leak.
+- **Treat the MSD sidewalk data as information only.** It's missing sidewalks that are visible on satellite, so a missing line doesn't mean "no sidewalk". Don't draw it on maps.
+- **Text wording** matches page 1 of the paper pack: "Wolf A – W7 done", "Wolf A available", "W8 need bags".
+
+## Useful facts
+
+- The dens are Lions (L), Tigers (T), Wolves (W), Bears (B), Webelos (WB, with segment IDs starting WE) and AOL (A). There are 79 segments and 1,183 houses.
+- Main-road segments are marked ⚠: MW1–2, MB1–2, MWE1–2 and MA. The place to cross Baptist Church Rd is the all-way stop at Kingsmere.
+- The printed PDFs and the dispatcher Google Sheet are in the pack's Google Drive. They aren't in this repo.
