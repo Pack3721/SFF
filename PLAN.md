@@ -141,6 +141,16 @@ A group's QR code or link is a group setup link (`#tel=…&g=Wolf+A&den=W&seg=W6
 
 **Known issue:** **+** and **−** re-split the whole den. A leader who adds a "Needs coverage" group for leftover segments (low turnout) after handing out QR codes would scramble groups that parents already have. The guide says to do it before handing out codes. A possible fix: once any group's QR or list has been opened, **+** adds an empty group and leaves the others alone.
 
+## Week 2 (pickup) notes
+
+Jay's notes for Week 2 (Sat Nov 21, 2026), written after Week 1. Not built yet.
+
+- **Must stay the same:** den areas and segments.
+- **Dividing a den:** Week 2 is more about driving around looking for bags, so dens may want to divide their area differently. Auto split should build groups around car loops rather than walking distance.
+- **Bag tally:** record bags for each segment in the app, as stats for next year, and send the counts to the dispatcher. People can add to a segment's tally as they go. When a segment is marked done, the text includes the count if there's a tally; if not, the app can optionally ask roughly how many bags before texting.
+- **Drop-off:** add Mehlville firehouse 5 to the map as the place to take bags. When a group is done, offer directions there, and offer to text the dispatcher that the group is available to help.
+- **No "Need bags"** in Week 2 (already hidden in Week 2).
+
 ## Decisions
 
 - **One QR code for the whole pack,** with a den picker. Dens may need help, and the dispatcher sends free groups to other areas.
