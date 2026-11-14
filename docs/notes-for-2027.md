@@ -13,3 +13,7 @@ Written down after the 2026 Week 1 walk (bags, Sat Nov 14, 2026).
 
 - After finishing the target segment, the app should use GPS to switch the target to the nearest unfinished segment. Only when GPS is available; without it, leave the target empty (as now).
 - Swiping to the next target was a lot sometimes. The swipe goes in segment-number order, and the arrows on the map are only suggestions, not necessarily the best way on the ground.
+
+## Walking direction
+
+- Maybe have the segment arrows point against traffic, so walkers face oncoming cars, since most streets don't have sidewalks.
