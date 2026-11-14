@@ -1383,7 +1383,7 @@ function allDoneWeek2() {
   h("span", "card-gap", null, top);
   const x = h("button", "close", "\u2715", top); x.type = "button"; x.setAttribute("aria-label", "Close");
   x.addEventListener("click", () => slideOut(availPanel));
-  h("p", "avail-q", "Take the bags to Fire Station 5.", availPanel);
+  h("p", "avail-q", "Take the bags to Firehouse 5, or offer to help with more segments.", availPanel);
   const row = h("div", "card-texts", null, availPanel);
   const go = h("a", "dir-btn", "Directions \u203a", row);
   directionsTo(go, fire.lonlat);
