@@ -1549,7 +1549,7 @@ function allDoneWeek2() {
   h("span", "card-gap", null, top);
   const x = h("button", "close", "\u2715", top); x.type = "button"; x.setAttribute("aria-label", "Close");
   x.addEventListener("click", () => slideOut(availPanel));
-  h("p", "avail-q", "Take the bags of food to Fire Station 5, or offer to help with more segments.", availPanel);
+  h("p", "avail-q", "Offer to help with more segments, or take the bags of food to Fire Station 5. Drop off once: when you\u2019re finished or the car is full.", availPanel);
   const row = h("div", "card-texts", null, availPanel);
   const go = h("a", "dir-btn", "Directions \u203a", row);
   directionsTo(go, fire.address || fire.lonlat);
@@ -2670,7 +2670,8 @@ function printHandouts(only) {
     } else {
       tip("Finished a segment:", `${wk} \u2013 ${ex} done, 12 bags`);
       tip("Can\u2019t get to some:", `${wk} \u2013 ${ids.slice(0, 2).join(", ") || ex} need coverage`);
-      tip("All done: take the bags of food to Fire Station 5 (11020 Mueller Rd), then", `${wk} available to help`);
+      tip("All done, and room for more:", `${wk} available to help`);
+      h("li", "", "Take the bags of food to Fire Station 5 (11020 Mueller Rd) once, when you\u2019re finished helping or the car is full.", tl);
     }
     const qr = h("div", "print-qr", null, foot);
     qr.dataset.group = g;
