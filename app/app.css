@@ -182,14 +182,14 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 4px); }
 #banner .label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: #555; }
 #banner .what { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-#card, #sheet, #settings, #avail, #contact, #leader, #gqr {
+#card, #sheet, #settings, #avail, #contact, #leader, #gqr, #scan {
   position: fixed; z-index: 4; left: 0; right: 0; bottom: 0;
   background: #fff; border-radius: 16px 16px 0 0; box-shadow: 0 -2px 12px rgba(0, 0, 0, .3);
   padding: 8px 16px calc(16px + env(safe-area-inset-bottom));
 }
-#card, #sheet, #settings, #avail, #contact, #leader, #gqr { transform: translateY(105%); transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
-#card.open, #sheet.open, #settings.open, #avail.open, #contact.open, #leader.open, #gqr.open { transform: none; }
-@media (prefers-reduced-motion: reduce) { #card, #sheet, #settings, #avail, #contact, #leader, #gqr { transition: none; } }
+#card, #sheet, #settings, #avail, #contact, #leader, #gqr, #scan { transform: translateY(105%); transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
+#card.open, #sheet.open, #settings.open, #avail.open, #contact.open, #leader.open, #gqr.open, #scan.open { transform: none; }
+@media (prefers-reduced-motion: reduce) { #card, #sheet, #settings, #avail, #contact, #leader, #gqr, #scan { transition: none; } }
 .card-top { display: flex; align-items: center; gap: 4px; margin-left: -10px; }
 .card-gap { flex: 1; }
 .card-top .star { width: 44px; height: 44px; }
@@ -422,3 +422,10 @@ body.leader #tools { bottom: calc(var(--leader-h, 0px) + 4px); }
 #banner .bag-total { flex: none; margin-left: 8px; font-size: 13px; font-weight: 700; color: #555; white-space: nowrap; }
 #avail .dir-btn { flex: 1 1 auto; display: inline-flex; align-items: center; justify-content: center; min-height: 48px;
   border-radius: 12px; background: #1a5fb4; color: #fff; font-weight: 700; text-decoration: none; }
+
+/* the QR scanner, opened from Settings › Share › Group setup */
+#scan { z-index: 7; }
+#scan .card-top { margin-left: 0; }
+#scan h2 { margin: 6px 0; font-size: 20px; }
+#scan .scan-video { display: block; width: 100%; max-height: 55vh; aspect-ratio: 1; object-fit: cover; background: #111; border-radius: 12px; }
+#scan .scan-say { margin: 8px 0 4px; font-size: 15px; color: #444; }

@@ -9,6 +9,7 @@ Copyright 2026 Jay Tuley and contributors.
 | **Code**: `app/` (except `app/vendor/`), `planner/*.py`, `tools/`, `.github/` | [PolyForm Noncommercial 1.0.0](LICENSE) |
 | **Writing**: `README.md`, `PLAN.md`, `CLAUDE.md`, `docs/` | [CC BY-NC 4.0](LICENSES/CC-BY-NC-4.0.txt) |
 | **QR code library**: `app/vendor/qrcode-generator-2.0.4.js` | MIT, © 2009 Kazuhiko Arase (notice in the file; see [`app/vendor/README.md`](app/vendor/README.md)) |
+| **QR code reader**: `app/vendor/jsQR-1.4.0.js` | Apache-2.0, jsQR (github.com/cozmo/jsQR) ([licence text](app/vendor/jsQR-1.4.0.LICENSE.txt); see [`app/vendor/README.md`](app/vendor/README.md)) |
 | **Map data**: `data/sff-2026.json`, `planner/addr.txt`, `planner/streets.txt`, `planner/layers/ms.txt` | The terms of each source, below. Our own additions (segments, routes, colours, checklist lines) are under CC BY-NC 4.0. |
 
 PolyForm Noncommercial lets anyone use, change and share the code for any noncommercial purpose. Charities, schools and government bodies may use it whatever the purpose, which covers other packs, councils and chartered organizations. It doesn't allow selling it or building a paid product on it.

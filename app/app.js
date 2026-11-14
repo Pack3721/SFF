@@ -1919,8 +1919,8 @@ function groupPane(pane) {
   // With no group name yet there's nothing worth sharing: only offer to restore from someone else's copy.
   const has = !!settings.group;
   h("p", "hint", has
-    ? `For a parent in your group, or your own Home Screen app: \u201c${settings.group}\u201d, den, segments and the dispatcher\u2019s number. Scan it, or Copy settings and Restore from paste on the other phone.`
-    : "Got settings from someone in your group? Copy them, then tap Restore from paste. To share yours, add your group name above.", pane);
+    ? `For a parent in your group, or your own Home Screen app: \u201c${settings.group}\u201d, den, segments and the dispatcher\u2019s number. Scan it with the other phone, or Copy settings and Restore from paste.`
+    : "Got your group\u2019s QR code, or settings copied from someone in your group? Tap Scan QR code or Restore from paste. To share yours, add your group name above.", pane);
   const link = has ? setupLink() : null;
   if (has) qrBox(pane, link);
   const row = h("div", "move-row", null, pane);
@@ -1937,18 +1937,99 @@ function groupPane(pane) {
   paste.addEventListener("click", () => {
     if (!navigator.clipboard || !navigator.clipboard.readText) { say.textContent = "This browser can\u2019t paste here. Paste the link into the address bar instead."; return; }
     navigator.clipboard.readText().then((text) => {
-      const at = (text || "").indexOf("#");
-      const q = new URLSearchParams(at >= 0 ? text.slice(at + 1) : "");
-      if (!q.has("seg") && !q.has("g") && !q.has("tel")) { say.textContent = "That isn\u2019t copied settings. Tap Copy settings on the other phone first."; return; }
-      const n = applySetup(q);
-      pick(localStorage.getItem(STORE_KEY) || denKey);
-      textingChanged();
-      renderSettings();
-      const msg = document.querySelector("#settings .move-msg");
-      if (msg) msg.textContent = `\u2714\ufe0e Restored: ${settings.group || "no group"}, ${n} segment${n === 1 ? "" : "s"}${settings.tel ? ", dispatcher\u2019s number" : ""}.`;
+      if (!useLinkText(text)) say.textContent = "That isn\u2019t copied settings. Tap Copy settings on the other phone first.";
     }).catch(() => { say.textContent = "Couldn\u2019t read the clipboard. Allow Paste when asked, then try again."; });
   });
+  // the Home Screen app can't be reached by the phone's camera app (that opens the browser), so it scans itself
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    const scan = h("button", "share-btn", "Scan QR code", row); scan.type = "button";
+    scan.addEventListener("click", openScanner);
+  }
 }
+// Settings from a copied or scanned link: a group setup link (name, den, segments, number) or the
+// dispatcher's (number, den). Anything else is turned down. Returns false if it wasn't one of ours.
+function useLinkText(text) {
+  text = (text || "").trim();
+  const at = text.indexOf("#");
+  if (/^https?:/i.test(text)) {
+    try { const u = new URL(text); if (u.host !== location.host && u.host !== "pack3721.github.io") return false; } catch (_) { return false; }
+  }
+  const q = new URLSearchParams(at >= 0 ? text.slice(at + 1) : "");
+  if (!q.has("seg") && !q.has("g") && !q.has("tel")) return false;
+  const n = applySetup(q);
+  pick(localStorage.getItem(STORE_KEY) || denKey);
+  textingChanged();
+  renderSettings();
+  const msg = document.querySelector("#settings .move-msg");
+  if (msg) msg.textContent = q.has("seg") || q.has("g")
+    ? `\u2714\ufe0e Restored: ${settings.group || "no group"}, ${n} segment${n === 1 ? "" : "s"}${settings.tel ? ", dispatcher\u2019s number" : ""}.`
+    : "\u2714\ufe0e Got the dispatcher\u2019s number.";
+  return true;
+}
+
+// ---------- the QR scanner (Settings > Share > Group setup) ----------
+// The camera picture is read on the phone by jsQR (vendored; Safari has no built-in QR reader), and a
+// group or dispatcher QR code is applied like Restore from paste. The camera is off whenever the panel is.
+const scanPanel = document.getElementById("scan");
+let scanStop = null;
+function loadJsQR() {
+  if (window.jsQR) return Promise.resolve();
+  return new Promise((ok, fail) => {
+    const sc = document.createElement("script");
+    sc.src = "vendor/jsQR-1.4.0.js?v=" + BUILD;
+    sc.onload = ok; sc.onerror = fail;
+    document.head.appendChild(sc);
+  });
+}
+function closeScanner() { if (scanStop) scanStop(); slideOut(scanPanel); }
+function openScanner() {
+  if (scanStop) scanStop();
+  scanPanel.textContent = "";
+  const top = h("div", "card-top", null, scanPanel);
+  h("h2", "", "Scan a QR code", top);
+  h("span", "card-gap", null, top);
+  const x = h("button", "close", "\u2715", top); x.type = "button"; x.setAttribute("aria-label", "Close");
+  x.addEventListener("click", closeScanner);
+  const v = h("video", "scan-video", null, scanPanel);
+  v.muted = true; v.setAttribute("playsinline", ""); v.setAttribute("aria-hidden", "true");
+  const say = h("p", "scan-say", "Point the camera at your group\u2019s QR code (or the dispatcher\u2019s).", scanPanel);
+  slideIn(scanPanel);
+  let stream = null, timer = 0, stopped = false;
+  scanStop = () => {
+    stopped = true; clearTimeout(timer);
+    if (stream) stream.getTracks().forEach((t) => t.stop());
+    v.srcObject = null; scanStop = null;
+  };
+  Promise.all([loadJsQR(), navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })])
+    .then(([, s]) => {
+      if (stopped) { s.getTracks().forEach((t) => t.stop()); return; }
+      stream = s; v.srcObject = s;
+      return v.play().then(() => {
+        const c = document.createElement("canvas"), ctx = c.getContext("2d", { willReadFrequently: true });
+        const look = () => {
+          if (stopped) return;
+          if (v.videoWidth) {
+            const w = Math.min(640, v.videoWidth), hh = Math.round(v.videoHeight * w / v.videoWidth);
+            c.width = w; c.height = hh; ctx.drawImage(v, 0, 0, w, hh);
+            const code = jsQR(ctx.getImageData(0, 0, w, hh).data, w, hh, { inversionAttempts: "dontInvert" });
+            if (code && code.data) {
+              if (useLinkText(code.data)) { closeScanner(); return; }
+              say.textContent = "That QR code isn\u2019t for the SFF 721 Map. Try your group\u2019s code.";
+            }
+          }
+          timer = setTimeout(look, 150);
+        };
+        look();
+      });
+    })
+    .catch((e) => {
+      if (stopped) return;
+      say.textContent = e && e.name === "NotAllowedError"
+        ? "The camera is blocked. Allow the camera for this app in the phone\u2019s settings, then try again."
+        : "Couldn\u2019t start the camera.";
+    });
+}
+document.addEventListener("visibilitychange", () => { if (document.hidden && scanStop) closeScanner(); });   // never leave the camera on
 document.getElementById("settings-btn").addEventListener("click", () => openSettings());
 document.getElementById("settings-close").addEventListener("click", closeSettings);
 
