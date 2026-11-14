@@ -150,6 +150,7 @@ Jay's notes for Week 2 (Sat Nov 21, 2026), written after Week 1. Not built yet.
 - **Bag tally:** record bags for each segment in the app, as stats for next year, and send the counts to the dispatcher. People can add to a segment's tally as they go. When a segment is marked done, the text includes the count if there's a tally; if not, the app can optionally ask roughly how many bags before texting.
 - **Drop-off:** add Mehlville firehouse 5 to the map as the place to take bags. When a group is done, offer directions there, and offer to text the dispatcher that the group is available to help.
 - **No "Need bags"** in Week 2 (already hidden in Week 2).
+- **Done is tracked separately for each week.** Week 2 starts with nothing done, and Week 1's done marks are not shown in Week 2. (Today `sff.segments` keeps one `done` list with no week, so Week 1 ticks would carry over.)
 
 ## Decisions
 
