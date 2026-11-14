@@ -21,4 +21,4 @@ Written down after the 2026 Week 1 walk (bags, Sat Nov 14, 2026).
 ## Bags for Week 1
 
 - In whole-pack mode, show how many folds of bags each den needs, to divide the bags up. A fold is 100 bags. For example, 2026's houses would need, rounding each den up to whole folds: Lions 1 (68 houses), Tigers 2 (171), Wolves 3 (299), Bears 3 (214), Webelos 3 (226), AOL 3 (205), so 15 folds for 1,183 houses. That's 1,500 bags, about 317 more than needed (Bears 86, AOL 95, Webelos 74, Lions 32, Tigers 29, Wolves 1 spare).
-- Option: hand out 12 folds (1,200 bags, 17 spare) and split partial folds between dens. That needs a **bag redistributor** job on the day, moving spare bags between dens.
+- Better: 13 folds (1,300 bags, about 117 spare, so some slack for miscounts and torn bags) and split partial folds between dens. That needs a **bag redistributor** job on the day, moving spare bags between dens.
