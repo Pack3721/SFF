@@ -1466,7 +1466,7 @@ function renderCover() {
   h("span", "card-gap", null, top);
   const x = h("button", "close", "\u2715", top); x.type = "button"; x.setAttribute("aria-label", "Cancel");
   x.addEventListener("click", endCover);
-  h("p", "hint", "Tap the segments on the map your group can\u2019t get to. Tap one again to unpick it.", coverPanel);
+  h("p", "hint", "Tap the segments on the map your group can\u2019t get to. Tap one again to unpick it. Once texted, they come off your list.", coverPanel);
   const ids = [...cover].sort((a, b) => segOrder(segById(a), segById(b)));
   const picked = h("p", "cov-picked", null, coverPanel);
   if (ids.length) for (const id of ids) chip(segById(id), picked);
@@ -1474,7 +1474,17 @@ function renderCover() {
   const send = h("button", "cov-send", ids.length ? `Text: ${ids.join(", ")} ${ids.length > 1 ? "need" : "needs"} coverage` : "Text \u201cneeds coverage\u201d", coverPanel);
   send.type = "button"; msgIcon(send);
   send.disabled = !ids.length;
-  send.addEventListener("click", () => { if (sendText("coverage", ids.join(", "))) endCover(); });
+  send.addEventListener("click", () => {
+    if (!sendText("coverage", ids.join(", "))) return;
+    // someone else will cover them: they come off your list (not ones you've already marked done)
+    const gone = ids.filter((id) => isTracked(id) && !mySegs.done.includes(id));
+    if (gone.length) {
+      mySegs.tracked = mySegs.tracked.filter((id) => !gone.includes(id));
+      if (gone.includes(mySegs.target)) { mySegs.target = null; autoTarget(); nearestTarget(); }
+      saveSegs(); segmentsChanged(false);
+    }
+    endCover();
+  });
 }
 
 // Driving directions in the phone's own maps app: Apple Maps on iPhone, Google Maps elsewhere.
