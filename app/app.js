@@ -2657,6 +2657,21 @@ function printHandouts(only) {
       h("span", "", first ? first.text + (first.numbers ? " " + first.numbers : "") + (sg.lines.filter((l) => !l.warning).length > 1 ? " \u2026" : "") : "", li);
       h("i", "", String(sg.houses), li);
     }
+    // texting the dispatcher from the paper, written out for this group and this week
+    const name = leader.names[g], wk = `Wk${week()}: ${name}`, ex = ids[0] || "W7";
+    const tips = h("div", "print-texts", null, page);
+    h("b", "", "Texting the dispatcher" + (settings.tel ? " \u2013 " + showTel(settings.tel) : "") + ":", tips);
+    const tl = h("ul", "", null, tips);
+    const tip = (when, text) => { const li = h("li", "", when + " ", tl); h("q", "", text, li); };
+    if (week() === 1) {
+      tip("Finished a segment:", `${wk} \u2013 ${ex} done`);
+      tip("Out of bags:", `${wk} \u2013 send bags to ${ex}`);
+      tip("All done:", `${wk} available \u2013 a few bags left`);
+    } else {
+      tip("Finished a segment:", `${wk} \u2013 ${ex} done, 12 bags`);
+      tip("Can\u2019t get to some:", `${wk} \u2013 ${ids.slice(0, 2).join(", ") || ex} need coverage`);
+      tip("All done: take the bags of food to Fire Station 5 (11020 Mueller Rd), then", `${wk} available to help`);
+    }
     const qr = h("div", "print-qr", null, foot);
     qr.dataset.group = g;
     h("p", "", "Scan to set up your phone for " + leader.names[g] + ". Then, on iPhone: Share \u2192 Add to Home Screen.", qr);

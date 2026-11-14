@@ -489,6 +489,9 @@ body.printing #wrap { position: fixed; left: 0; top: 0; right: auto; bottom: aut
   .print-segs b { flex: none; min-width: 3.6em; }
   .print-segs span { flex: 1; }
   .print-segs i { flex: none; font-style: normal; }
+  .print-texts { flex: none; margin-top: 6px; padding: 4px 8px; border: 1px solid #999; border-radius: 6px; font-size: 8.5pt; }
+  .print-texts ul { margin: 2px 0 0; padding-left: 14px; }
+  .print-texts q { font-weight: 700; }
   .print-qr { flex: none; width: 1.5in; text-align: center; font-size: 8pt; }
   .print-qr svg { width: 1.4in; height: 1.4in; }
   .print-qr p { margin: 2px 0 0; }
