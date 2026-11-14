@@ -29,10 +29,15 @@ def checklist_lines(s):  # same text as the PDF dispatcher log
 out = {"event": "Scouting for Food 2026", "pack": "3721", "frozen": True,
        "coords": "[lon, lat] WGS84", "dens": [], "segments": [], "houses": [],
        "streets": [], "arterials": [], "zones": {}, "stops": [],
-       "landmarks": [{"name": "Sappington Elementary", "icon": "school", "lonlat": [-90.364914, 38.542702]},
+       "landmarks": [{"name": "Sappington Elementary", "icon": "school", "full": "Sappington Elementary School",
+                      "address": "11011 Gravois Rd, St. Louis, MO 63126", "note": "Where every walk starts and ends.",
+                      "lonlat": [-90.364914, 38.542702]},
                      # Week 2 bag drop-off: Mehlville Fire Protection District Fire Station 5, 11020 Mueller Rd
                      # (St. Louis County address point)
-                     {"name": "Fire Station 5 \u2013 bag drop-off", "icon": "fire", "lonlat": [-90.345189, 38.523408]}]}
+                     {"name": "Fire Station 5 \u2013 bag drop-off", "icon": "fire",
+                      "full": "Mehlville Fire Protection District \u2013 Fire Station 5",
+                      "address": "11020 Mueller Rd, St. Louis, MO 63123", "note": "Week 2: take the bags here.",
+                      "lonlat": [-90.345189, 38.523408]}]}
 
 for d in g["DENS"]:
     name = {"Arrow of Light": "AOL"}.get(d["name"], d["name"])

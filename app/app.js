@@ -1041,7 +1041,7 @@ function segBox(s) {
 }
 
 function select(id, zoom) {
-  selected = id;
+  selected = id; place = null;
   const s = id && segById(id);
   if (s && !(id in segEls)) { pick(s.den); }      // on another den's map: switch to that den
   styleSegments(); renderCard();
@@ -1070,8 +1070,14 @@ function sizeAnts() {                    // dash sizes are in map units, so they
 }
 
 // one tap on the map: the nearest segment line or ID tag within about 22 px
+let place = null;                        // a landmark whose card is open (Sappington Elementary, Fire Station 5)
 function tapAt(p) {
   const x = (p.x - tx) / k, y = (p.y - ty) / k, reach = 22 / k;
+  // a landmark's badge (about 14 px round): its card, with the full name, address and directions
+  if (!leader && !cover) {
+    const lm = DATA.landmarks.find((m) => m.full && dist(P(m.lonlat), [x, y]) < 18 / k);
+    if (lm) { selected = null; place = lm; styleSegments(); renderCard(); return; }
+  }
   let best = null, bestD = reach;
   for (const id in segEls) {
     const e = segEls[id];
@@ -1209,10 +1215,27 @@ function finishSegment(id) {             // marks done either way; texts too whe
   markDone(id, true);
 }
 
+// a landmark's card: full name, address and a Directions link
+function renderPlace() {
+  slideIn(card);
+  card.textContent = "";
+  const top = h("div", "card-top place-top", null, card);
+  h("h2", "place-name", place.full, top);
+  h("span", "card-gap", null, top);
+  const x = h("button", "close", "\u2715", top); x.type = "button"; x.setAttribute("aria-label", "Close");
+  x.addEventListener("click", () => { place = null; renderCard(); });
+  if (place.note) h("p", "place-note", place.note, card);
+  const row = h("div", "card-den", place.address, card);
+  const go = h("a", "directions", "Directions \u203a", row);
+  directionsTo(go, place.address || place.lonlat);
+  go.setAttribute("aria-label", "Driving directions to " + place.full);
+  document.body.style.setProperty("--card-h", card.getBoundingClientRect().height + "px");
+}
 // the card for one segment: all its lines and the Track / Target buttons
 function renderCard() {
   const s = selected && segById(selected);
-  document.body.classList.toggle("card-open", !!s);
+  document.body.classList.toggle("card-open", !!(s || place));
+  if (!s && place) { renderPlace(); return; }
   if (!s) { slideOut(card); return; }    // keep its content while it slides away
   slideIn(card);
   card.textContent = "";
@@ -1509,10 +1532,12 @@ function renderCover() {
 }
 
 // Driving directions in the phone's own maps app: Apple Maps on iPhone, Google Maps elsewhere.
-// Only the coordinates go in the link (no referrer), so the #tel=… fragment never leaves the page.
-function directionsTo(a, [lon, lat]) {
-  a.href = isIOS() ? `https://maps.apple.com/?daddr=${lat},${lon}&dirflg=d`
-                   : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving`;
+// Only the place (coordinates or a landmark's address) goes in the link, with no referrer, so the #tel=…
+// fragment never leaves the page.
+function directionsTo(a, to) {           // to: [lon, lat], or a street address
+  const dest = typeof to === "string" ? encodeURIComponent(to) : `${to[1]},${to[0]}`;
+  a.href = isIOS() ? `https://maps.apple.com/?daddr=${dest}&dirflg=d`
+                   : `https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=driving`;
   a.rel = "noreferrer"; a.target = "_blank";
 }
 // Week 2, all done: take the bags to Fire Station 5 (directions), and text that you're available to help.
@@ -1527,7 +1552,7 @@ function allDoneWeek2() {
   h("p", "avail-q", "Take the bags to Fire Station 5, or offer to help with more segments.", availPanel);
   const row = h("div", "card-texts", null, availPanel);
   const go = h("a", "dir-btn", "Directions \u203a", row);
-  directionsTo(go, fire.lonlat);
+  directionsTo(go, fire.address || fire.lonlat);
   go.setAttribute("aria-label", "Driving directions to Fire Station 5");
   const tx = h("button", "", "Available to help", row); tx.type = "button"; msgIcon(tx);
   tx.addEventListener("click", () => sendAvailable());   // opens Settings if texting isn't set up yet

@@ -195,7 +195,7 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 4px); }
 .card-top .star { width: 44px; height: 44px; }
 #card .lines { margin: 6px 0 2px; }
 .card-den { color: #666; font-size: 13px; margin-bottom: 4px; display: flex; align-items: baseline; }
-.card-den .directions { margin-left: auto; padding: 4px 0 4px 12px; color: #1a5fb4; font-weight: 600; text-decoration: none; }
+.card-den .directions { margin-left: auto; padding: 4px 0 4px 12px; white-space: nowrap; color: #1a5fb4; font-weight: 600; text-decoration: none; }
 
 /* target radio: a grey ring; the target is a dark ring with a dark dot */
 .radio { flex: none; width: 44px; min-height: 44px; padding: 0; border: 0; background: transparent; display: grid; place-items: center; }
@@ -457,3 +457,7 @@ body.covering #tools { display: none; }
 .seg-main .badge.covered { color: #777; }
 .covered-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 10px; font-size: 15px; color: #444; }
 .covered-row .share-btn { font: inherit; font-size: 15px; font-weight: 700; min-height: 44px; padding: 0 16px; color: #111; background: #fff; border: 2px solid #333; border-radius: 22px; }
+/* a landmark's card */
+#card .place-name { margin: 6px 0; font-size: 18px; line-height: 1.25; }
+#card .place-note { margin: 2px 0 6px; font-size: 15px; color: #444; }
+#card .place-top { margin-left: 0; }
