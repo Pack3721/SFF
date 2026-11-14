@@ -30,7 +30,7 @@ out = {"event": "Scouting for Food 2026", "pack": "3721", "frozen": True,
        "coords": "[lon, lat] WGS84", "dens": [], "segments": [], "houses": [],
        "streets": [], "arterials": [], "zones": {}, "stops": [],
        "landmarks": [{"name": "Sappington Elementary", "icon": "school", "full": "Sappington Elementary School",
-                      "address": "11011 Gravois Rd, St. Louis, MO 63126", "note": "Where every walk starts and ends.",
+                      "address": "11011 Gravois Rd, St. Louis, MO 63126", "note": "Where we meet at the start.",
                       "lonlat": [-90.364914, 38.542702]},
                      # Week 2 bag drop-off: Mehlville Fire Protection District Fire Station 5, 11020 Mueller Rd
                      # (St. Louis County address point)

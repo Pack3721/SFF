@@ -307,7 +307,7 @@ function draw() {
     }
   }
 
-  // landmarks: Sappington Elementary (where every walk starts and ends) with a schoolhouse, and Fire
+  // landmarks: Sappington Elementary (where we meet at the start) with a schoolhouse, and Fire
   // Station 5 (Week 2's bag drop-off) with a firehouse. A round badge and its name.
   for (const lm of D.landmarks) {
     const [x, y] = P(lm.lonlat);
