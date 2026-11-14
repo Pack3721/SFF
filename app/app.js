@@ -1190,11 +1190,8 @@ function renderCard() {
   linesOf(s, card, true);
   const cd = h("div", "card-den", `${denOf(s).short} \u2022 ${s.houses} houses`, card);
   // Directions to where the walk starts, in the phone's own maps app (for a far-off segment, or the first one)
-  const [lon, lat] = s.route[0];
   const go = h("a", "directions", "Directions \u203a", cd);
-  go.href = isIOS() ? `https://maps.apple.com/?daddr=${lat},${lon}&dirflg=d`
-                    : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving`;
-  go.rel = "noreferrer"; go.target = "_blank";
+  directionsTo(go, s.route[0]);
   go.setAttribute("aria-label", `Driving directions to the start of ${s.id}`);
   // texts to the dispatcher about this segment. Done is offered on your target (and Undo on a done one);
   // Needs coverage and Need bags only work once texting is set up, so they're greyed out until then.
@@ -1240,8 +1237,8 @@ function renderBanner() {
     n.setAttribute("aria-label", s.houses + (s.houses === 1 ? " house" : " houses") + " on target");
   } else if (allDone()) {
     banner.classList.add("alldone");
-    h("span", "what", "\u2714\ufe0e All done \u2013 tap to text \u201cavailable\u201d", row);
-    msgIcon(row);
+    if (week() === 2) h("span", "what", "\u2714\ufe0e All done \u2013 tap for drop-off", row);
+    else { h("span", "what", "\u2714\ufe0e All done \u2013 tap to text \u201cavailable\u201d", row); msgIcon(row); }
   } else {
     h("span", "what", "No target \u2013 tap to pick one", row);
   }
@@ -1353,7 +1350,7 @@ function sendAvailable(extra) {
 // first: none, a few or plenty. In Week 2 (pickup) it texts straight away.
 const availPanel = document.getElementById("avail");
 function askAvailable() {
-  if (week() !== 1) { sendAvailable(); return; }
+  if (week() !== 1) { allDoneWeek2(); return; }
   if (!textsReady()) { sendText("available"); return; }   // opens Settings to fill in what's missing
   availPanel.textContent = "";
   const top = h("div", "card-top", null, availPanel);
@@ -1367,6 +1364,32 @@ function askAvailable() {
     const b = h("button", "", label, row); b.type = "button"; msgIcon(b);
     b.addEventListener("click", () => sendAvailable(extra));
   }
+  closeSheet();
+  slideIn(availPanel);
+}
+// Driving directions in the phone's own maps app: Apple Maps on iPhone, Google Maps elsewhere.
+// Only the coordinates go in the link (no referrer), so the #tel=… fragment never leaves the page.
+function directionsTo(a, [lon, lat]) {
+  a.href = isIOS() ? `https://maps.apple.com/?daddr=${lat},${lon}&dirflg=d`
+                   : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving`;
+  a.rel = "noreferrer"; a.target = "_blank";
+}
+// Week 2, all done: take the bags to Fire Station 5 (directions), and text that you're available to help.
+function allDoneWeek2() {
+  const fire = DATA.landmarks.find((lm) => lm.icon === "fire");
+  availPanel.textContent = "";
+  const top = h("div", "card-top", null, availPanel);
+  h("h2", "", "You\u2019re all done!", top);
+  h("span", "card-gap", null, top);
+  const x = h("button", "close", "\u2715", top); x.type = "button"; x.setAttribute("aria-label", "Close");
+  x.addEventListener("click", () => slideOut(availPanel));
+  h("p", "avail-q", "Take the bags to Fire Station 5.", availPanel);
+  const row = h("div", "card-texts", null, availPanel);
+  const go = h("a", "dir-btn", "Directions \u203a", row);
+  directionsTo(go, fire.lonlat);
+  go.setAttribute("aria-label", "Driving directions to Fire Station 5");
+  const tx = h("button", "", "Available to help", row); tx.type = "button"; msgIcon(tx);
+  tx.addEventListener("click", () => sendAvailable());   // opens Settings if texting isn't set up yet
   closeSheet();
   slideIn(availPanel);
 }
@@ -1449,8 +1472,10 @@ function renderList() {
       h("p", "total", `${mine.length} segment${mine.length === 1 ? "" : "s"} \u2022 ${n} house${n === 1 ? "" : "s"}` +
         (b ? ` \u2022 ${bagWord(b)}` : ""), body);
       // "available for more" is for when you've finished: greyed out until every tracked segment is done
-      const av = h("button", "available", "Text \u201cavailable for more\u201d", body); av.type = "button"; msgIcon(av);
-      av.disabled = !allDone() || !textsReady();
+      const wk2 = week() === 2;   // Week 2: the drop-off and "available to help" panel
+      const av = h("button", "available", wk2 ? "Bag drop-off & \u201cavailable to help\u201d" : "Text \u201cavailable for more\u201d", body);
+      av.type = "button"; if (!wk2) msgIcon(av);
+      av.disabled = !allDone() || (!wk2 && !textsReady());
       av.addEventListener("click", askAvailable);
       if (!allDone()) h("p", "available-note", "Once all your segments are done", body);
     }
@@ -1659,7 +1684,7 @@ function textBody(kind, id, extra) {
   const tally = tallying() && bags[id] ? `, ${bagWord(bags[id])}` : "";
   return { done: `${who} \u2013 ${id} done${tally}`, coverage: `${who} \u2013 ${id} needs coverage`,
            bags: `${who} \u2013 send bags to ${id}${bagsWhere(id)}`,
-           available: `${who} available` + (extra ? ` \u2013 ${extra}` : "") }[kind];
+           available: `${who} available` + (week() === 2 ? " to help" : "") + (extra ? ` \u2013 ${extra}` : "") }[kind];
 }
 // iPhones want sms:NUMBER&body=…, Android sms:NUMBER?body=…
 const smsHref = (body) => `sms:${settings.tel}${isIOS() ? "&" : "?"}body=${encodeURIComponent(body)}`;
