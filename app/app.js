@@ -2092,7 +2092,7 @@ function leaderStore(den, value) {
   all[den] = value;
   try { localStorage.setItem(LEADER_KEY, JSON.stringify(all)); } catch (_) { /* ignore */ }
 }
-const saveLeader = () => leaderStore(leader.den, { n: leader.n, names: leader.names, assign: leader.assign, edited: leader.edited });
+const saveLeader = () => leaderStore(leader.den, { n: leader.n, names: leader.names, assign: leader.assign, edited: leader.edited, mode: leader.mode });
 function groupNames() {                  // fill in default names: Wolf A, Wolf B, …
   for (let i = 0; i < leader.n; i++) if (!leader.names[i]) leader.names[i] = `${SINGULAR[leader.den]} ${"ABCDEFGH"[i]}`;
   leader.names.length = leader.n;
@@ -2104,7 +2104,7 @@ function enterLeader(den) {
   const segIds = DATA.dens.find((d) => d.key === den).segments;
   const ok = saved && saved.assign && segIds.every((id) => id in saved.assign);
   leader = { den, n: (saved && saved.n) || 2, names: (saved && saved.names) || [], assign: ok ? saved.assign : null, active: 0,
-             edited: ok && saved.edited !== false };   // moved by hand since the last auto split (older saves: assume so)
+             edited: ok && saved.edited !== false, mode: (ok && saved.mode) || "walk" };   // older saves were walking splits   // moved by hand since the last auto split (older saves: assume so)
   groupNames();
   if (!leader.assign) splitGroups();
   selected = null; renderCard(); closeSheet(); slideOut(availPanel); slideOut(contactPanel);
@@ -2127,7 +2127,12 @@ function exitLeader(quiet) {
 // The first split: walk the den's segments in one sweep (nearest next segment each time), cut the sweep
 // into groups of about equal houses, and keep the sweep, over every starting segment, whose groups are
 // most compact and most even. Contiguous pieces of a sweep stay close together.
-function splitGroups() {
+// Week 2 (pickup, by car) splits into car loops instead: wedges around the middle of the den, each a run of
+// segments a car can drive out along one side and back along the other. Main roads don't matter by car.
+const splitMode = () => (week() === 2 ? "drive" : "walk");
+function splitGroups(mode) {
+  mode = mode || splitMode();
+  if (mode === "drive") { leader.assign = splitLoops(leader.den, leader.n); leader.edited = false; leader.mode = mode; saveLeader(); return; }
   const segs = DATA.dens.find((d) => d.key === leader.den).segments.map(segById);
   const n = Math.min(leader.n, segs.length);
   const ids = segs.map((s) => s.id), cen = {}, w = {};
@@ -2194,8 +2199,93 @@ function splitGroups() {
     }
     if (c < bestCost) { bestCost = c; best = { ...assign }; }
   }
-  leader.assign = best; leader.edited = false;
+  leader.assign = best; leader.edited = false; leader.mode = mode;
   saveLeader();
+}
+function splitLoops(denKey_, n) {
+  const ANG_W = 800, EVEN_W = 1500, PAIR_W = 3000;   // wedge shape, even houses, both sides of a street together
+  const segs = DATA.dens.find((d) => d.key === denKey_).segments.map(segById);
+  n = Math.min(n, segs.length);
+  const ids = segs.map((s) => s.id), cen = {}, w = {};
+  for (const s of segs) {
+    const pts = DATA.houses.filter((h) => h.seg === s.id).map((h) => P(h.lonlat));
+    cen[s.id] = [pts.reduce((a, p) => a + p[0], 0) / pts.length, pts.reduce((a, p) => a + p[1], 0) / pts.length];
+    w[s.id] = s.houses;
+  }
+  // both sides of a street: segments on the same street whose houses face each other are partners, so one car
+  // can drive the street once and pick up both sides
+  const housesOn = {};                   // segment -> street -> house points
+  for (const s of segs) {
+    housesOn[s.id] = {};
+    for (const hh of DATA.houses) if (hh.seg === s.id) (housesOn[s.id][hh.street] = housesOn[s.id][hh.street] || []).push(P(hh.lonlat));
+  }
+  const partners = {};
+  for (const id of ids) partners[id] = [];
+  const near = (X, Y) => X.filter((p) => Y.some((q) => dist(p, q) < 52)).length;   // a house across the street, ~45 m
+  for (let i = 0; i < segs.length; i++) for (let j = i + 1; j < segs.length; j++) {
+    const A = segs[i].id, B = segs[j].id;
+    // facing: on a street they share (at least 3 houses each), most houses have one across from them
+    const facing = Object.keys(housesOn[A]).some((st) => {
+      const X = housesOn[A][st], Y = housesOn[B][st];
+      return Y && X.length >= 3 && Y.length >= 3 && Math.max(near(X, Y) / X.length, near(Y, X) / Y.length) >= 0.5;
+    });
+    if (facing) { partners[A].push(B); partners[B].push(A); }
+  }
+  const total = ids.reduce((a, id) => a + w[id], 0);
+  const mid = [ids.reduce((a, id) => a + cen[id][0] * w[id], 0) / total, ids.reduce((a, id) => a + cen[id][1] * w[id], 0) / total];
+  const ang = {}, rad = {};
+  for (const id of ids) { ang[id] = Math.atan2(cen[id][1] - mid[1], cen[id][0] - mid[0]); rad[id] = dist(cen[id], mid); }
+  const rmax = Math.max(...ids.map((id) => rad[id])) || 1;
+  // cost: each segment's angle away from its group's direction (counts more the farther out it is, since
+  // segments near the middle fit any wedge), a little spread, and unevenness
+  function cost(assign) {
+    let c = 0;
+    for (let g = 0; g < n; g++) {
+      const mine = ids.filter((id) => assign[id] === g);
+      if (!mine.length) { c += 1e9; continue; }
+      const hs = mine.reduce((a, id) => a + w[id], 0);
+      const sx = mine.reduce((a, id) => a + Math.cos(ang[id]) * w[id] * rad[id], 0), sy = mine.reduce((a, id) => a + Math.sin(ang[id]) * w[id] * rad[id], 0);
+      const dir = Math.atan2(sy, sx);
+      const m = [mine.reduce((a, id) => a + cen[id][0] * w[id], 0) / hs, mine.reduce((a, id) => a + cen[id][1] * w[id], 0) / hs];
+      for (const id of mine) {
+        const da = Math.abs(((ang[id] - dir + 3 * Math.PI) % (2 * Math.PI)) - Math.PI);
+        c += w[id] * da * da * (rad[id] / rmax) * ANG_W;
+        c += dist(cen[id], m) ** 2 / 600 * w[id];
+      }
+      c += Math.abs(hs - total / n) * EVEN_W;
+    }
+    for (const id of ids) for (const p of partners[id]) if (id < p && assign[id] !== assign[p]) c += Math.min(w[id], w[p]) * PAIR_W;
+    return c;
+  }
+  const order = ids.slice().sort((a, b) => ang[a] - ang[b]);
+  let best = null, bestCost = Infinity;
+  for (let r = 0; r < order.length; r++) {
+    // 1. go round the middle starting at segment r, cutting into n wedges of about equal houses
+    const tour = order.slice(r).concat(order.slice(0, r));
+    const assign = {}; let acc = 0, g = 0, inGroup = 0;
+    tour.forEach((id, t) => {
+      if (g < n - 1 && inGroup > 0 && (acc + w[id] / 2 > total * (g + 1) / n || tour.length - t < n - g)) { g++; inGroup = 0; }
+      assign[id] = g; acc += w[id]; inGroup++;
+    });
+    // 2. tidy up: move single segments while that lowers the cost
+    let c = cost(assign);
+    for (let pass = 0, moved = true; moved && pass < 30; pass++) {
+      moved = false;
+      for (const id of ids) for (let to = 0; to < n; to++) {
+        // move a segment alone, or with its other side of the street
+        for (const group of [[id], [id, ...partners[id]]]) {
+          const from = group.map((x) => assign[x]);
+          if (from.every((f) => f === to)) continue;
+          group.forEach((x) => { assign[x] = to; });
+          const c2 = cost(assign);
+          if (c2 < c - 1e-6) { c = c2; moved = true; } else group.forEach((x, k) => { assign[x] = from[k]; });
+          if (!partners[id].length) break;
+        }
+      }
+    }
+    if (c < bestCost) { bestCost = c; best = { ...assign }; }
+  }
+  return best;
 }
 
 function assignGroup(id) {
@@ -2246,7 +2336,8 @@ function renderLeader() {
   h("b", "", String(leader.n), row);
   const plus = h("button", "step", "+", row); plus.type = "button"; plus.setAttribute("aria-label", "More groups");
   const again = h("button", "share-btn", "Auto re-split", row); again.type = "button";
-  again.disabled = !leader.edited;         // nothing moved by hand, so it would come out the same
+  // greyed out when it would come out the same: nothing moved by hand, and already this week's kind of split
+  again.disabled = !leader.edited && leader.mode === splitMode();
   const setN = (n) => {
     leader.n = Math.max(1, Math.min(8, n)); leader.active = Math.min(leader.active, leader.n - 1);
     groupNames(); splitGroups(); styleSegments(); renderLeader();
@@ -2257,6 +2348,8 @@ function renderLeader() {
   again.addEventListener("click", () => { splitGroups(); styleSegments(); renderLeader(); });
 
   h("p", "hint", "Pick a group below by tapping its colour, then tap a segment on the map to put that segment in the group.", leaderPanel);
+  if (splitMode() === "drive") h("p", "hint", leader.mode === "drive" ? "Week 2: these groups are car loops."
+    : "Week 2: keep last week\u2019s groups, or tap Auto re-split for car loops.", leaderPanel);
   h("p", "leader-warn", "Hand out QR codes after the groups are final. Phones that already scanned one keep the old segments, so moving segments later means new QR codes.", leaderPanel);
   const list = h("div", "groups", null, leaderPanel);
   for (let i = 0; i < leader.n; i++) {
