@@ -409,3 +409,14 @@ body.leader #tools { bottom: calc(var(--leader-h, 0px) + 4px); }
   color: #111; background: #fff; border: 2px solid #333; }
 #contact .contact-row button.call { color: #fff; background: #1e7e34; border-color: #1e7e34; }
 #contact .contact-row svg { width: 22px; height: 22px; }
+
+/* Week 2: the bag tally on a segment's card */
+.bag-row { display: flex; align-items: center; gap: 10px; margin: 8px 0 2px; }
+.bag-row .lbl { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: #555; margin-right: auto; }
+.bag-row .step { font: inherit; font-size: 26px; width: 52px; height: 48px; border: 2px solid #333; border-radius: 24px; background: #fff; color: #111; }
+.bag-row .step:disabled { color: #bbb; border-color: #ddd; }
+.bag-row .bag-count { width: 3.2em; height: 44px; text-align: center; font: inherit; font-size: 22px; font-weight: 800;
+  font-variant-numeric: tabular-nums; border: 1.5px solid #ccc; border-radius: 10px; }
+#avail .bag-ask { flex: 1 1 auto; min-width: 0; width: 4em; height: 48px; text-align: center; font: inherit; font-size: 20px; font-weight: 700;
+  border: 1.5px solid #bbb; border-radius: 12px; }
+#banner .bag-total { flex: none; margin-left: 8px; font-size: 13px; font-weight: 700; color: #555; white-space: nowrap; }

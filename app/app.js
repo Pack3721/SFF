@@ -856,6 +856,9 @@ const SEG_KEY = "sff.segments";
 let mySegs = { tracked: [], target: null, done: [] };   // done: segments you've texted Done for, this week
 // Done is kept separately for each week (Week 2 starts with nothing done); tracked and target carry over.
 let doneByWeek = {};                     // week -> ids, as saved; mySegs.done is this week's
+let bagsByWeek = {};                     // week -> {segment id: bags picked up}; Week 2's tally
+let bags = {};                           // this week's tally
+const tallying = () => week() === 2;     // bags are counted at pickup, not when they're handed out
 let segWeek = null;                      // the week mySegs.done belongs to
 let segEls = {};                         // id -> drawn pieces, rebuilt by draw()
 let selected = null;                     // the segment shown in the card
@@ -871,11 +874,14 @@ function loadSegs() {
     mySegs.target = ok.has(v.target) ? v.target : null;
     // saves from before weeks were kept apart have a bare done list: that was Week 1
     doneByWeek = v.doneByWeek || (v.done ? { 1: v.done } : {});
+    bagsByWeek = v.bagsByWeek || {};
   } catch (_) { /* nothing saved, or no storage */ }
   segWeek = week();
   const ok = new Set(DATA.segments.map((s) => s.id));
   mySegs.done = (doneByWeek[segWeek] || []).filter((id) => ok.has(id));
   if (mySegs.done.includes(mySegs.target)) mySegs.target = null;
+  bags = {};
+  for (const [id, n] of Object.entries(bagsByWeek[segWeek] || {})) if (ok.has(id) && n > 0) bags[id] = n;
 }
 // the date moved into another week while the page was open (or asleep): show that week's done marks
 function checkWeek() {
@@ -884,7 +890,8 @@ function checkWeek() {
 }
 function saveSegs() {
   doneByWeek[segWeek || week()] = mySegs.done;
-  try { localStorage.setItem(SEG_KEY, JSON.stringify({ tracked: mySegs.tracked, target: mySegs.target, doneByWeek })); }
+  bagsByWeek[segWeek || week()] = bags;
+  try { localStorage.setItem(SEG_KEY, JSON.stringify({ tracked: mySegs.tracked, target: mySegs.target, doneByWeek, bagsByWeek })); }
   catch (_) { /* ignore */ }
 }
 
@@ -1102,6 +1109,57 @@ function slideOut(panel) {
   else panel.addEventListener("transitionend", done, { once: true });
 }
 
+// ---------- Week 2: a tally of bags for each segment, counted as you go ----------
+const bagWord = (n) => n + (n === 1 ? " bag" : " bags");
+function setBags(id, n) {
+  n = Math.max(0, Math.min(999, Math.round(Number(n) || 0)));
+  if (n) bags[id] = n; else delete bags[id];
+  saveSegs(); renderBanner(); if (!sheet.hidden) renderList();
+  return n;
+}
+// Bags  [ − ]  12  [ + ]   — the count can also be typed
+function bagRow(s, parent) {
+  const row = h("div", "bag-row", null, parent);
+  h("span", "lbl", "Bags", row);
+  const minus = h("button", "step", "\u2212", row); minus.type = "button"; minus.setAttribute("aria-label", "One bag fewer");
+  const box = h("input", "bag-count", null, row);
+  Object.assign(box, { type: "text", inputMode: "numeric", pattern: "[0-9]*", autocomplete: "off", value: String(bags[s.id] || 0) });
+  box.setAttribute("aria-label", `Bags from ${s.id}`);
+  const plus = h("button", "step", "+", row); plus.type = "button"; plus.setAttribute("aria-label", "One more bag");
+  const show = (n) => { box.value = String(n); minus.disabled = n <= 0; };
+  show(bags[s.id] || 0);
+  minus.addEventListener("click", () => show(setBags(s.id, (bags[s.id] || 0) - 1)));
+  plus.addEventListener("click", () => show(setBags(s.id, (bags[s.id] || 0) + 1)));
+  box.addEventListener("focus", () => box.select());
+  box.addEventListener("change", () => show(setBags(s.id, box.value.replace(/\D/g, ""))));
+}
+// Done with no tally: ask roughly how many bags before texting. A number box, and Skip.
+function askBags(id) {
+  availPanel.textContent = "";
+  const top = h("div", "card-top", null, availPanel);
+  h("h2", "", `${id} done`, top);
+  h("span", "card-gap", null, top);
+  const x = h("button", "close", "\u2715", top); x.type = "button"; x.setAttribute("aria-label", "Cancel");
+  x.addEventListener("click", () => slideOut(availPanel));
+  h("p", "avail-q", "About how many bags?", availPanel);
+  const row = h("div", "card-texts", null, availPanel);
+  const box = h("input", "bag-ask", null, row);
+  Object.assign(box, { type: "text", inputMode: "numeric", pattern: "[0-9]*", autocomplete: "off", placeholder: "0" });
+  box.setAttribute("aria-label", "About how many bags");
+  const send = h("button", "", "Send", row); send.type = "button"; msgIcon(send);
+  const skip = h("button", "", "Skip", row); skip.type = "button"; msgIcon(skip);
+  const go = (n) => { slideOut(availPanel); if (n) setBags(id, n); finishSegment(id); };
+  send.addEventListener("click", () => go(box.value.replace(/\D/g, "")));
+  box.addEventListener("keydown", (e) => { if (e.key === "Enter") go(box.value.replace(/\D/g, "")); });
+  skip.addEventListener("click", () => go(0));
+  closeSheet();
+  slideIn(availPanel);
+}
+function finishSegment(id) {             // marks done either way; texts too when texting is set up
+  if (textsReady()) sendText("done", id);
+  markDone(id, true);
+}
+
 // the card for one segment: all its lines and the Track / Target buttons
 function renderCard() {
   const s = selected && segById(selected);
@@ -1130,6 +1188,7 @@ function renderCard() {
   go.setAttribute("aria-label", `Driving directions to the start of ${s.id}`);
   // texts to the dispatcher about this segment. Done is offered on your target (and Undo on a done one);
   // Needs coverage and Need bags only work once texting is set up, so they're greyed out until then.
+  if (tallying()) bagRow(s, card);
   const texts = h("div", "card-texts", null, card);
   const isDone = mySegs.done.includes(s.id);
   if (isDone || mySegs.target === s.id) {
@@ -1138,10 +1197,8 @@ function renderCard() {
     if (!isDone) msgIcon(dn);
     dn.addEventListener("click", () => {
       if (isDone) markDone(s.id, false);   // undo: no text
-      else {                               // marks done either way; texts too when texting is set up
-        if (textsReady()) sendText("done", s.id);
-        markDone(s.id, true);
-      }
+      else if (tallying() && textsReady() && !bags[s.id]) askBags(s.id);   // no tally: ask roughly how many
+      else finishSegment(s.id);
     });
   }
   const textBtn = (label, kind) => {
@@ -1197,6 +1254,8 @@ function renderBanner() {
     }
   }
   const count = h("span", "count", `\u2714\ufe0e ${done} of ${total}`, prog);   // ✔ heavy check, as text, not an emoji
+  const bagTotal = tallying() ? mine.reduce((t, x) => t + (bags[x.id] || 0), 0) : 0;
+  if (bagTotal) h("span", "bag-total", bagWord(bagTotal), prog);
   count.setAttribute("aria-label", `${done} of ${total} houses done`);
   bar.setAttribute("role", "progressbar");
   bar.setAttribute("aria-valuemin", 0); bar.setAttribute("aria-valuemax", total); bar.setAttribute("aria-valuenow", done);
@@ -1376,7 +1435,9 @@ function renderList() {
       h("p", "empty", "No segments yet. On the Segments tab, tap \u2606 on the ones your group was given.", body);
     } else {                             // the total for your group
       const n = mine.reduce((t, x) => t + x.houses, 0);
-      h("p", "total", `${mine.length} segment${mine.length === 1 ? "" : "s"} \u2022 ${n} house${n === 1 ? "" : "s"}`, body);
+      const b = tallying() ? mine.reduce((t, x) => t + (bags[x.id] || 0), 0) : 0;
+      h("p", "total", `${mine.length} segment${mine.length === 1 ? "" : "s"} \u2022 ${n} house${n === 1 ? "" : "s"}` +
+        (b ? ` \u2022 ${bagWord(b)}` : ""), body);
       // "available for more" is for when you've finished: greyed out until every tracked segment is done
       const av = h("button", "available", "Text \u201cavailable for more\u201d", body); av.type = "button"; msgIcon(av);
       av.disabled = !allDone() || !textsReady();
@@ -1396,6 +1457,7 @@ function renderList() {
       linesOf(s, main, false);
       const meta = h("span", "meta", s.houses + (s.houses === 1 ? " house" : " houses"), main);
       if (s.den !== denKey && denKey !== PACK) meta.textContent += " \u2022 " + denOf(s).short;
+      if (tallying() && bags[s.id]) meta.textContent += " \u2022 " + bagWord(bags[s.id]);
       if (mySegs.target === s.id) h("span", "badge", "Target", meta);
       if (mySegs.done.includes(s.id)) { row.classList.add("is-done"); h("span", "badge done", "\u2714\ufe0e Done", meta); }
       main.addEventListener("click", () => { closeSheet(); select(s.id, true); });
@@ -1584,7 +1646,8 @@ function applySetup(q) {                  // q: the parts after # of a setup lin
 }
 function textBody(kind, id, extra) {
   const who = `Wk${week()}: ${settings.group}`;
-  return { done: `${who} \u2013 ${id} done`, coverage: `${who} \u2013 ${id} needs coverage`,
+  const tally = tallying() && bags[id] ? `, ${bagWord(bags[id])}` : "";
+  return { done: `${who} \u2013 ${id} done${tally}`, coverage: `${who} \u2013 ${id} needs coverage`,
            bags: `${who} \u2013 send bags to ${id}${bagsWhere(id)}`,
            available: `${who} available` + (extra ? ` \u2013 ${extra}` : "") }[kind];
 }
