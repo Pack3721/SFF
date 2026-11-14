@@ -1209,12 +1209,12 @@ function renderCard() {
       else finishSegment(s.id);
     });
   }
-  const textBtn = (label, kind) => {
-    const b = h("button", "", label, texts); b.type = "button"; msgIcon(b);
+  const textBtn = (label, kind, cls) => {
+    const b = h("button", cls || "", label, texts); b.type = "button"; msgIcon(b);
     b.disabled = !textsReady();
     b.addEventListener("click", () => sendText(kind, s.id));
   };
-  textBtn("Needs coverage", "coverage");
+  textBtn("Needs coverage", "coverage", "minor");   // the less likely one: a smaller target than Done
   if (week() !== 2) textBtn("Need bags", "bags");   // bags only go out in Week 1
   document.body.style.setProperty("--card-h", card.getBoundingClientRect().height + "px");
 }

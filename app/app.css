@@ -434,3 +434,4 @@ body.leader #tools { bottom: calc(var(--leader-h, 0px) + 4px); }
   border-radius: 22px; background: #1e7e34; color: #fff; font-size: 18px; font-weight: 800; box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
 #scan .scan-view.found .scan-got { display: block; }
 #scan .scan-say { margin: 8px 0 4px; font-size: 15px; color: #444; }
+.card-texts button.minor { flex: 0 1 auto; font-size: 13px; font-weight: 600; min-height: 40px; align-self: center; padding: 0 10px; color: #444; }
