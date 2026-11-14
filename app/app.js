@@ -1225,14 +1225,25 @@ function renderCard() {
   const texts = h("div", "card-texts", null, card);
   const isDone = mySegs.done.includes(s.id);
   if (isDone || mySegs.target === s.id) {
+    const auto = settings.autoText;      // off: Done only marks it, and Text done sends the text
     const dn = h("button", "done" + (isDone ? " on" : ""), isDone ? "\u2714\ufe0e Done \u2013 undo" : "\u2714\ufe0e Done", texts);
     dn.type = "button";
-    if (!isDone) msgIcon(dn);
+    if (!isDone && auto) msgIcon(dn);
     dn.addEventListener("click", () => {
       if (isDone) markDone(s.id, false);   // undo: no text
+      else if (!auto) markDone(s.id, true);
       else if (tallying() && textsReady() && !bags[s.id]) askBags(s.id);   // no tally: ask roughly how many
       else finishSegment(s.id);
     });
+    if (!auto) {
+      const td = h("button", "", "Text done", texts); td.type = "button"; msgIcon(td);
+      td.disabled = !textsReady();
+      td.addEventListener("click", () => {
+        if (isDone) sendText("done", s.id);                                  // already marked: just the text
+        else if (tallying() && !bags[s.id]) askBags(s.id);
+        else finishSegment(s.id);
+      });
+    }
   }
   const textBtn = (label, kind, cls) => {
     const b = h("button", cls || "", label, texts); b.type = "button"; msgIcon(b);
@@ -1632,7 +1643,7 @@ document.getElementById("sheet-close").addEventListener("click", closeSheet);
 // Wording matches page 1 of the paper pack, with the week in front: "Wk1 Wolf A – W7 done".
 const SINGULAR = { L: "Lion", T: "Tiger", W: "Wolf", B: "Bear", WB: "Webelos", A: "AOL" };
 const SET_KEY = "sff.settings";
-let settings = { tel: "", group: "" };   // group: typed as people say it, e.g. "Wolf A"
+let settings = { tel: "", group: "", autoText: true };   // group: typed as people say it, e.g. "Wolf A"; autoText: Done texts too
 
 // The 2026 walk: Week 1 (bags) is Saturday Nov 14, Week 2 (pickup) is Saturday Nov 21. The week comes
 // from the date: Week 1 up to Nov 14, Week 2 after.
@@ -1647,7 +1658,7 @@ function loadSettings() {
   try {
     const v = JSON.parse(localStorage.getItem(SET_KEY) || "{}");
     if (!v.group && v.groupDen) v.group = SINGULAR[v.groupDen] + (v.letter ? " " + v.letter : "");   // older den + letter
-    settings = { tel: v.tel || "", group: v.group || "" };
+    settings = { tel: v.tel || "", group: v.group || "", autoText: v.autoText !== false };
   } catch (_) { /* ignore */ }
 }
 function saveSettings() {
@@ -1866,6 +1877,14 @@ function renderSettings() {
     preview.textContent = `Texts will read: Wk${week()}: ${group.value.trim() || "\u2026"} \u2013 ${mySegs.target || "W7"} done`;
   }
   paint();
+  // Not every phone in a group needs to text: one parent can be the texter. Off: Done just marks the
+  // segment, and a separate "Text done" button sends the text.
+  const atL = h("label", "field check", null, f);
+  const at = h("input", "", null, atL);
+  Object.assign(at, { type: "checkbox", checked: settings.autoText });
+  h("span", "field-label", "Text the dispatcher when I tap Done", atL);
+  h("span", "hint", "Turn off if someone else in your group sends the texts. Done then just marks the segment, with a separate Text done button.", atL);
+  at.addEventListener("change", () => { settings.autoText = at.checked; saveSettings(); renderCard(); });
 
   // Saves as you fill it in: the group as you type; the number once it's a good 10 digits (or cleared).
   // A number that doesn't look right is never saved (the last good one stays); you're told when you leave it.

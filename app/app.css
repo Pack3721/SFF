@@ -318,7 +318,9 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 4px); }
 #setup-status[hidden] { display: none; }
 #setup-status .msg-icon { order: -1; margin: 0; }
 #banner .row .msg-icon { margin-left: auto; }
-@media (max-width: 359px) { .card-texts button { white-space: normal; line-height: 1.15; } }   /* small phones: labels may wrap */
+/* small phones: buttons that don't fit move to a second line, rather than squeezing their labels */
+.card-texts { flex-wrap: wrap; }
+.card-texts button.minor { margin-left: auto; }
 #sheet .available:disabled { color: #999; background: #f1f1f1; }
 #sheet .available-note { margin: -6px 0 10px; font-size: 13px; color: #777; text-align: center; }
 
@@ -435,3 +437,7 @@ body.leader #tools { bottom: calc(var(--leader-h, 0px) + 4px); }
 #scan .scan-view.found .scan-got { display: block; }
 #scan .scan-say { margin: 8px 0 4px; font-size: 15px; color: #444; }
 .card-texts button.minor { flex: 0 1 auto; font-size: 13px; font-weight: 600; min-height: 40px; align-self: center; padding: 0 10px; color: #444; }
+#settings .field.check { display: grid; grid-template-columns: auto 1fr; column-gap: 10px; align-items: center; }
+#settings .field.check input { width: 22px; height: 22px; margin: 0; }
+#settings .field.check .hint { grid-column: 2; }
+#settings .field.check .field-label { font-size: 15px; font-weight: 700; text-transform: none; letter-spacing: 0; color: #111; }
