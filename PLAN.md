@@ -152,7 +152,7 @@ Jay's notes for Week 2 (Sat Nov 21, 2026), written after Week 1. Not built yet.
 - **No "Need bags"** in Week 2 (already hidden in Week 2).
 - **Done is tracked separately for each week.** Week 2 starts with nothing done, and Week 1's done marks are not shown in Week 2. (Today `sff.segments` keeps one `done` list with no week, so Week 1 ticks would carry over.)
 - **Starred segments and the target stay** into Week 2 until the parent scans a new group QR.
-- **Maybe: a QR scanner in the app**, to make updating for Week 2 easier. On iPhone, the camera app opens a scanned link in Safari, not in the Home Screen app, which has its own storage; a scanner inside the app would update the app itself. It would have to decode on the phone with no online service: Chrome on Android has a built-in barcode reader (`BarcodeDetector`), Safari doesn't, so iPhones would need a decoder vendored into `app/vendor/`.
+- **Maybe: a QR scanner in the app**, to make updating for Week 2 easier. On iPhone, the camera app opens a scanned link in Safari, not in the Home Screen app, which has its own storage; a scanner inside the app would update the app itself. It would have to decode on the phone with no online service: Chrome on Android has a built-in barcode reader (`BarcodeDetector`), Safari doesn't, so iPhones would need a decoder vendored into `app/vendor/`. Jay's sound-box-crosswords already does this (`js/scan.js` on its main branch): jsQR 1.4.0 (Apache-2.0) reading frames from `getUserMedia`. Here jsQR would be vendored rather than loaded from a CDN, and credited in `vendor/README.md` and `NOTICE.md`.
 
 ## Decisions
 
