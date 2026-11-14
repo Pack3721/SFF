@@ -1308,7 +1308,42 @@ function renderBanner() {
 // Left = next of your unfinished segments, right = previous (wrapping). Inside the banner's frame the
 // content follows your finger, slides out, and the new target slides in from the other side (the dots stay
 // put). An open card follows the new target; the map glides to it unless Center on me is following you.
-const cycleList = () => mySegs.tracked.map(segById).sort(segOrder).filter((x) => !mySegs.done.includes(x.id));
+// Swipe order: around the shortest loop through your segments, so each swipe goes to a neighbour on the ground
+// (and wrapping from the last back to the first does too). Worked out once for all your tracked segments, done
+// ones included, so it doesn't reshuffle as you go; done ones are skipped. Starts at your lowest-numbered one.
+let loopCache = { key: "", order: [] };
+function loopOrder() {
+  const key = mySegs.tracked.slice().sort().join(",");
+  if (loopCache.key === key) return loopCache.order;
+  const segs = mySegs.tracked.map(segById).sort(segOrder), n = segs.length;
+  const pts = segs.map((s) => s.route.map(P));
+  const D = segs.map((_, i) => segs.map((_, j) => {              // closest approach of the two streets
+    if (i === j) return 0;
+    let m = Infinity;
+    for (const p of pts[i]) for (const q of pts[j]) { const d = dist(p, q); if (d < m) m = d; }
+    return m;
+  }));
+  // nearest neighbour from the first, then 2-opt: reverse a stretch while that shortens the loop
+  const tour = [0], left = new Set(segs.map((_, i) => i).slice(1));
+  while (left.size) {
+    const cur = tour[tour.length - 1]; let nb = -1, bd = Infinity;
+    for (const j of left) if (D[cur][j] < bd) { bd = D[cur][j]; nb = j; }
+    tour.push(nb); left.delete(nb);
+  }
+  for (let improved = true, pass = 0; improved && pass < 50 && n > 3; pass++) {
+    improved = false;
+    for (let a = 0; a < n - 1; a++) for (let b = a + 2; b < n; b++) {
+      const a2 = tour[a + 1], b2 = tour[(b + 1) % n];
+      if (b2 === tour[a]) continue;
+      if (D[tour[a]][tour[b]] + D[a2][b2] < D[tour[a]][a2] + D[tour[b]][b2] - 1e-6) {
+        tour.splice(a + 1, b - a, ...tour.slice(a + 1, b + 1).reverse()); improved = true;
+      }
+    }
+  }
+  loopCache = { key, order: tour.map((i) => segs[i].id) };
+  return loopCache.order;
+}
+const cycleList = () => loopOrder().map(segById).filter((x) => !mySegs.done.includes(x.id));
 let swipe = null, swiped = false;
 const bannerBox = () => banner.querySelector(".content");
 function cycleTarget(dir) {
