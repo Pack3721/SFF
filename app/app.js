@@ -146,6 +146,11 @@ function screenGroup(parent, x, y, rot, prio, fit) {
 function screenStroke(e, px, dash) { strokes.push({ el: e, px, dash }); return e; }
 
 // ---------- drawing ----------
+// landmark badges, drawn on a 24-unit grid: a schoolhouse with a flag, and a flame
+const LANDMARK_ICONS = {
+  school: { color: "#1f4e8c", d: "M12 1.5h4v2.5h-3v1.6l8 6.4h-2.5v9.5H5.5V12H3l8-6.4V1.5zM10 21.5v-5h4v5z" },
+  fire: { color: "#c62828", labelLeft: true, d: "M12.5 1.5c.6 3.6 3 5.4 4.6 7.9 1.3 2 1.6 4.3.9 6.4A6.3 6.3 0 0 1 12 22.5a6.3 6.3 0 0 1-6.2-6.6c0-2.4 1.1-4.3 2.6-5.8.1 1.6.8 2.9 2 3.6-.5-4.3.6-8 2.1-12.2zM12 21a3 3 0 0 1-3-3c0-1.6 1-2.7 2.1-3.9.2 1.2.9 1.9 1.7 2.2.2-1.2.7-2.1 1.4-2.9.6 1.2 1 2.4 1 3.6a3.1 3.1 0 0 1-3.2 4z" },
+};
 function draw() {
   view.textContent = "";
   scaled = []; strokes = []; placedK = 0;
@@ -301,12 +306,17 @@ function draw() {
     }
   }
 
-  // landmarks (Sappington Elementary, where every walk starts and ends): a marker and its name
+  // landmarks: Sappington Elementary (where every walk starts and ends) with a schoolhouse, and Fire
+  // Station 5 (Week 2's bag drop-off) with a flame. A round badge and its name.
   for (const lm of D.landmarks) {
     const [x, y] = P(lm.lonlat);
     const g = screenGroup(Lstop, x, y, 0, ALWAYS);
-    el("circle", { r: 7, fill: "#1a1a1a", stroke: "#fff", "stroke-width": 2.5 }, g);
-    el("text", { class: "landmark", x: 12, "dominant-baseline": "central" }, g).textContent = lm.name;
+    const icon = LANDMARK_ICONS[lm.icon];
+    el("circle", { r: icon ? 12 : 7, fill: icon ? icon.color : "#1a1a1a", stroke: "#fff", "stroke-width": 2.5 }, g);
+    if (icon) el("path", { d: icon.d, fill: "#fff", "fill-rule": "evenodd", transform: "translate(-8 -8) scale(.6667)" }, g);
+    const left = icon && icon.labelLeft;   // the firehouse is at the map's east edge: name on its left
+    el("text", { class: "landmark", x: left ? -17 : icon ? 17 : 12, "text-anchor": left ? "end" : "start", "dominant-baseline": "central" }, g)
+      .textContent = lm.name;
   }
 
   // 5. stop signs

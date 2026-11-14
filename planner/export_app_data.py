@@ -29,7 +29,10 @@ def checklist_lines(s):  # same text as the PDF dispatcher log
 out = {"event": "Scouting for Food 2026", "pack": "3721", "frozen": True,
        "coords": "[lon, lat] WGS84", "dens": [], "segments": [], "houses": [],
        "streets": [], "arterials": [], "zones": {}, "stops": [],
-       "landmarks": [{"name": "Sappington Elementary", "lonlat": [-90.364914, 38.542702]}]}
+       "landmarks": [{"name": "Sappington Elementary", "icon": "school", "lonlat": [-90.364914, 38.542702]},
+                     # Week 2 bag drop-off: Mehlville Fire Protection District Fire Station 5, 11020 Mueller Rd
+                     # (St. Louis County address point)
+                     {"name": "Fire Station 5 \u2013 bag drop-off", "icon": "fire", "lonlat": [-90.345189, 38.523408]}]}
 
 for d in g["DENS"]:
     name = {"Arrow of Light": "AOL"}.get(d["name"], d["name"])
@@ -59,6 +62,12 @@ for n, t, p in g["streets"]:
     if len(p) > 1: out["streets"].append({"name": n.title(), "type": t, "line": [ll(*q) for q in p]})
 for n, pts in g["ARTERIALS"].items():
     out["arterials"].append({"name": n, "line": [ll(int(a) * KX, int(b)) for a, b in (q.split(",") for q in pts.split())]})
+# Week 2 bag drop-off (Fire Station 5 on Mueller Rd): Mueller Rd, and S Lindbergh Blvd east of Tesson Ferry Rd,
+# from St. Louis County's street centrelines, already in [lon, lat]
+_drop = json.load(open("layers/dropoff_streets.json"))
+out["streets"].insert(0, {"name": "Mueller Rd", "type": 2, "line": _drop["mueller"]})
+for a in out["arterials"]:
+    if a["name"] == "S Lindbergh Blvd": a["line"] += _drop["lindbergh_east"]
 # faint grey buildings that aren't on any segment (background, as on the PDF)
 # (only those within ~90 m of a house we walk, to keep the file small)
 _hx = [h[1] for d in g["DENS"] for s in d["segs"] for p in (s.get("parts") or [s]) for h in p["houses"]]
