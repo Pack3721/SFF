@@ -146,10 +146,10 @@ function screenGroup(parent, x, y, rot, prio, fit) {
 function screenStroke(e, px, dash) { strokes.push({ el: e, px, dash }); return e; }
 
 // ---------- drawing ----------
-// landmark badges, drawn on a 24-unit grid: a schoolhouse with a flag, and a flame
+// landmark badges, drawn on a 24-unit grid: a schoolhouse with a flag, and a firehouse with its garage door
 const LANDMARK_ICONS = {
   school: { color: "#1f4e8c", d: "M12 1.5h4v2.5h-3v1.6l8 6.4h-2.5v9.5H5.5V12H3l8-6.4V1.5zM10 21.5v-5h4v5z" },
-  fire: { color: "#c62828", labelLeft: true, d: "M12.5 1.5c.6 3.6 3 5.4 4.6 7.9 1.3 2 1.6 4.3.9 6.4A6.3 6.3 0 0 1 12 22.5a6.3 6.3 0 0 1-6.2-6.6c0-2.4 1.1-4.3 2.6-5.8.1 1.6.8 2.9 2 3.6-.5-4.3.6-8 2.1-12.2zM12 21a3 3 0 0 1-3-3c0-1.6 1-2.7 2.1-3.9.2 1.2.9 1.9 1.7 2.2.2-1.2.7-2.1 1.4-2.9.6 1.2 1 2.4 1 3.6a3.1 3.1 0 0 1-3.2 4z" },
+  fire: { color: "#c62828", labelLeft: true, d: "M3.5 9.5L12 3l8.5 6.5V21h-17zM7 12h10v9H7zM7 14.2h10v1.3H7zM7 17.2h10v1.3H7z" },   // a firehouse: a building with a big garage door
 };
 function draw() {
   view.textContent = "";
@@ -307,7 +307,7 @@ function draw() {
   }
 
   // landmarks: Sappington Elementary (where every walk starts and ends) with a schoolhouse, and Fire
-  // Station 5 (Week 2's bag drop-off) with a flame. A round badge and its name.
+  // Station 5 (Week 2's bag drop-off) with a firehouse. A round badge and its name.
   for (const lm of D.landmarks) {
     const [x, y] = P(lm.lonlat);
     const g = screenGroup(Lstop, x, y, 0, ALWAYS);
