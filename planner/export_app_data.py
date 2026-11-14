@@ -36,7 +36,7 @@ out = {"event": "Scouting for Food 2026", "pack": "3721", "frozen": True,
                      # (St. Louis County address point)
                      {"name": "Fire Station 5 \u2013 bag drop-off", "icon": "fire",
                       "full": "Mehlville Fire Protection District \u2013 Fire Station 5",
-                      "address": "11020 Mueller Rd, St. Louis, MO 63123", "note": "Week 2: take the bags here.",
+                      "address": "11020 Mueller Rd, St. Louis, MO 63123", "note": "Week 2: take the bags of food here.",
                       "lonlat": [-90.345189, 38.523408]}]}
 
 for d in g["DENS"]:

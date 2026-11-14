@@ -1196,11 +1196,11 @@ function askBags(id) {
   h("span", "card-gap", null, top);
   const x = h("button", "close", "\u2715", top); x.type = "button"; x.setAttribute("aria-label", "Cancel");
   x.addEventListener("click", () => slideOut(availPanel));
-  h("p", "avail-q", "About how many bags?", availPanel);
+  h("p", "avail-q", "About how many bags of food?", availPanel);
   const row = h("div", "card-texts", null, availPanel);
   const box = h("input", "bag-ask", null, row);
   Object.assign(box, { type: "text", inputMode: "numeric", pattern: "[0-9]*", autocomplete: "off", placeholder: "0" });
-  box.setAttribute("aria-label", "About how many bags");
+  box.setAttribute("aria-label", "About how many bags of food");
   const send = h("button", "", "Send", row); send.type = "button"; msgIcon(send);
   const skip = h("button", "", "Skip", row); skip.type = "button"; msgIcon(skip);
   const go = (n) => { slideOut(availPanel); if (n) setBags(id, n); finishSegment(id); };
@@ -1549,7 +1549,7 @@ function allDoneWeek2() {
   h("span", "card-gap", null, top);
   const x = h("button", "close", "\u2715", top); x.type = "button"; x.setAttribute("aria-label", "Close");
   x.addEventListener("click", () => slideOut(availPanel));
-  h("p", "avail-q", "Take the bags to Fire Station 5, or offer to help with more segments.", availPanel);
+  h("p", "avail-q", "Take the bags of food to Fire Station 5, or offer to help with more segments.", availPanel);
   const row = h("div", "card-texts", null, availPanel);
   const go = h("a", "dir-btn", "Directions \u203a", row);
   directionsTo(go, fire.address || fire.lonlat);
