@@ -864,9 +864,10 @@ function resumeGps() {
 // Tracked = the segments your group was given. Target = the one you're on or heading to.
 // Both live only on this phone (localStorage).
 const SEG_KEY = "sff.segments";
-let mySegs = { tracked: [], target: null, done: [] };   // done: segments you've texted Done for, this week
+let mySegs = { tracked: [], target: null, done: [], covered: [] };   // covered: asked someone else to cover, this week   // done: segments you've texted Done for, this week
 // Done is kept separately for each week (Week 2 starts with nothing done); tracked and target carry over.
 let doneByWeek = {};                     // week -> ids, as saved; mySegs.done is this week's
+let coveredByWeek = {};                  // week -> ids crossed out after a "needs coverage" text
 let bagsByWeek = {};                     // week -> {segment id: bags picked up}; Week 2's tally
 let bags = {};                           // this week's tally
 const tallying = () => week() === 2;     // bags are counted at pickup, not when they're handed out
@@ -886,11 +887,14 @@ function loadSegs() {
     // saves from before weeks were kept apart have a bare done list: that was Week 1
     doneByWeek = v.doneByWeek || (v.done ? { 1: v.done } : {});
     bagsByWeek = v.bagsByWeek || {};
+    coveredByWeek = v.coveredByWeek || {};
   } catch (_) { /* nothing saved, or no storage */ }
   segWeek = weekKey();
   const ok = new Set(DATA.segments.map((s) => s.id));
   mySegs.done = (doneByWeek[segWeek] || []).filter((id) => ok.has(id));
   if (mySegs.done.includes(mySegs.target)) mySegs.target = null;
+  mySegs.covered = (coveredByWeek[segWeek] || []).filter((id) => ok.has(id) && mySegs.tracked.includes(id));
+  if (mySegs.covered.includes(mySegs.target)) mySegs.target = null;
   bags = {};
   for (const [id, n] of Object.entries(bagsByWeek[segWeek] || {})) if (ok.has(id) && n > 0) bags[id] = n;
 }
@@ -902,7 +906,8 @@ function checkWeek() {
 function saveSegs() {
   doneByWeek[segWeek || weekKey()] = mySegs.done;
   bagsByWeek[segWeek || weekKey()] = bags;
-  try { localStorage.setItem(SEG_KEY, JSON.stringify({ tracked: mySegs.tracked, target: mySegs.target, doneByWeek, bagsByWeek })); }
+  coveredByWeek[segWeek || weekKey()] = mySegs.covered;
+  try { localStorage.setItem(SEG_KEY, JSON.stringify({ tracked: mySegs.tracked, target: mySegs.target, doneByWeek, bagsByWeek, coveredByWeek })); }
   catch (_) { /* ignore */ }
 }
 
@@ -921,9 +926,10 @@ function joinDen(wasEmpty, id) {
 }
 // With just one unfinished segment of yours there's nothing to choose: make it the target. Done after
 // tracking, untracking, Done, a restore and on start, but not after you clear the target yourself.
+const stillToDo = (id) => !mySegs.done.includes(id) && !mySegs.covered.includes(id);   // not done, not handed off
 function autoTarget() {
   if (mySegs.target) return;
-  const left = mySegs.tracked.filter((x) => !mySegs.done.includes(x));
+  const left = mySegs.tracked.filter(stillToDo);
   if (left.length === 1) mySegs.target = left[0];
 }
 // After Done: with a recent GPS fix, the nearest unfinished segment of yours becomes the target. Which way
@@ -931,7 +937,7 @@ function autoTarget() {
 // half again as far. If it's wrong, a swipe changes it. Without GPS, nothing is picked (as before).
 function nearestTarget() {
   if (mySegs.target || !me.pos || Date.now() - me.lastFix > 60000) return;
-  const left = mySegs.tracked.filter((x) => !mySegs.done.includes(x)).map(segById);
+  const left = mySegs.tracked.filter(stillToDo).map(segById);
   if (left.length < 2) return;           // none, or autoTarget's one
   const facing = heading != null && Date.now() - headingAt < 15000 ? heading : null;
   let best = null, bestScore = Infinity;
@@ -964,7 +970,7 @@ function setTracked(id, on) {
 }
 function setTarget(id) {
   const wasEmpty = !mySegs.tracked.length;
-  if (mySegs.target !== id && mySegs.done.includes(id)) return;   // a done segment can't be the target
+  if (mySegs.target !== id && !stillToDo(id)) return;   // a done (or handed-off) segment can't be the target
   mySegs.target = mySegs.target === id ? null : id;
   if (mySegs.target && !isTracked(id)) mySegs.tracked.push(id);   // your target is always one of yours
   saveSegs();
@@ -990,15 +996,19 @@ function styleSegments() {
     e.faded = any && !isTracked(id) && id !== selected;
     for (const [part, attr, colour, grey] of e.paint) part.setAttribute(attr, e.faded ? grey : colour);
     // done: faint line, houses and labels; the tag turns pale with dark text and a green ✔
-    const done = mySegs.done.includes(id);
+    const crossed = mySegs.covered.includes(id);           // handed off: grey and crossed out
+    if (crossed) for (const [part, attr, , grey] of e.paint) part.setAttribute(attr, grey);
+    const done = mySegs.done.includes(id) || crossed;
     e.route.setAttribute("opacity", done ? 0.3 : e.faded ? 0.8 : 0.9);
     e.homes.setAttribute("opacity", done ? 0.35 : 1);
     for (const g of e.extras) g.setAttribute("opacity", done && g.kind !== "tag" ? 0.35 : 1);
     if (e.tagText) {
-      const w = e.tagW[done ? 1 : 0];
+      const w = e.tagW[done && !crossed ? 1 : 0];
       e.tagText.textContent = e.tagLabel;
       e.tagText.style.fill = done ? "#333" : "";
-      if (done) {
+      e.tagText.style.textDecoration = crossed ? "line-through" : "";
+      if (crossed) e.tagBox.setAttribute("fill", "#e6e6e6");
+      else if (done) {
         const tick = document.createElementNS(NS, "tspan");
         tick.textContent = " \u2714\ufe0e";
         tick.style.fill = "#1e7e34";
@@ -1092,7 +1102,7 @@ function targetRadio(s, parent, before, label) {
   b.setAttribute("role", "radio"); b.setAttribute("aria-checked", on);
   b.setAttribute("aria-label", (on ? "Target: " : "Make target: ") + s.id);
   b.title = on ? "Your target \u2013 tap to clear" : "Make this your target";
-  b.disabled = !on && mySegs.done.includes(s.id);   // done: nothing left to walk there (undo Done first)
+  b.disabled = !on && !stillToDo(s.id);   // done: nothing left to walk there (undo Done first)
   parent.insertBefore(b, before || null);
   return b;
 }
@@ -1224,6 +1234,17 @@ function renderCard() {
   go.setAttribute("aria-label", `Driving directions to the start of ${s.id}`);
   // texts to the dispatcher about this segment. Done is offered on your target (and Undo on a done one);
   // Needs coverage and Need bags only work once texting is set up, so they're greyed out until then.
+  if (mySegs.covered.includes(s.id)) {   // handed off with a "needs coverage" text: put it back if plans change
+    const row = h("div", "covered-row", null, card);
+    h("span", "", "Coverage asked \u2013 someone else is doing this one.", row);
+    const back = h("button", "share-btn", "We\u2019ll do it after all", row); back.type = "button";
+    back.addEventListener("click", () => {
+      mySegs.covered = mySegs.covered.filter((x) => x !== s.id);
+      autoTarget(); saveSegs(); segmentsChanged(false);
+    });
+    document.body.style.setProperty("--card-h", card.getBoundingClientRect().height + "px");
+    return;
+  }
   if (tallying()) bagRow(s, card);
   const texts = h("div", "card-texts", null, card);
   const isDone = mySegs.done.includes(s.id);
@@ -1282,7 +1303,7 @@ function renderBanner() {
     h("span", "what", "No target \u2013 tap to pick one", row);
   }
   // progress: houses on your tracked segments that are done, out of all your tracked houses
-  const mine = mySegs.tracked.map(segById);
+  const mine = mySegs.tracked.filter((id) => !mySegs.covered.includes(id)).map(segById);   // handed-off ones don't count
   if (!mine.length) return;
   const total = mine.reduce((t, x) => t + x.houses, 0);
   const done = mine.filter((x) => mySegs.done.includes(x.id)).reduce((t, x) => t + x.houses, 0);
@@ -1356,7 +1377,7 @@ function loopOrder() {
   loopCache = { key, order: tour.map((i) => segs[i].id) };
   return loopCache.order;
 }
-const cycleList = () => loopOrder().map(segById).filter((x) => !mySegs.done.includes(x.id));
+const cycleList = () => loopOrder().map(segById).filter((x) => stillToDo(x.id));
 let swipe = null, swiped = false;
 const bannerBox = () => banner.querySelector(".content");
 function cycleTarget(dir) {
@@ -1466,7 +1487,7 @@ function renderCover() {
   h("span", "card-gap", null, top);
   const x = h("button", "close", "\u2715", top); x.type = "button"; x.setAttribute("aria-label", "Cancel");
   x.addEventListener("click", endCover);
-  h("p", "hint", "Tap the segments on the map your group can\u2019t get to. Tap one again to unpick it. Once texted, they come off your list.", coverPanel);
+  h("p", "hint", "Tap the segments on the map your group can\u2019t get to. Tap one again to unpick it. Once texted, they\u2019re crossed out on your list.", coverPanel);
   const ids = [...cover].sort((a, b) => segOrder(segById(a), segById(b)));
   const picked = h("p", "cov-picked", null, coverPanel);
   if (ids.length) for (const id of ids) chip(segById(id), picked);
@@ -1476,11 +1497,11 @@ function renderCover() {
   send.disabled = !ids.length;
   send.addEventListener("click", () => {
     if (!sendText("coverage", ids.join(", "))) return;
-    // someone else will cover them: they come off your list (not ones you've already marked done)
-    const gone = ids.filter((id) => isTracked(id) && !mySegs.done.includes(id));
-    if (gone.length) {
-      mySegs.tracked = mySegs.tracked.filter((id) => !gone.includes(id));
-      if (gone.includes(mySegs.target)) { mySegs.target = null; autoTarget(); nearestTarget(); }
+    // someone else will cover them: crossed out on your list (not ones already done), and put back from their card
+    const asked = ids.filter((id) => isTracked(id) && !mySegs.done.includes(id) && !mySegs.covered.includes(id));
+    if (asked.length) {
+      mySegs.covered.push(...asked);
+      if (asked.includes(mySegs.target)) { mySegs.target = null; autoTarget(); nearestTarget(); }
       saveSegs(); segmentsChanged(false);
     }
     endCover();
@@ -1565,7 +1586,7 @@ function openContact() {
 }
 callBtn.addEventListener("click", openContact);
 
-const allDone = () => mySegs.tracked.length > 0 && mySegs.tracked.every((id) => mySegs.done.includes(id));
+const allDone = () => mySegs.tracked.some((id) => mySegs.done.includes(id)) && !mySegs.tracked.some(stillToDo);
 
 // the list: yours first, then the den's (or every den's, in the whole-pack view)
 // the list has two tabs: Segments (the den's, or every den's in the pack view) and Mine (tracked ones)
@@ -1618,6 +1639,7 @@ function renderList() {
       if (tallying() && bags[s.id]) meta.textContent += " \u2022 " + bagWord(bags[s.id]);
       if (mySegs.target === s.id) h("span", "badge", "Target", meta);
       if (mySegs.done.includes(s.id)) { row.classList.add("is-done"); h("span", "badge done", "\u2714\ufe0e Done", meta); }
+      else if (mySegs.covered.includes(s.id)) { row.classList.add("is-covered"); h("span", "badge covered", "Coverage asked", meta); }
       main.addEventListener("click", () => { closeSheet(); select(s.id, true); });
       const radio = targetRadio(s, row, main);
       radio.addEventListener("click", () => {

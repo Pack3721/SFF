@@ -452,3 +452,8 @@ body.leader #tools { bottom: calc(var(--leader-h, 0px) + 4px); }
   font-weight: 700; min-height: 48px; border-radius: 12px; border: 2px solid #1e7e34; background: #1e7e34; color: #fff; }
 #cover .cov-send:disabled { background: #f1f1f1; border-color: #f1f1f1; color: #999; }
 body.covering #tools { display: none; }
+/* handed off with a "needs coverage" text */
+.seg-row.is-covered .lines, .seg-row.is-covered .chip { text-decoration: line-through; opacity: .55; }
+.seg-main .badge.covered { color: #777; }
+.covered-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 10px; font-size: 15px; color: #444; }
+.covered-row .share-btn { font: inherit; font-size: 15px; font-weight: 700; min-height: 44px; padding: 0 16px; color: #111; background: #fff; border: 2px solid #333; border-radius: 22px; }
