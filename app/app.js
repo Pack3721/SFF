@@ -601,6 +601,8 @@ function unzoomPage() {
 }
 if (window.visualViewport) visualViewport.addEventListener("resize", () => setTimeout(unzoomPage, 300));
 document.addEventListener("visibilitychange", () => { if (!document.hidden) unzoomPage(); });
+document.addEventListener("visibilitychange", () => { if (!document.hidden) checkWeek(); });   // woke up in a new week
+window.addEventListener("pageshow", (e) => { if (e.persisted) checkWeek(); });
 
 let resizeTimer;
 window.addEventListener("resize", () => {
@@ -851,7 +853,10 @@ function resumeGps() {
 // Tracked = the segments your group was given. Target = the one you're on or heading to.
 // Both live only on this phone (localStorage).
 const SEG_KEY = "sff.segments";
-let mySegs = { tracked: [], target: null, done: [] };   // done: segments you've texted Done for
+let mySegs = { tracked: [], target: null, done: [] };   // done: segments you've texted Done for, this week
+// Done is kept separately for each week (Week 2 starts with nothing done); tracked and target carry over.
+let doneByWeek = {};                     // week -> ids, as saved; mySegs.done is this week's
+let segWeek = null;                      // the week mySegs.done belongs to
 let segEls = {};                         // id -> drawn pieces, rebuilt by draw()
 let selected = null;                     // the segment shown in the card
 const card = document.getElementById("card");
@@ -864,11 +869,24 @@ function loadSegs() {
     const ok = new Set(DATA.segments.map((s) => s.id));
     mySegs.tracked = (v.tracked || []).filter((id) => ok.has(id));
     mySegs.target = ok.has(v.target) ? v.target : null;
-    mySegs.done = (v.done || []).filter((id) => ok.has(id));
-    if (mySegs.done.includes(mySegs.target)) mySegs.target = null;
+    // saves from before weeks were kept apart have a bare done list: that was Week 1
+    doneByWeek = v.doneByWeek || (v.done ? { 1: v.done } : {});
   } catch (_) { /* nothing saved, or no storage */ }
+  segWeek = week();
+  const ok = new Set(DATA.segments.map((s) => s.id));
+  mySegs.done = (doneByWeek[segWeek] || []).filter((id) => ok.has(id));
+  if (mySegs.done.includes(mySegs.target)) mySegs.target = null;
 }
-function saveSegs() { try { localStorage.setItem(SEG_KEY, JSON.stringify(mySegs)); } catch (_) { /* ignore */ } }
+// the date moved into another week while the page was open (or asleep): show that week's done marks
+function checkWeek() {
+  if (segWeek === null || segWeek === week()) return;
+  loadSegs(); autoTarget(); segmentsChanged(false);
+}
+function saveSegs() {
+  doneByWeek[segWeek || week()] = mySegs.done;
+  try { localStorage.setItem(SEG_KEY, JSON.stringify({ tracked: mySegs.tracked, target: mySegs.target, doneByWeek })); }
+  catch (_) { /* ignore */ }
+}
 
 const segById = (id) => DATA.segments.find((s) => s.id === id);
 const denOf = (s) => DATA.dens.find((d) => d.key === s.den);
@@ -1539,7 +1557,7 @@ function setupLink() {
   if (denKey) q.set("den", denKey);
   q.set("seg", mySegs.tracked.join(","));
   if (mySegs.target) q.set("t", mySegs.target);
-  if (mySegs.done.length) q.set("d", mySegs.done.join(","));
+  if (mySegs.done.length) { q.set("d", mySegs.done.join(",")); q.set("w", week()); }   // done marks belong to a week
   return new URL("./", location.href).href + "#" + q.toString().replace(/%2C/g, ",");
 }
 function applySetup(q) {                  // q: the parts after # of a setup link
@@ -1552,7 +1570,9 @@ function applySetup(q) {                  // q: the parts after # of a setup lin
   if (q.has("seg")) {
     mySegs.tracked = ids(q.get("seg"));
     mySegs.target = mySegs.tracked.includes((q.get("t") || "").toUpperCase()) ? q.get("t").toUpperCase() : null;
-    mySegs.done = ids(q.get("d")).filter((x) => mySegs.tracked.includes(x));
+    // done marks only count in the week they were made (links from before "w" existed were Week 1)
+    const sameWeek = Number(q.get("w") || 1) === week();
+    mySegs.done = sameWeek ? ids(q.get("d")).filter((x) => mySegs.tracked.includes(x)) : [];
     autoTarget();
     saveSegs();
   }
