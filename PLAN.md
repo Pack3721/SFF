@@ -146,7 +146,7 @@ A group's QR code or link is a group setup link (`#tel=…&g=Wolf+A&den=W&seg=W6
 Jay's notes for Week 2 (Sat Nov 21, 2026), written after Week 1. Not built yet.
 
 - **Must stay the same:** den areas and segments.
-- **Dividing a den:** Week 2 is more about driving around looking for bags, so dens may want to divide their area differently. Auto split should build groups around car loops rather than walking distance.
+- **Dividing a den:** it's up to each den leader whether to re-divide for Week 2. Groups can keep their Week 1 segments. Week 2 is more about driving around looking for bags, so some dens may want to divide their area differently. Auto split should build groups around car loops rather than walking distance.
 - **Bag tally:** record bags for each segment in the app, as stats for next year, and send the counts to the dispatcher. People can add to a segment's tally as they go. When a segment is marked done, the text includes the count if there's a tally; if not, the app can optionally ask roughly how many bags before texting.
 - **Drop-off:** add Mehlville firehouse 5 to the map as the place to take bags. When a group is done, offer directions there, and offer to text the dispatcher that the group is available to help.
 - **No "Need bags"** in Week 2 (already hidden in Week 2).
