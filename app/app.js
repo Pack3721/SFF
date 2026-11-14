@@ -926,6 +926,31 @@ function autoTarget() {
   const left = mySegs.tracked.filter((x) => !mySegs.done.includes(x));
   if (left.length === 1) mySegs.target = left[0];
 }
+// After Done: with a recent GPS fix, the nearest unfinished segment of yours becomes the target. Which way
+// you're facing (compass, or GPS direction of travel) counts a little: a segment behind you counts as up to
+// half again as far. If it's wrong, a swipe changes it. Without GPS, nothing is picked (as before).
+function nearestTarget() {
+  if (mySegs.target || !me.pos || Date.now() - me.lastFix > 60000) return;
+  const left = mySegs.tracked.filter((x) => !mySegs.done.includes(x)).map(segById);
+  if (left.length < 2) return;           // none, or autoTarget's one
+  const facing = heading != null && Date.now() - headingAt < 15000 ? heading : null;
+  let best = null, bestScore = Infinity;
+  for (const s of left) {
+    const pts = s.route.map(P);
+    let d = Infinity, at = pts[0];
+    for (let i = 1; i < pts.length; i++) {
+      const di = segDist(me.pos, pts[i - 1], pts[i]);
+      if (di < d) { d = di; at = dist(me.pos, pts[i - 1]) < dist(me.pos, pts[i]) ? pts[i - 1] : pts[i]; }
+    }
+    let score = d;
+    if (facing != null && d > 15) {      // right next to it, direction doesn't matter
+      const bearing = Math.atan2(at[0] - me.pos[0], -(at[1] - me.pos[1])) * 180 / Math.PI;   // map y grows southward
+      score *= 1 + 0.25 * (1 - Math.cos((bearing - facing) * Math.PI / 180));
+    }
+    if (score < bestScore) { bestScore = score; best = s.id; }
+  }
+  if (best) mySegs.target = best;
+}
 function setTracked(id, on) {
   if (!on && mySegs.done.includes(id)) return;   // done segments can't be removed (undo Done first)
   const wasEmpty = !mySegs.tracked.length;
@@ -1748,8 +1773,9 @@ function markDone(id, on) {
   let next = null;
   if (on) {
     mySegs.done.push(id);
-    if (mySegs.target === id || allDone()) mySegs.target = null;   // done with it: no target until you pick the next
-    autoTarget();                                                 // …unless only one is left
+    if (mySegs.target === id || allDone()) mySegs.target = null;   // done with it: the next one, if we can tell
+    autoTarget();                                                 // only one left: that one
+    nearestTarget();                                              // or, with GPS, the nearest
     next = mySegs.target && mySegs.target !== id ? mySegs.target : null;
   }
   saveSegs();
