@@ -1948,14 +1948,20 @@ function groupPane(pane) {
 }
 // Settings from a copied or scanned link: a group setup link (name, den, segments, number) or the
 // dispatcher's (number, den). Anything else is turned down. Returns false if it wasn't one of ours.
-function useLinkText(text) {
+function linkLooksOurs(text) {
   text = (text || "").trim();
-  const at = text.indexOf("#");
   if (/^https?:/i.test(text)) {
     try { const u = new URL(text); if (u.host !== location.host && u.host !== "pack3721.github.io") return false; } catch (_) { return false; }
   }
+  const at = text.indexOf("#");
   const q = new URLSearchParams(at >= 0 ? text.slice(at + 1) : "");
-  if (!q.has("seg") && !q.has("g") && !q.has("tel")) return false;
+  return q.has("seg") || q.has("g") || q.has("tel");
+}
+function useLinkText(text) {
+  if (!linkLooksOurs(text)) return false;
+  text = text.trim();
+  const at = text.indexOf("#");
+  const q = new URLSearchParams(at >= 0 ? text.slice(at + 1) : "");
   const n = applySetup(q);
   pick(localStorage.getItem(STORE_KEY) || denKey);
   textingChanged();
@@ -1982,6 +1988,11 @@ function loadJsQR() {
   });
 }
 function closeScanner() { if (scanStop) scanStop(); slideOut(scanPanel); }
+// Focus: an iPhone Pro's main camera can't focus closer than about 20 cm, so a code held close stays
+// blurry. So ask for a sharp picture, zoom 2x where the camera allows it, and read the middle of the
+// picture at full detail: the code reads from farther away, where it's sharp. (As in sound-box-crosswords.)
+// Found: the frame it was read from stays, the code outlined in green, with "Got it!", for a moment
+// before it's applied, so it's plain what happened.
 function openScanner() {
   if (scanStop) scanStop();
   scanPanel.textContent = "";
@@ -1990,37 +2001,66 @@ function openScanner() {
   h("span", "card-gap", null, top);
   const x = h("button", "close", "\u2715", top); x.type = "button"; x.setAttribute("aria-label", "Close");
   x.addEventListener("click", closeScanner);
-  const v = h("video", "scan-video", null, scanPanel);
+  const view = h("div", "scan-view", null, scanPanel);
+  const v = h("video", "scan-video", null, view);
   v.muted = true; v.setAttribute("playsinline", ""); v.setAttribute("aria-hidden", "true");
+  h("span", "scan-got", "\u2714\ufe0e Got it!", view);
   const say = h("p", "scan-say", "Point the camera at your group\u2019s QR code (or the dispatcher\u2019s).", scanPanel);
+  say.setAttribute("role", "status");
   slideIn(scanPanel);
   let stream = null, timer = 0, stopped = false;
-  scanStop = () => {
-    stopped = true; clearTimeout(timer);
-    if (stream) stream.getTracks().forEach((t) => t.stop());
-    v.srcObject = null; scanStop = null;
-  };
-  Promise.all([loadJsQR(), navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false })])
-    .then(([, s]) => {
+  const camOff = () => { if (stream) stream.getTracks().forEach((t) => t.stop()); stream = null; v.srcObject = null; };
+  scanStop = () => { stopped = true; clearTimeout(timer); camOff(); scanStop = null; };
+  Promise.all([loadJsQR(), navigator.mediaDevices.getUserMedia({
+    video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false })])
+    .then(async ([, s]) => {
       if (stopped) { s.getTracks().forEach((t) => t.stop()); return; }
-      stream = s; v.srcObject = s;
-      return v.play().then(() => {
-        const c = document.createElement("canvas"), ctx = c.getContext("2d", { willReadFrequently: true });
-        const look = () => {
-          if (stopped) return;
-          if (v.videoWidth) {
-            const w = Math.min(640, v.videoWidth), hh = Math.round(v.videoHeight * w / v.videoWidth);
-            c.width = w; c.height = hh; ctx.drawImage(v, 0, 0, w, hh);
-            const code = jsQR(ctx.getImageData(0, 0, w, hh).data, w, hh, { inversionAttempts: "dontInvert" });
-            if (code && code.data) {
-              if (useLinkText(code.data)) { closeScanner(); return; }
-              say.textContent = "That QR code isn\u2019t for the SFF 721 Map. Try your group\u2019s code.";
-            }
+      stream = s;
+      const track = s.getVideoTracks()[0];
+      try {
+        const zoom = track.getCapabilities && track.getCapabilities().zoom;
+        if (zoom && zoom.max >= 2) await track.applyConstraints({ advanced: [{ zoom: Math.max(zoom.min, 2) }] });
+      } catch (_) { /* not every camera or browser can zoom */ }
+      v.srcObject = s;
+      await v.play();
+      const c = document.createElement("canvas"), ctx = c.getContext("2d", { willReadFrequently: true });
+      const look = () => {
+        if (stopped) return;
+        const vw = v.videoWidth, vh = v.videoHeight;
+        if (vw) {
+          // the middle square, at most 800 pixels across: full detail where the code is held
+          const side = Math.min(vw, vh) * 0.8, w = Math.min(800, Math.round(side));
+          c.width = w; c.height = w;
+          ctx.drawImage(v, (vw - side) / 2, (vh - side) / 2, side, side, 0, 0, w, w);
+          const code = jsQR(ctx.getImageData(0, 0, w, w).data, w, w, { inversionAttempts: "dontInvert" });
+          if (code && code.data) {
+            if (linkLooksOurs(code.data)) { found(code, vw, vh, side, w); return; }
+            say.textContent = "That QR code isn\u2019t for the SFF 721 Map. Try your group\u2019s code.";
           }
-          timer = setTimeout(look, 150);
-        };
-        look();
-      });
+        }
+        timer = setTimeout(look, 200);   // 5 a second is plenty, and spares the battery
+      };
+      // keep the frame, outline the code, say "Got it!", then apply it and close
+      const found = (code, vw, vh, side, w) => {
+        const k = Math.min(1, 960 / vw), still = document.createElement("canvas");
+        still.width = Math.round(vw * k); still.height = Math.round(vh * k);
+        const sc = still.getContext("2d");
+        sc.drawImage(v, 0, 0, still.width, still.height);
+        const at = (p) => [((vw - side) / 2 + p.x * side / w) * k, ((vh - side) / 2 + p.y * side / w) * k];
+        const L = code.location;
+        sc.beginPath();
+        [L.topLeftCorner, L.topRightCorner, L.bottomRightCorner, L.bottomLeftCorner].forEach((p, i) => {
+          const [px, py] = at(p); if (i) sc.lineTo(px, py); else sc.moveTo(px, py);
+        });
+        sc.closePath(); sc.lineJoin = "round"; sc.lineWidth = Math.max(4, still.width / 80); sc.strokeStyle = "#1e7e34"; sc.stroke();
+        still.className = "scan-still"; still.setAttribute("aria-hidden", "true");
+        view.insertBefore(still, view.querySelector(".scan-got"));
+        view.classList.add("found");
+        say.textContent = "";
+        camOff();
+        timer = setTimeout(() => { if (stopped) return; useLinkText(code.data); closeScanner(); }, 1100);
+      };
+      look();
     })
     .catch((e) => {
       if (stopped) return;
