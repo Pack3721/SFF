@@ -2646,6 +2646,7 @@ function printHandouts(only) {
     page.appendChild(map);
     const foot = h("div", "print-foot", null, page);
     const list = h("ol", "print-segs", null, foot);
+    list.style.gridTemplateRows = `repeat(${Math.ceil(den.segments.length / 2)}, auto)`;
     const order = den.segments.map(segById).sort((a, b) => (leader.assign[b.id] === g) - (leader.assign[a.id] === g) || segOrder(a, b));
     for (const sg of order) {
       const mine = leader.assign[sg.id] === g;

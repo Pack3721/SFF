@@ -472,8 +472,8 @@ body.printing #wrap { position: fixed; left: 0; top: 0; right: auto; bottom: aut
   html, body { height: auto !important; overflow: visible !important; position: static !important; }
   body { background: #fff; }
   #print { display: block; }
-  /* a fixed height that fits Letter even with Safari's bigger margins; the map takes what the header and list leave */
-  .print-page { break-after: page; break-inside: avoid; height: 9in; display: flex; flex-direction: column; overflow: hidden;
+  /* a fixed height that fits Letter even with Safari's margins, header and footer; the map takes what the header and list leave */
+  .print-page { break-after: page; break-inside: avoid; height: 8.3in; display: flex; flex-direction: column; overflow: hidden;
     font: 10pt/1.3 -apple-system, "Helvetica Neue", Arial, sans-serif; color: #111; -webkit-text-size-adjust: none; }
   .print-page:last-child { break-after: auto; }
   .print-head { flex: none; display: flex; align-items: baseline; gap: 12px; border-bottom: 2px solid #111; margin-bottom: 4px; }
@@ -481,7 +481,8 @@ body.printing #wrap { position: fixed; left: 0; top: 0; right: auto; bottom: aut
   .print-head p { margin: 0; font-size: 11pt; color: #333; }
   .print-map { display: block; flex: 1 1 0; min-height: 0; width: 100%; height: 100%; }
   .print-foot { flex: none; display: flex; gap: 14px; margin-top: 4px; }
-  .print-segs { flex: 1; margin: 0; padding: 0; list-style: none; columns: 2; column-gap: 14px; font-size: 8.5pt; }
+  /* two columns, filled down then across (a grid: Safari's print layout ignores CSS columns here) */
+  .print-segs { flex: 1; margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr 1fr; grid-auto-flow: column; align-content: start; column-gap: 14px; font-size: 8.5pt; }
   .print-segs li { break-inside: avoid; display: flex; gap: 4px; color: #666; }
   .print-segs li.mine { color: #111; }
   .print-segs b { flex: none; min-width: 3.6em; }
