@@ -479,6 +479,7 @@ body.printing #wrap { position: fixed; left: 0; top: 0; right: auto; bottom: aut
   .print-head { flex: none; display: flex; align-items: baseline; gap: 12px; border-bottom: 2px solid #111; margin-bottom: 4px; }
   .print-head h1 { margin: 0; font-size: 20pt; }
   .print-head p { margin: 0; font-size: 11pt; color: #333; }
+  .print-head .print-ver { margin-left: auto; font-size: 8pt; color: #999; }
   .print-map { display: block; flex: 1 1 0; min-height: 0; width: 100%; height: 100%; }
   .print-foot { flex: none; display: flex; gap: 14px; margin-top: 4px; }
   /* two columns, filled down then across (a grid: Safari's print layout ignores CSS columns here) */

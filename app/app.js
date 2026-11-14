@@ -2639,6 +2639,7 @@ function printHandouts(only) {
     const head = h("div", "print-head", null, page);
     const t = h("h1", "", leader.names[g], head); t.style.color = GROUP_COLORS[g];
     h("p", "", `${den.name} \u2022 Week ${week()} \u2022 \u2605 ${ids.length} segment${ids.length === 1 ? "" : "s"}, ${houses} houses`, head);
+    h("span", "print-ver", BUILD === "dev" ? "dev" : BUILD.slice(0, 7), head);   // which version printed it
     const map = svg.cloneNode(true);
     map.removeAttribute("id"); map.removeAttribute("style"); map.classList.add("print-map");
     map.setAttribute("viewBox", `${mx} ${my} ${PRINT_W} ${PRINT_H}`);
