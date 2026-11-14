@@ -1250,7 +1250,6 @@ function renderCard() {
     b.disabled = !textsReady();
     b.addEventListener("click", () => sendText(kind, s.id));
   };
-  textBtn("Needs coverage", "coverage", "minor");   // the less likely one: a smaller target than Done
   if (week() !== 2) textBtn("Need bags", "bags");   // bags only go out in Week 1
   document.body.style.setProperty("--card-h", card.getBoundingClientRect().height + "px");
 }
@@ -1509,6 +1508,36 @@ function openContact() {
   cl.appendChild(icon([{ d: HANDSET, fill: "currentColor" }], 22));
   h("span", "", "Call", cl);
   cl.addEventListener("click", () => { slideOut(contactPanel); openSms("tel:" + settings.tel); });
+  // Needs coverage: pick any of your unfinished segments the group can't get to, and text them in one go
+  const left = cycleList();
+  if (left.length) {
+    const cov = h("div", "coverage", null, contactPanel);
+    h("h3", "", "Needs coverage", cov);
+    h("p", "hint", "Pick the segments your group can\u2019t get to.", cov);
+    const chips = h("div", "cov-chips", null, cov);
+    const picked = new Set();
+    const send = h("button", "cov-send", "Text \u201cneeds coverage\u201d", cov); send.type = "button"; msgIcon(send);
+    const refresh = () => {
+      send.disabled = !picked.size;
+      const ids = cycleList().filter((x) => picked.has(x.id)).map((x) => x.id);
+      send.firstChild.textContent = ids.length ? `Text: ${ids.join(", ")} ${ids.length > 1 ? "need" : "needs"} coverage` : "Text \u201cneeds coverage\u201d";
+    };
+    for (const sg of left) {
+      const b = h("button", "cov-chip", null, chips); b.type = "button"; b.setAttribute("aria-pressed", "false");
+      chip(sg, b);
+      const first = sg.lines.find((l) => !l.warning);
+      h("span", "cov-street", first ? first.text.split(",")[0] : "", b);
+      b.addEventListener("click", () => {
+        if (picked.has(sg.id)) picked.delete(sg.id); else picked.add(sg.id);
+        b.setAttribute("aria-pressed", String(picked.has(sg.id))); refresh();
+      });
+    }
+    refresh();
+    send.addEventListener("click", () => {
+      const ids = cycleList().filter((x) => picked.has(x.id)).map((x) => x.id);
+      if (ids.length && sendText("coverage", ids.join(", "))) slideOut(contactPanel);
+    });
+  }
   closeSheet(); slideOut(availPanel);
   slideIn(contactPanel);
 }
@@ -1758,7 +1787,7 @@ function applySetup(q) {                  // q: the parts after # of a setup lin
 function textBody(kind, id, extra) {
   const who = `Wk${week()}: ${settings.group}`;
   const tally = tallying() && bags[id] ? `, ${bagWord(bags[id])}` : "";
-  return { done: `${who} \u2013 ${id} done${tally}`, coverage: `${who} \u2013 ${id} needs coverage`,
+  return { done: `${who} \u2013 ${id} done${tally}`, coverage: `${who} \u2013 ${id} ${id.includes(",") ? "need" : "needs"} coverage`,
            bags: `${who} \u2013 send bags to ${id}${bagsWhere(id)}`,
            available: `${who} available` + (week() === 2 ? " to help" : "") + (extra ? ` \u2013 ${extra}` : "") }[kind];
 }
