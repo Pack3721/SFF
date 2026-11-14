@@ -1007,9 +1007,11 @@ function styleSegments() {
       }
       e.tagBox.setAttribute("x", -w / 2); e.tagBox.setAttribute("width", w);
     }
-    const glow = id === mySegs.target || id === selected;   // a soft glow in the segment's own colour
+    const picked = cover && cover.has(id);                  // picked for "needs coverage": a strong dark glow
+    const glow = picked || id === mySegs.target || id === selected;   // otherwise a soft glow in the segment's own colour
     e.halo.style.display = glow ? "" : "none";
-    if (glow) { e.halo.setAttribute("stroke", e.color); e.halo.setAttribute("stroke-opacity", id === mySegs.target ? 0.45 : 0.3); }
+    if (picked) { e.halo.setAttribute("stroke", "#111"); e.halo.setAttribute("stroke-opacity", 0.55); }
+    else if (glow) { e.halo.setAttribute("stroke", e.color); e.halo.setAttribute("stroke-opacity", id === mySegs.target ? 0.45 : 0.3); }
   }
   const t = mySegs.target && segEls[mySegs.target];
   ants.style.display = t ? "" : "none";
@@ -1070,6 +1072,7 @@ function tapAt(p) {
     }
   }
   if (leader) { if (best) assignGroup(best); return; }
+  if (cover) { if (best) { if (cover.has(best)) cover.delete(best); else cover.add(best); styleSegments(); renderCover(); } return; }
   if (best) select(best, false);
   else if (selected) select(null);
 }
@@ -1438,6 +1441,42 @@ function askAvailable() {
   closeSheet();
   slideIn(availPanel);
 }
+// ---------- needs coverage: tap segments on the map, then one text ----------
+// From the dispatcher panel. While it's open, a tap on the map picks or unpicks a segment instead of opening
+// its card; the picked ones get a dark glow. The text reads "Wk2: Wolf A – W9, W11 need coverage".
+let cover = null;                        // a Set of picked segment ids while picking
+const coverPanel = document.getElementById("cover");
+function startCover() {
+  slideOut(contactPanel); closeSheet(); slideOut(availPanel);
+  if (selected) select(null);
+  cover = new Set();
+  document.body.classList.add("covering");
+  styleSegments(); renderCover();
+  slideIn(coverPanel);
+}
+function endCover() {
+  cover = null;
+  document.body.classList.remove("covering");
+  slideOut(coverPanel); styleSegments();
+}
+function renderCover() {
+  coverPanel.textContent = "";
+  const top = h("div", "card-top", null, coverPanel);
+  h("h2", "", "Needs coverage", top);
+  h("span", "card-gap", null, top);
+  const x = h("button", "close", "\u2715", top); x.type = "button"; x.setAttribute("aria-label", "Cancel");
+  x.addEventListener("click", endCover);
+  h("p", "hint", "Tap the segments on the map your group can\u2019t get to. Tap one again to unpick it.", coverPanel);
+  const ids = [...cover].sort((a, b) => segOrder(segById(a), segById(b)));
+  const picked = h("p", "cov-picked", null, coverPanel);
+  if (ids.length) for (const id of ids) chip(segById(id), picked);
+  else picked.textContent = "None picked yet.";
+  const send = h("button", "cov-send", ids.length ? `Text: ${ids.join(", ")} ${ids.length > 1 ? "need" : "needs"} coverage` : "Text \u201cneeds coverage\u201d", coverPanel);
+  send.type = "button"; msgIcon(send);
+  send.disabled = !ids.length;
+  send.addEventListener("click", () => { if (sendText("coverage", ids.join(", "))) endCover(); });
+}
+
 // Driving directions in the phone's own maps app: Apple Maps on iPhone, Google Maps elsewhere.
 // Only the coordinates go in the link (no referrer), so the #tel=… fragment never leaves the page.
 function directionsTo(a, [lon, lat]) {
@@ -1508,36 +1547,9 @@ function openContact() {
   cl.appendChild(icon([{ d: HANDSET, fill: "currentColor" }], 22));
   h("span", "", "Call", cl);
   cl.addEventListener("click", () => { slideOut(contactPanel); openSms("tel:" + settings.tel); });
-  // Needs coverage: pick any of your unfinished segments the group can't get to, and text them in one go
-  const left = cycleList();
-  if (left.length) {
-    const cov = h("div", "coverage", null, contactPanel);
-    h("h3", "", "Needs coverage", cov);
-    h("p", "hint", "Pick the segments your group can\u2019t get to.", cov);
-    const chips = h("div", "cov-chips", null, cov);
-    const picked = new Set();
-    const send = h("button", "cov-send", "Text \u201cneeds coverage\u201d", cov); send.type = "button"; msgIcon(send);
-    const refresh = () => {
-      send.disabled = !picked.size;
-      const ids = cycleList().filter((x) => picked.has(x.id)).map((x) => x.id);
-      send.firstChild.textContent = ids.length ? `Text: ${ids.join(", ")} ${ids.length > 1 ? "need" : "needs"} coverage` : "Text \u201cneeds coverage\u201d";
-    };
-    for (const sg of left) {
-      const b = h("button", "cov-chip", null, chips); b.type = "button"; b.setAttribute("aria-pressed", "false");
-      chip(sg, b);
-      const first = sg.lines.find((l) => !l.warning);
-      h("span", "cov-street", first ? first.text.split(",")[0] : "", b);
-      b.addEventListener("click", () => {
-        if (picked.has(sg.id)) picked.delete(sg.id); else picked.add(sg.id);
-        b.setAttribute("aria-pressed", String(picked.has(sg.id))); refresh();
-      });
-    }
-    refresh();
-    send.addEventListener("click", () => {
-      const ids = cycleList().filter((x) => picked.has(x.id)).map((x) => x.id);
-      if (ids.length && sendText("coverage", ids.join(", "))) slideOut(contactPanel);
-    });
-  }
+  // Needs coverage: a panel that has you tap the segments on the map, then texts them in one go
+  const cov = h("button", "cov-open", "Needs coverage\u2026", contactPanel); cov.type = "button"; msgIcon(cov);
+  cov.addEventListener("click", startCover);
   closeSheet(); slideOut(availPanel);
   slideIn(contactPanel);
 }
