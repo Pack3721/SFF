@@ -1789,6 +1789,12 @@ const textsReady = () => !!(settings.tel && settings.group);
 // Home Screen icon added from this page keeps it (an iPhone Home Screen app doesn't share Safari's storage).
 function readLink() {
   const q = new URLSearchParams(location.hash.slice(1));
+  if (q.has("lead")) {                   // a den leader's split, sent to Safari to print
+    const t = normTel(q.get("tel"));
+    if (t) { settings.tel = t; saveSettings(); }
+    applyLeaderLink(q);
+    return;
+  }
   if (q.has("seg") || q.has("g")) { applySetup(q); return; }
   linkDen(q.get("den"));
   const t = normTel(q.get("tel"));
@@ -1812,6 +1818,7 @@ window.addEventListener("hashchange", () => {
   let before = null;
   try { before = localStorage.getItem("sff.linkDen"); } catch (_) { /* ignore */ }
   readLink();
+  if (pendingLeader) { enterLeader(pendingLeader); pendingLeader = null; return; }
   let after = null;
   try { after = localStorage.getItem("sff.linkDen"); } catch (_) { /* ignore */ }
   if (full || after !== before) pick(localStorage.getItem(STORE_KEY) || denKey);   // a new den or a whole setup: redraw
@@ -2613,6 +2620,7 @@ function printStyle(g) {
   ants.style.display = "none";
 }
 function printHandouts(only) {
+  if (isIOS() && navigator.standalone) { printFromSafari(); return; }   // a Home Screen app can't print on iPhone
   const groups = (only == null ? [...Array(leader.n).keys()] : [only]).filter((i) => groupSegs(i).length);
   if (!groups.length) return;
   const out = document.getElementById("print");
@@ -2658,6 +2666,52 @@ function printHandouts(only) {
   loadQr().then(() => {
     for (const box of out.querySelectorAll(".print-qr")) box.insertBefore(qrSvg(groupLink(Number(box.dataset.group))), box.firstChild);
   }).catch(() => { /* no QR without the library: the page still prints */ }).then(() => window.print());
+}
+
+// The iPhone Home Screen app can't print, and Safari keeps its own storage, so hand over the split as a link:
+// pasted into Safari it opens den leader mode with the same groups, ready to print.
+function leaderLink() {
+  const den = DATA.dens.find((d) => d.key === leader.den);
+  const q = new URLSearchParams();
+  if (settings.tel) q.set("tel", settings.tel.slice(2));
+  q.set("lead", leader.den); q.set("n", leader.n);
+  q.set("ln", leader.names.join("|"));
+  q.set("la", den.segments.map((id) => leader.assign[id]).join(""));   // each segment's group, in den order
+  return location.origin + location.pathname + location.search + "#" + q.toString();
+}
+function printFromSafari() {
+  const link = leaderLink();
+  groupPanel.textContent = "";
+  const top = h("div", "card-top", null, groupPanel);
+  h("h2", "", "Print from Safari", top);
+  h("span", "card-gap", null, top);
+  const x = h("button", "close", "\u2715", top); x.type = "button"; x.setAttribute("aria-label", "Close");
+  x.addEventListener("click", () => slideOut(groupPanel));
+  h("p", "hint", "The Home Screen app can\u2019t print on iPhone. Copy this link, paste it into Safari\u2019s address bar, then tap Print there. Your groups come with it.", groupPanel);
+  const row = h("div", "move-row", null, groupPanel);
+  const cp = h("button", "share-btn", "Copy link", row); cp.type = "button";
+  cp.addEventListener("click", () => {
+    (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject())
+      .then(() => { cp.textContent = "\u2714\ufe0e Copied"; }).catch(() => { cp.textContent = "Couldn\u2019t copy"; });
+  });
+  if (navigator.share) {
+    const sh = h("button", "share-btn", "Share\u2026", row); sh.type = "button";
+    sh.addEventListener("click", () => navigator.share({ title: "SFF 721 Map \u2013 den leader", url: link }).catch(() => {}));
+  }
+  slideIn(groupPanel);
+}
+// a den leader link (#lead=W&n=3&ln=Wolf A|Wolf B|Wolf C&la=0011…): save that split, then open den leader mode
+let pendingLeader = null;
+function applyLeaderLink(q) {
+  const den = DATA.dens.find((d) => d.key === q.get("lead"));
+  const n = Number(q.get("n")), la = q.get("la") || "";
+  if (!den || !(n >= 1 && n <= 8) || la.length !== den.segments.length || !/^[0-7]+$/.test(la)) return false;
+  const assign = {};
+  den.segments.forEach((id, i) => { assign[id] = Math.min(Number(la[i]), n - 1); });
+  const names = (q.get("ln") || "").split("|").map((x) => x.trim().slice(0, 24)).slice(0, n);
+  leaderStore(den.key, { n, names, assign, edited: true, mode: splitMode() });
+  pendingLeader = den.key;
+  return true;
 }
 
 // A group's segments written out, for families walking from the paper map.
@@ -2777,6 +2831,7 @@ function start(data) {
   renderSetupStatus(); renderCallBtn();
   renderBanner();
   pick(ok(saved) ? saved : PACK, true);
+  if (pendingLeader) { enterLeader(pendingLeader); pendingLeader = null; }
   resumeGps();
 }
 
