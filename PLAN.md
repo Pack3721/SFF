@@ -151,4 +151,4 @@ A group's QR code or link is a group setup link (`#tel=…&g=Wolf+A&den=W&seg=W6
 
 ## Later (2027 planner)
 
-The planner side covers boundaries, county address pull, den balancing, auto-segments with hand editing, and printing the PDFs. It lives in `planner/` as Python scripts today. `docs/how-the-maps-were-made.md` has the method, data sources and lessons learned.
+The planner side covers boundaries, county address pull, den balancing, auto-segments with hand editing, and printing the PDFs. It lives in `planner/` as Python scripts today. `docs/how-the-maps-were-made.md` has the method, data sources and lessons learned. `docs/notes-for-2027.md` has notes from the 2026 Week 1 walk.
