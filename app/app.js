@@ -2561,6 +2561,8 @@ function renderLeader() {
     qr.disabled = !ids.length;
     qr.addEventListener("click", () => showGroupQr(i));
   }
+  const pa = h("button", "share-btn print-all", "Print handouts for all groups\u2026", leaderPanel); pa.type = "button";
+  pa.addEventListener("click", () => printHandouts(null));
   document.body.style.setProperty("--leader-h", leaderPanel.getBoundingClientRect().height + "px");
 }
 
@@ -2586,6 +2588,76 @@ function listIcon() {                    // same picture as the segments-list bu
   for (const cy of [6.5, 12, 17.5]) el("circle", { cx: 5, cy, r: 1.8, fill: "currentColor" }, svgEl);
   el("path", { d: "M9.5 6.5h11M9.5 12h11M9.5 17.5h11", stroke: "currentColor", "stroke-width": 2.2, "stroke-linecap": "round" }, svgEl);
   return svgEl;
+}
+
+// ---------- printed handouts (den leader mode) ----------
+// One letter page per group: the whole den map (coverage can send anyone anywhere), with the group's own
+// segments marked with a star and the rest a little lighter; the den's segment list with the group's first;
+// and the group's QR code. The map is drawn at page size off to the side, copied, and the view put back.
+const PRINT_W = 740, PRINT_H = 700;      // CSS px: about 7.7 x 7.3 in
+function printStyle(g) {
+  for (const id in segEls) {
+    const e = segEls[id], mine = leader.assign[id] === g;
+    e.faded = false;
+    for (const [part, attr, colour] of e.paint) part.setAttribute(attr, mine ? colour : tint(colour, 0.55));
+    e.route.setAttribute("opacity", mine ? 1 : 0.6); e.homes.setAttribute("opacity", mine ? 1 : 0.5);
+    for (const x of e.extras) x.setAttribute("opacity", mine || x.kind === "tag" ? 1 : 0.5);
+    if (e.tagText) {
+      e.tagText.textContent = e.tagLabel + (mine ? " \u2605" : ""); e.tagText.style.fill = "";
+      const w = e.tagW[mine ? 1 : 0];
+      e.tagBox.setAttribute("x", -w / 2); e.tagBox.setAttribute("width", w);
+      e.tagBox.setAttribute("stroke", mine ? "#111" : "none"); e.tagBox.setAttribute("stroke-width", mine ? 2 : 0);
+    }
+    e.halo.style.display = "none";
+  }
+  ants.style.display = "none";
+}
+function printHandouts(only) {
+  const groups = (only == null ? [...Array(leader.n).keys()] : [only]).filter((i) => groupSegs(i).length);
+  if (!groups.length) return;
+  const out = document.getElementById("print");
+  out.textContent = "";
+  const keep = { k, tx, ty };
+  document.body.classList.add("printing");   // the map's frame at page size (app.css)
+  layout();
+  const pad = 18, bw = bbox[2] - bbox[0], bh = bbox[3] - bbox[1];
+  k = Math.min((PRINT_W - 2 * pad) / bw, (PRINT_H - 2 * pad) / bh);
+  tx = (PRINT_W - bw * k) / 2 - bbox[0] * k; ty = (PRINT_H - bh * k) / 2 - bbox[1] * k;
+  const den = DATA.dens.find((d) => d.key === leader.den);
+  for (const g of groups) {
+    printStyle(g); placedK = 0; commit();
+    const ids = groupSegs(g), houses = ids.reduce((a, id) => a + segById(id).houses, 0);
+    const page = h("section", "print-page", null, out);
+    const head = h("div", "print-head", null, page);
+    const t = h("h1", "", leader.names[g], head); t.style.color = GROUP_COLORS[g];
+    h("p", "", `${den.name} \u2022 Week ${week()} \u2022 \u2605 ${ids.length} segment${ids.length === 1 ? "" : "s"}, ${houses} houses`, head);
+    const map = svg.cloneNode(true);
+    map.removeAttribute("id"); map.removeAttribute("style"); map.classList.add("print-map");
+    map.setAttribute("viewBox", `${mx} ${my} ${PRINT_W} ${PRINT_H}`);
+    map.setAttribute("aria-label", `${den.name} map, ${leader.names[g]}'s segments starred`);
+    page.appendChild(map);
+    const foot = h("div", "print-foot", null, page);
+    const list = h("ol", "print-segs", null, foot);
+    const order = den.segments.map(segById).sort((a, b) => (leader.assign[b.id] === g) - (leader.assign[a.id] === g) || segOrder(a, b));
+    for (const sg of order) {
+      const mine = leader.assign[sg.id] === g;
+      const li = h("li", mine ? "mine" : "", null, list);
+      h("b", "", (mine ? "\u2605 " : "") + sg.id + (sg.main_road ? " \u26a0" : ""), li);
+      const first = sg.lines.find((l) => !l.warning);
+      h("span", "", first ? first.text + (first.numbers ? " " + first.numbers : "") + (sg.lines.filter((l) => !l.warning).length > 1 ? " \u2026" : "") : "", li);
+      h("i", "", String(sg.houses), li);
+    }
+    const qr = h("div", "print-qr", null, foot);
+    qr.dataset.group = g;
+    h("p", "", "Scan to set up your phone for " + leader.names[g] + ". Then, on iPhone: Share \u2192 Add to Home Screen.", qr);
+  }
+  // put the screen back the way it was
+  document.body.classList.remove("printing");
+  layout(); leaderStyle(); ({ k, tx, ty } = keep); placedK = 0; commit();
+  for (const id in segEls) if (segEls[id].tagBox) segEls[id].tagBox.setAttribute("stroke", "none");
+  loadQr().then(() => {
+    for (const box of out.querySelectorAll(".print-qr")) box.insertBefore(qrSvg(groupLink(Number(box.dataset.group))), box.firstChild);
+  }).catch(() => { /* no QR without the library: the page still prints */ }).then(() => window.print());
 }
 
 // A group's segments written out, for families walking from the paper map.
@@ -2620,6 +2692,8 @@ function showGroupList(i) {
     const sh = h("button", "share-btn", "Share list\u2026", row); sh.type = "button";
     sh.addEventListener("click", () => navigator.share({ title: leader.names[i], text: body }).catch(() => {}));
   }
+  const pr = h("button", "share-btn", "Print\u2026", row); pr.type = "button";
+  pr.addEventListener("click", () => printHandouts(i));
   const cp = h("button", "share-btn", "Copy list", row); cp.type = "button";
   cp.addEventListener("click", () => {
     (navigator.clipboard ? navigator.clipboard.writeText(body) : Promise.reject())

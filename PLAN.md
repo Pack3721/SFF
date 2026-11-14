@@ -137,6 +137,8 @@ There are 79 segments and 1,183 houses. Den keys are L, T, W, B, WB (Webelos, wh
 
 The first split (and **Auto re-split**, greyed out until a segment is moved by hand) tries a sweep from every segment, cuts it into groups of about equal houses, then moves single segments while that lowers a cost. The cost counts house-weighted squared distance from each group's middle (so a far-off segment costs a lot), unevenness, and houses on the smaller side of a main road within a group (cross only at the stop). It takes a few milliseconds.
 
+**Printed handouts** ✅ Built: **Print handouts for all groups…** at the bottom of the panel, or **Print…** on a group's segment list, makes one letter page per group: the whole den map (coverage can send anyone anywhere) with the group's segments starred and outlined and the rest lighter, the den's segments listed with the group's first, and the group's QR code. It uses the phone's own print dialog (save as PDF or print).
+
 A group's QR code or link is a group setup link (`#tel=…&g=Wolf+A&den=W&seg=W6,W7,…`). A parent scans it and their phone has the group name, den, those segments starred and the dispatcher's number (if the leader's phone has it). The split and names are saved per den on the leader's phone.
 
 **Known issue:** **+** and **−** re-split the whole den. A leader who adds a "Needs coverage" group for leftover segments (low turnout) after handing out QR codes would scramble groups that parents already have. The guide says to do it before handing out codes. A possible fix: once any group's QR or list has been opened, **+** adds an empty group and leaves the others alone.
