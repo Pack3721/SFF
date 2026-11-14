@@ -151,6 +151,7 @@ Jay's notes for Week 2 (Sat Nov 21, 2026), written after Week 1. Not built yet.
 - **Drop-off:** add Mehlville firehouse 5 to the map as the place to take bags. When a group is done, offer directions there, and offer to text the dispatcher that the group is available to help.
 - **No "Need bags"** in Week 2 (already hidden in Week 2).
 - **Done is tracked separately for each week.** Week 2 starts with nothing done, and Week 1's done marks are not shown in Week 2. (Today `sff.segments` keeps one `done` list with no week, so Week 1 ticks would carry over.)
+- **Starred segments and the target stay** into Week 2 until the parent scans a new group QR.
 
 ## Decisions
 
