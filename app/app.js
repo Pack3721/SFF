@@ -19,6 +19,7 @@ const STORE_KEY = "sff.den";
 // The version is the ?v= on this script's own URL: the git SHA once deployed (pages.yml), "dev" locally.
 const BUILD = new URL(document.currentScript.src).searchParams.get("v") || "dev";
 document.getElementById("build").textContent = BUILD === "dev" ? "dev" : BUILD.slice(0, 7);
+if (new URLSearchParams(location.search).has("week")) document.getElementById("build").textContent += " \u2022 week " + new URLSearchParams(location.search).get("week") + " test";
 
 // Updates: a Home Screen app can sit suspended for days and wake on old code. Whenever the page starts,
 // comes back to the front, is restored, or gets a signal again, fetch index.html fresh (cache: "reload"
@@ -886,7 +887,7 @@ function loadSegs() {
     doneByWeek = v.doneByWeek || (v.done ? { 1: v.done } : {});
     bagsByWeek = v.bagsByWeek || {};
   } catch (_) { /* nothing saved, or no storage */ }
-  segWeek = week();
+  segWeek = weekKey();
   const ok = new Set(DATA.segments.map((s) => s.id));
   mySegs.done = (doneByWeek[segWeek] || []).filter((id) => ok.has(id));
   if (mySegs.done.includes(mySegs.target)) mySegs.target = null;
@@ -895,12 +896,12 @@ function loadSegs() {
 }
 // the date moved into another week while the page was open (or asleep): show that week's done marks
 function checkWeek() {
-  if (segWeek === null || segWeek === week()) return;
+  if (segWeek === null || segWeek === weekKey()) return;
   loadSegs(); autoTarget(); segmentsChanged(false);
 }
 function saveSegs() {
-  doneByWeek[segWeek || week()] = mySegs.done;
-  bagsByWeek[segWeek || week()] = bags;
+  doneByWeek[segWeek || weekKey()] = mySegs.done;
+  bagsByWeek[segWeek || weekKey()] = bags;
   try { localStorage.setItem(SEG_KEY, JSON.stringify({ tracked: mySegs.tracked, target: mySegs.target, doneByWeek, bagsByWeek })); }
   catch (_) { /* ignore */ }
 }
@@ -1577,7 +1578,11 @@ let settings = { tel: "", group: "" };   // group: typed as people say it, e.g. 
 // from the date: Week 1 up to Nov 14, Week 2 after.
 const WEEK_DAYS = { 1: "2026-11-14", 2: "2026-11-21" };
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
-const week = () => (today() <= WEEK_DAYS[1] ? 1 : 2);
+// ?week=1 or ?week=2 in the address forces the week, for trying Week 2 early. A forced week keeps its done
+// marks and bag tally apart ("test2"), so trying things out doesn't carry into the real week.
+const WEEK_TEST = (() => { const v = new URLSearchParams(location.search).get("week"); return v === "1" || v === "2" ? Number(v) : null; })();
+const week = () => WEEK_TEST || (today() <= WEEK_DAYS[1] ? 1 : 2);
+const weekKey = () => (WEEK_TEST ? "test" + WEEK_TEST : week());   // where this week's done marks and bags are saved
 function loadSettings() {
   try {
     const v = JSON.parse(localStorage.getItem(SET_KEY) || "{}");
