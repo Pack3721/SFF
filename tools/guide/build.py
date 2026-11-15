@@ -48,7 +48,7 @@ WEEK1 = {
             "- Finish the split before handing out codes. Moving a segment later means new codes.",
             "- Low turnout, and the load looks too big? Add an extra group and name it **Needs coverage**. The split gives it a fair share like any group. Screenshot its list and send it to the dispatcher to hand out. Do this before handing out codes, since + re-splits the whole den.",
             "- ⚠ main-road segments go to older scouts, or scouts closely watched by an adult. Cross Baptist Church Rd at the Kingsmere all-way stop.",
-            "- **One texter per group?** The others can turn off **Settings → Texting → Text the dispatcher when I tap Done**. Their Done then just marks the segment.",
+            "- **More than one parent tracking the group?** Keep one texter per group: the others turn off **Settings → Texting → Text the dispatcher when I tap Done**. Their Done then just marks the segment.",
             "- **Walking with a group yourself, or using the iPhone Home Screen app?** Settings → **Group** → **Scan QR code**, and scan the group’s code.",
             "- No dispatcher number in the QR? Add it in Settings → Texting, then reopen the QR."],
             ["w1-settings-texting.jpg", "w1-settings-group.jpg"]),
@@ -85,7 +85,7 @@ WEEK2 = {
             "**Then the drop-off.** Tap the green box: **Directions** to Fire Station 5 (11020 Mueller Rd) for the bags of food texts the dispatcher \u201cheading to Fire Station 5\u201d, then opens the directions. (With auto-texting off, it\u2019s a separate **Text heading there** button, like Text done.) Or **Available to help** to take more segments. Tap the fire station on the map for its address."],
             ["w2-alldone.jpg"]),
         ("Tips", [
-            "- **One texter per car?** The others can turn off **Settings → Texting → Text the dispatcher when I tap Done**. Their Done then just marks the segment.",
+            "- **More than one parent tracking the group?** Keep one texter per group: the others turn off **Settings → Texting → Text the dispatcher when I tap Done**. Their Done then just marks the segment.",
             "- **Setting up a phone, or the iPhone Home Screen app?** Settings → **Group** → **Scan QR code**, and scan the group’s code.",
             "- Take the bags of food to Fire Station 5 when you’re finished, or whenever the car fills up.",
             "- Last week’s ticks don’t carry over. Last week’s starred segments do, until a new QR code is scanned."],
