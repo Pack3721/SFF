@@ -3231,8 +3231,126 @@ function groupsTab(body) {
   }
 }
 function exportTab(body) {
-  h("p", "hint", "CSV, share picture and backup come next.", body);
+  // CSV: one row per segment, and a den summary (open in Numbers, Excel or Google Sheets)
+  h("h3", "", "Spreadsheet (CSV)", body);
+  const row = h("div", "move-row", null, body);
+  iconBtn("copy", "Segments CSV", row).addEventListener("click", () => download(`sff-week${week()}-segments.csv`, "text/csv", segmentsCsv()));
+  iconBtn("copy", "Dens CSV", row).addEventListener("click", () => download(`sff-week${week()}-dens.csv`, "text/csv", densCsv()));
+  // a picture to share: progress for the group chat during the walk, or the finished map for social media
+  h("h3", "", "Share picture", body);
+  const t = totals();
+  if (!dispatch.picMode) dispatch.picMode = t.done === t.segs ? "done" : "progress";
+  const opts = h("div", "dp-filters", null, body);
+  const mode = h("select", "", null, opts); mode.setAttribute("aria-label", "Picture");
+  for (const [v, l] of [["progress", "Progress (group chat)"], ["done", "Finished (social media)"]]) { const o = h("option", "", l, mode); o.value = v; }
+  mode.value = dispatch.picMode;
+  const size = h("select", "", null, opts); size.setAttribute("aria-label", "Size");
+  for (const [v, l] of [["1600x1200", "Wide 1600×1200"], ["1080x1080", "Square 1080×1080"]]) { const o = h("option", "", l, size); o.value = v; }
+  size.value = dispatch.picSize || "1600x1200";
+  const img = h("img", "dp-pic", null, body); img.alt = "Preview of the picture";
+  const paint = () => {
+    dispatch.picMode = mode.value; dispatch.picSize = size.value;
+    const [W, H] = size.value.split("x").map(Number);
+    img.src = shareCanvas(mode.value, W, H).toDataURL("image/png");
+  };
+  mode.addEventListener("change", paint); size.addEventListener("change", paint);
+  paint();
+  const prow = h("div", "move-row", null, body);
+  const name = () => `sff-week${week()}-${dispatch.picMode === "done" ? "finished" : "progress"}.png`;
+  const blob = () => new Promise((ok) => { const [W, H] = size.value.split("x").map(Number); shareCanvas(mode.value, W, H).toBlob(ok, "image/png"); });
+  iconBtn("copy", "Save picture", prow).addEventListener("click", () => blob().then((b) => download(name(), "image/png", b)));
+  if (navigator.canShare) {
+    const sh = iconBtn("share", "Share…", prow);
+    sh.addEventListener("click", () => blob().then((b) => {
+      const file = new File([b], name(), { type: "image/png" });
+      if (navigator.canShare({ files: [file] })) navigator.share({ files: [file] }).catch(() => {});
+      else download(name(), "image/png", b);
+    }));
+  }
   backupTools(body);
+}
+// ---- CSV ----
+const csvCell = (v) => { v = v == null ? "" : String(v); return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v; };
+const csvRows = (rows) => "\ufeff" + rows.map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";   // BOM: Excel reads it as UTF-8
+const stamp = (t) => (t ? new Date(t).toLocaleString() : "");
+function segmentsCsv() {
+  const rows = [["week", "den", "segment", "streets", "houses", "status", "bags", "second_pass_bags", "group", "entered_at"]];
+  for (const d of DATA.dens) for (const id of d.segments) {
+    const sg = segById(id), r = rec(id), st = segStatus(id);
+    rows.push([week(), d.short, id, sg.lines.filter((l) => !l.warning).map((l) => l.text + (l.numbers ? " " + l.numbers : "")).join("; "),
+               sg.houses, { done: "done", cov: "needs coverage", todo: "" }[st], r.bags || "", r.bags2 || "", r.group || "", stamp(r.at || r.covAt)]);
+  }
+  return csvRows(rows);
+}
+function densCsv() {
+  const rows = [["week", "den", "segments", "segments_done", "houses", "houses_done", "bags", "needs_coverage"]];
+  for (const d of DATA.dens) {
+    const done = d.segments.filter((id) => segStatus(id) === "done");
+    rows.push([week(), d.short, d.segments.length, done.length, d.houses, done.reduce((a, id) => a + segById(id).houses, 0),
+               d.segments.reduce((a, id) => a + bagsOf(id), 0), d.segments.filter((id) => segStatus(id) === "cov").length]);
+  }
+  const t = totals();
+  rows.push([week(), "Total", t.segs, t.done, t.houses, t.housesDone, t.bags, t.cov]);
+  return csvRows(rows);
+}
+// ---- the share picture, drawn on a canvas ----
+function shareCanvas(mode, W, H) {
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const g = c.getContext("2d");
+  const u = Math.min(W, H) / 1080;                       // 1 at 1080 px
+  const font = (px, weight) => `${weight || 700} ${Math.round(px * u)}px -apple-system, "Helvetica Neue", Arial, sans-serif`;
+  g.fillStyle = "#fff"; g.fillRect(0, 0, W, H);
+  const t = totals(), wk2 = week() === 2, done = mode === "done";
+  // title
+  const day = new Date(WEEK_DAYS[week()] + "T12:00").toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+  g.fillStyle = "#111"; g.textBaseline = "top";
+  g.font = font(44); g.fillText(done ? `Pack 721 Scouting for Food • ${day}` : `Pack 721 Scouting for Food • progress at ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`, 40 * u, 34 * u);
+  g.font = font(64, 800); g.fillStyle = "#1e7e34";
+  g.fillText(done ? (wk2 ? `${t.bags.toLocaleString()} bags of food collected` : `${t.housesDone.toLocaleString()} houses got bags`)
+                  : `${t.done} of ${t.segs} segments done` + (wk2 && t.bags ? ` • ${t.bags.toLocaleString()} bags` : ""), 40 * u, 90 * u);
+  // the map: fit every house into the space under the title
+  const top = 190 * u, foot = 60 * u, pad = 30 * u;
+  const pts = DATA.houses.map((hh) => P(hh.lonlat));
+  const bx = [Math.min(...pts.map((p) => p[0])), Math.min(...pts.map((p) => p[1])), Math.max(...pts.map((p) => p[0])), Math.max(...pts.map((p) => p[1]))];
+  const sc = Math.min((W - 2 * pad) / (bx[2] - bx[0]), (H - top - foot - 2 * pad) / (bx[3] - bx[1]));
+  const ox = (W - (bx[2] - bx[0]) * sc) / 2 - bx[0] * sc, oy = top + pad + (H - top - foot - 2 * pad - (bx[3] - bx[1]) * sc) / 2 - bx[1] * sc;
+  const X = (p) => [ox + p[0] * sc, oy + p[1] * sc];
+  const line = (pts2, colour, width) => {
+    g.beginPath(); pts2.forEach((p, i) => { const [x, y] = X(p); if (i) g.lineTo(x, y); else g.moveTo(x, y); });
+    g.strokeStyle = colour; g.lineWidth = width; g.lineCap = "round"; g.lineJoin = "round"; g.stroke();
+  };
+  for (const st of DATA.streets) line(st.line.map(P), "#e4e4e4", 3 * u);
+  for (const a of DATA.arterials) line(a.line.map(P), "#eadcb4", 7 * u);
+  const den = Object.fromEntries(DATA.dens.map((d) => [d.key, d]));
+  const order = DATA.segments.slice().sort((a, b) => (segStatus(a.id) === "done") - (segStatus(b.id) === "done"));   // done on top
+  for (const s of order) {
+    const st = segStatus(s.id), on = done || st === "done";
+    for (const r of [s.route, ...s.route_parts]) {
+      if (!done && st === "cov") line(r.map(P), "#d0021b", 15 * u);
+      line(r.map(P), on ? den[s.den].color : "#c9c9c9", 9 * u);
+    }
+  }
+  // each den's name and its numbers, over the middle of its houses
+  g.textAlign = "center"; g.textBaseline = "middle"; g.lineJoin = "round";
+  for (const d of DATA.dens) {
+    const hp = DATA.houses.filter((hh) => d.segments.includes(hh.seg)).map((hh) => X(P(hh.lonlat)));
+    const cx = hp.reduce((a, p) => a + p[0], 0) / hp.length, cy = hp.reduce((a, p) => a + p[1], 0) / hp.length;
+    const dd = d.segments.filter((id) => segStatus(id) === "done").length, bags = d.segments.reduce((a, id) => a + bagsOf(id), 0);
+    const sub = done ? (wk2 ? `${bags.toLocaleString()} bags` : `${d.houses} houses`) : `${dd} of ${d.segments.length}` + (wk2 && bags ? ` \u2022 ${bags} bags` : "");
+    // one line on a white pill: the den's name in its colour, then its numbers
+    g.font = font(30, 800); const wName = g.measureText(d.short + " ").width;
+    g.font = font(26, 700); const wSub = g.measureText(sub).width;
+    const pw = wName + wSub + 28 * u, ph = 46 * u, px = cx - pw / 2, py = cy - ph / 2;
+    g.fillStyle = "rgba(255,255,255,.92)"; g.strokeStyle = d.color; g.lineWidth = 3 * u;
+    g.beginPath(); g.roundRect ? g.roundRect(px, py, pw, ph, ph / 2) : g.rect(px, py, pw, ph); g.fill(); g.stroke();
+    g.textAlign = "left";
+    g.font = font(30, 800); g.fillStyle = d.color; g.fillText(d.short + " ", px + 14 * u, cy);
+    g.font = font(26, 700); g.fillStyle = "#111"; g.fillText(sub, px + 14 * u + wName, cy);
+  }
+  // footer
+  g.textAlign = "left"; g.textBaseline = "bottom"; g.fillStyle = "#888"; g.font = font(22, 600);
+  g.fillText("Thank you to every scout, family and neighbor! • SFF 721 Map", 40 * u, H - 20 * u);
+  return c;
 }
 // backup: the whole board (both weeks) as a file, to keep or move to another computer
 function backupTools(body) {

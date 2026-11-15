@@ -579,3 +579,4 @@ body.dispatch #banner, body.dispatch #setup-status, body.dispatch #tools, body.d
   body.dispatch #scale { left: 12px; }
   body.dispatch #north { right: 512px; }
 }
+.dp-pic { display: block; width: 100%; height: auto; margin: 6px 0 8px; border: 1px solid #ddd; border-radius: 8px; }

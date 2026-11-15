@@ -160,6 +160,15 @@ Jay's notes for Week 2 (Sat Nov 21, 2026), written after Week 1. Not built yet.
 - **Starred segments and the target stay** into Week 2 until the parent scans a new group QR.
 - **QR scanner in the app** ✅ Built: Settings › Share › Group setup › **Scan QR code** reads a group or dispatcher QR with the camera and applies it like Restore from paste; other codes are turned down and the camera turns off when the panel closes or the app goes to the background. jsQR 1.4.0 is vendored in `app/vendor/`. Background:, to make updating for Week 2 easier. On iPhone, the camera app opens a scanned link in Safari, not in the Home Screen app, which has its own storage; a scanner inside the app would update the app itself. It would have to decode on the phone with no online service: Chrome on Android has a built-in barcode reader (`BarcodeDetector`), Safari doesn't, so iPhones would need a decoder vendored into `app/vendor/`. Jay's sound-box-crosswords already does this (`js/scan.js` on its main branch): jsQR 1.4.0 (Apache-2.0) reading frames from `getUserMedia`. Here jsQR would be vendored rather than loaded from a CDN, and credited in `vendor/README.md` and `NOTICE.md`.
 
+## Dispatcher mode
+
+The den menu's **Dispatcher** choice (or `?dispatch`; the old `dispatcher.html` QR page now redirects here). The whole pack's map, with a panel beside it on a computer and below it on a phone. Saved only in that browser (`sff.board`, per week), with **Save backup** / **Restore** files.
+
+- **Board:** a quick entry box by segment code: `W6` done, `W6 12` done with 12 bags, `W6 +3` second-pass bags, `W6 c` needs coverage, `W6 g Wolf B` group, `W6 u` clear; several with commas. Unknown codes are refused, and overwriting bags, a done segment or a group asks first (Replace / Add / Cancel). One-step undo. Below it, a grid by den: status, bags, second pass, group, each editable. Totals across the top. Entry times are kept quietly (tooltip and CSV only).
+- **Map:** grey to do, the den's colour when done, bags on the tag. Needs coverage with no group yet gets the marching ants. Clicking a segment selects its row and puts its code in the box.
+- **Groups:** worked out from the group names typed in; no setup.
+- **Export:** segments and dens CSV; a share picture (PNG, wide or square) in two kinds: **Progress** for the group chat during the walk (done in colour, needs coverage outlined, each den's count) and **Finished** for social media (every den in colour with its bag total). Save, or Share on a phone.
+
 ## Decisions
 
 - **One QR code for the whole pack,** with a den picker. Dens may need help, and the dispatcher sends free groups to other areas.
