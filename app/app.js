@@ -2653,7 +2653,6 @@ function printHandouts(only) {
     const qr = h("div", "print-qr", null);   // goes beside the texting help, below, so the list gets the full width
     qr.dataset.group = g;
     h("div", "qr-slot", null, qr).style.cssText = "flex:none;width:1in;height:1in";   // the QR code goes here
-    h("p", "", "Scan to set up your phone for " + leader.names[g] + ". Then, on iPhone: Share \u2192 Add to Home Screen.", qr);
     // texting the dispatcher from the paper, written out for this group and this week
     const name = leader.names[g], wk = `Wk${week()}: ${name}`, ex = ids[0] || "W7";
     const help = h("div", "print-help", null, page);
