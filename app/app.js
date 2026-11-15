@@ -2570,7 +2570,8 @@ function renderLeader() {
     qr.disabled = !ids.length;
     qr.addEventListener("click", () => showGroupQr(i));
   }
-  const pa = h("button", "share-btn print-all", "Print handouts for all groups\u2026", leaderPanel); pa.type = "button";
+  const pa = h("button", "share-btn print-all", null, leaderPanel); pa.type = "button";
+  pa.appendChild(printIcon()); h("span", "", "Print handouts for all groups\u2026", pa);
   pa.addEventListener("click", () => printHandouts(null));
   document.body.style.setProperty("--leader-h", leaderPanel.getBoundingClientRect().height + "px");
 }
@@ -2600,6 +2601,13 @@ function listIcon() {                    // same picture as the segments-list bu
 }
 
 // ---------- printed handouts (den leader mode) ----------
+function printIcon() {                   // a small printer: paper in, body, paper out
+  const svgEl = document.createElementNS(NS, "svg");
+  for (const [k_, v] of Object.entries({ viewBox: "0 0 24 24", width: 20, height: 20, class: "print-icon", "aria-hidden": "true" })) svgEl.setAttribute(k_, v);
+  el("path", { d: "M7 9V3h10v6M7 17H4.5A1.5 1.5 0 0 1 3 15.5v-5A1.5 1.5 0 0 1 4.5 9h15a1.5 1.5 0 0 1 1.5 1.5v5a1.5 1.5 0 0 1-1.5 1.5H17M7 14h10v7H7z",
+               fill: "none", stroke: "currentColor", "stroke-width": 2, "stroke-linejoin": "round" }, svgEl);
+  return svgEl;
+}
 // One letter page per group: the whole den map (coverage can send anyone anywhere), with the group's own
 // segments marked with a star and the rest a little lighter; the den's segment list with the group's first;
 // and the group's QR code. The map is drawn at page size off to the side, copied, and the view put back.
@@ -2785,7 +2793,8 @@ function showGroupList(i) {
     const sh = h("button", "share-btn", "Share list\u2026", row); sh.type = "button";
     sh.addEventListener("click", () => navigator.share({ title: leader.names[i], text: body }).catch(() => {}));
   }
-  const pr = h("button", "share-btn", "Print\u2026", row); pr.type = "button";
+  const pr = h("button", "share-btn", null, row); pr.type = "button";
+  pr.appendChild(printIcon()); h("span", "", "Print\u2026", pr);
   pr.addEventListener("click", () => printHandouts(i));
   const cp = h("button", "share-btn", "Copy list", row); cp.type = "button";
   cp.addEventListener("click", () => {

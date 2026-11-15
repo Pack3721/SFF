@@ -506,3 +506,5 @@ body.printing #wrap { position: fixed; left: 0; top: 0; right: auto; bottom: aut
   #print { position: static; width: auto; visibility: visible; }
 }
 .print-star { color: #ffd21f; -webkit-text-stroke: 0.8px #111; margin-right: 3px; font-size: 1.15em; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.share-btn .print-icon { flex: none; vertical-align: -4px; margin-right: 6px; }
+#leader .print-all { display: flex; align-items: center; justify-content: center; }
