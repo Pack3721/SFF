@@ -1946,14 +1946,32 @@ const setPanel = document.getElementById("settings");
 let setNote = "";
 function openSettings(note) {
   setNote = note || "";
+  if (setNote) setTab = "texting";        // sent here to fill something in: show the boxes
   renderSettings();
   closeSheet();
   slideIn(setPanel);
 }
 function closeSettings() { slideOut(setPanel); }
+// Settings has four tabs, so it isn't one long scroll: Texting (number, group, auto-text), Share map,
+// Group setup, and About (credits)
+let setTab = "texting";
 function renderSettings() {
   const body = document.getElementById("settings-body");
   body.textContent = "";
+  const tabs = h("div", "tabs set-tabs", null, body);
+  tabs.setAttribute("role", "tablist");
+  for (const [key, label] of [["texting", "Texting"], ["map", "Share map"], ["group", "Group"], ["about", "About"]]) {
+    const b = h("button", key === setTab ? "on" : "", label, tabs); b.type = "button";
+    b.setAttribute("role", "tab"); b.setAttribute("aria-selected", key === setTab);
+    b.addEventListener("click", () => { setTab = key; setNote = ""; renderSettings(); body.scrollTop = 0; });
+  }
+  if (setTab !== "texting") {
+    const pane = h("section", "share", null, body);
+    if (setTab === "map") mapPane(pane);
+    else if (setTab === "group") groupPane(pane);
+    else about(pane);
+    return;
+  }
   if (setNote) h("p", "note", setNote, body);
   const f = h("form", "", null, body);
 
@@ -2007,12 +2025,7 @@ function renderSettings() {
     mark(telMark, telBad ? "bad" : typed && normTel(typed) && normTel(typed) === settings.tel ? "ok" : "");
   }
   marks(false);
-  function store() { saveSettings(); textingChanged(); marks(false); refreshShare(); }
-  // the Share section and credits below show the number and group, so redraw them after each save
-  function refreshShare() {
-    for (const el of body.querySelectorAll(":scope > .share, :scope > .about")) el.remove();
-    shareArea(body); about(body);
-  }
+  function store() { saveSettings(); textingChanged(); marks(false); }
   group.addEventListener("input", () => {
     paint();
     settings.group = group.value.trim().replace(/\s+/g, " ");
@@ -2031,8 +2044,6 @@ function renderSettings() {
     marks(bad);
   });
   f.addEventListener("submit", (e) => { e.preventDefault(); document.activeElement.blur(); });   // Return on the keyboard: done typing
-  shareArea(body);                       // tabs: the map & number for anyone, or the whole group setup
-  about(body);
 }
 // credits and licences (the map data's sources ask for them; NOTICE.md on GitHub has the full terms)
 function about(body) {
@@ -2073,22 +2084,6 @@ function qrSvg(text) {
 //  Map & dispatcher: for any parent; the map and the dispatcher's number only.
 //  Group setup: for a parent in your group or your own Home Screen app; group, den, segments and number
 //  (only offered once there's a group name; Restore from paste is always there).
-let shareTab = "map";
-function shareArea(body) {
-  const sec = h("section", "share", null, body);
-  h("h3", "", "Share", sec);
-  const tabs = h("div", "tabs share-tabs", null, sec);
-  tabs.setAttribute("role", "tablist");
-  const pane = h("div", "share-pane", null, sec);
-  const tabBtn = (key, label) => {
-    const b = h("button", key === shareTab ? "on" : "", label, tabs); b.type = "button";
-    b.setAttribute("role", "tab"); b.setAttribute("aria-selected", key === shareTab);
-    b.addEventListener("click", () => { shareTab = key; sec.remove(); shareArea(body); });
-  };
-  tabBtn("map", "Map & dispatcher");
-  tabBtn("group", "Group setup");
-  if (shareTab === "map") mapPane(pane); else groupPane(pane);
-}
 function qrBox(parent, link) {
   const box = h("div", "share-qr", null, parent);
   loadQr().then(() => { box.textContent = ""; box.appendChild(qrSvg(link)); })
@@ -2112,7 +2107,7 @@ function groupPane(pane) {
   const has = !!settings.group;
   h("p", "hint", has
     ? `For a parent in your group, or your own Home Screen app: \u201c${settings.group}\u201d, den, segments and the dispatcher\u2019s number. Scan it with the other phone, or Copy settings and Restore from paste.`
-    : "Got your group\u2019s QR code, or settings copied from someone in your group? Tap Scan QR code or Restore from paste. To share yours, add your group name above.", pane);
+    : "Got your group\u2019s QR code, or settings copied from someone in your group? Tap Scan QR code or Restore from paste. To share yours, add your group name on the Texting tab.", pane);
   const link = has ? setupLink() : null;
   if (has) qrBox(pane, link);
   const row = h("div", "move-row", null, pane);

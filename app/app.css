@@ -281,7 +281,7 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 4px); }
 #settings[hidden] { display: none; }
 #settings header { display: flex; align-items: center; }
 #settings h2 { margin: 0; font-size: 20px; }
-#settings-body { overflow-y: auto; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+#settings-body { overflow-y: auto; overflow-x: hidden; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
 #settings form { display: flex; flex-direction: column; gap: 16px; }
 #settings .note { margin: 8px 0 0; padding: 10px 12px; border-radius: 10px; background: #fff4d6; font-weight: 600; }
 #settings .field { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; border: 0; min-width: 0; }
@@ -333,7 +333,10 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 4px); }
 
 
 /* Settings: share the map with another parent */
-#settings .share { margin-top: 22px; padding-top: 16px; border-top: 1px solid #e3e3e3; text-align: center; }
+#settings .share { margin-top: 10px; text-align: center; }
+/* Settings' own tabs: four across, sharing the width */
+#settings .set-tabs { position: sticky; top: 0; z-index: 1; background: #fff; gap: 4px; margin: 0 0 8px; padding: 4px 0 8px; border-bottom: 1px solid #e3e3e3; }
+#settings .set-tabs button { flex: 1 1 auto; min-width: 0; white-space: nowrap; font-size: 14px; min-height: 40px; padding: 0 6px; }
 #settings .share h3 { margin: 0 0 4px; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: #555; text-align: left; }
 #settings .share .hint { display: block; text-align: left; margin: 0 0 8px; }
 #settings .share-qr { display: flex; justify-content: center; min-height: 40px; color: #777; font-size: 13px; }
@@ -349,7 +352,7 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 4px); }
 #settings .share-tabs button { font-size: 15px; min-height: 40px; }
 #settings .share-pane .hint { display: block; text-align: left; margin: 0 0 8px; }
 #settings .share-pane .move-row { margin-top: 8px; }
-#settings .about { margin: 22px 0 0; padding-top: 12px; border-top: 1px solid #e3e3e3; font-size: 12px; line-height: 1.4; color: #777; }
+#settings .about { margin: 6px 0 0; font-size: 14px; line-height: 1.5; color: #555; text-align: left; }
 #settings .about a { color: #555; }
 #avail { z-index: 5; }
 #avail h2 { margin: 6px 0; font-size: 20px; color: #1e7e34; }
