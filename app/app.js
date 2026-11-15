@@ -2601,7 +2601,6 @@ function listIcon() {                    // same picture as the segments-list bu
 // One letter page per group: the whole den map (coverage can send anyone anywhere), with the group's own
 // segments marked with a star and the rest a little lighter; the den's segment list with the group's first;
 // and the group's QR code. The map is drawn at page size off to the side, copied, and the view put back.
-const PRINT_W = 740, PRINT_H = 700;      // CSS px: about 7.7 x 7.3 in
 function printStyle(g) {
   for (const id in segEls) {
     const e = segEls[id], mine = leader.assign[id] === g;
@@ -2625,26 +2624,17 @@ function printHandouts(only) {
   if (!groups.length) return;
   const out = document.getElementById("print");
   out.textContent = "";
-  const keep = { k, tx, ty };
-  document.body.classList.add("printing");   // the map's frame at page size (app.css)
-  layout();
-  const pad = 18, bw = bbox[2] - bbox[0], bh = bbox[3] - bbox[1];
-  k = Math.min((PRINT_W - 2 * pad) / bw, (PRINT_H - 2 * pad) / bh);
-  tx = (PRINT_W - bw * k) / 2 - bbox[0] * k; ty = (PRINT_H - bh * k) / 2 - bbox[1] * k;
   const den = DATA.dens.find((d) => d.key === leader.den);
+  // 1. the pages without their maps: header, a box for the map, the segment list, QR and texting help
+  const boxes = [];
   for (const g of groups) {
-    printStyle(g); placedK = 0; commit();
     const ids = groupSegs(g), houses = ids.reduce((a, id) => a + segById(id).houses, 0);
     const page = h("section", "print-page", null, out);
     const head = h("div", "print-head", null, page);
     const t = h("h1", "", leader.names[g], head); t.style.color = GROUP_COLORS[g];
     h("p", "", `${den.name} \u2022 Week ${week()} \u2022 \u2605 ${ids.length} segment${ids.length === 1 ? "" : "s"}, ${houses} houses`, head);
     h("span", "print-ver", BUILD === "dev" ? "dev" : BUILD.slice(0, 7), head);   // which version printed it
-    const map = svg.cloneNode(true);
-    map.removeAttribute("id"); map.removeAttribute("style"); map.classList.add("print-map");
-    map.setAttribute("viewBox", `${mx} ${my} ${PRINT_W} ${PRINT_H}`);
-    map.setAttribute("aria-label", `${den.name} map, ${leader.names[g]}'s segments starred`);
-    page.appendChild(map);
+    boxes.push([g, h("div", "print-mapbox", null, page)]);
     const foot = h("div", "print-foot", null, page);
     const list = h("ol", "print-segs" + (week() === 1 ? " ticks" : " tallies"), null, foot);
     list.style.gridTemplateRows = `repeat(${Math.ceil(den.segments.length / 2)}, auto)`;
@@ -2654,10 +2644,14 @@ function printHandouts(only) {
       const li = h("li", mine ? "mine" : "", null, list);
       h("span", week() === 1 ? "print-tick" : "print-tally", "", li);   // next to the ID: Week 1 a box to tick, Week 2 room for tally marks
       h("b", "", (mine ? "\u2605 " : "") + sg.id + (sg.main_road ? " \u26a0" : ""), li);
-      const first = sg.lines.find((l) => !l.warning);
-      h("span", "", first ? first.text + (first.numbers ? " " + first.numbers : "") + (sg.lines.filter((l) => !l.warning).length > 1 ? " \u2026" : "") : "", li);
+      // every street line in full (the addresses matter on paper), wrapping onto a second line if needed
+      h("span", "", sg.lines.filter((l) => !l.warning).map((l) => l.text + (l.numbers ? " " + l.numbers : "")).join("; "), li);
       h("i", "", String(sg.houses), li);
     }
+    const qr = h("div", "print-qr", null, foot);
+    qr.dataset.group = g;
+    h("div", "qr-slot", null, qr).style.cssText = "width:1in;height:1in;margin:0 auto";   // the QR code goes here
+    h("p", "", "Scan to set up your phone for " + leader.names[g] + ". Then, on iPhone: Share \u2192 Add to Home Screen.", qr);
     // texting the dispatcher from the paper, written out for this group and this week
     const name = leader.names[g], wk = `Wk${week()}: ${name}`, ex = ids[0] || "W7";
     const tips = h("div", "print-texts", null, page);
@@ -2675,16 +2669,32 @@ function printHandouts(only) {
       tip("All done, and room for more:", `${wk} available to help`);
       h("li", "", "Take the bags of food to Fire Station 5 (11020 Mueller Rd) when you\u2019re finished, or whenever the car fills up.", tl);
     }
-    const qr = h("div", "print-qr", null, foot);
-    qr.dataset.group = g;
-    h("p", "", "Scan to set up your phone for " + leader.names[g] + ". Then, on iPhone: Share \u2192 Add to Home Screen.", qr);
+  }
+  // 2. each page's map, drawn in exactly the space its list and help leave (pages sit off screen, so they measure)
+  const keep = { k, tx, ty };
+  document.body.classList.add("printing");
+  for (const [g, box] of boxes) {
+    const W = Math.floor(box.clientWidth), H = Math.floor(box.clientHeight);
+    if (W < 50 || H < 50) continue;
+    document.body.style.setProperty("--print-w", W + "px"); document.body.style.setProperty("--print-h", H + "px");
+    layout();
+    const pad = 12, bw = bbox[2] - bbox[0], bh = bbox[3] - bbox[1];
+    k = Math.min((W - 2 * pad) / bw, (H - 2 * pad) / bh);
+    tx = (W - bw * k) / 2 - bbox[0] * k; ty = (H - bh * k) / 2 - bbox[1] * k;
+    printStyle(g); placedK = 0; commit();
+    const map = svg.cloneNode(true);
+    map.removeAttribute("id"); map.removeAttribute("style"); map.classList.add("print-map");
+    map.setAttribute("viewBox", `${mx} ${my} ${W} ${H}`);
+    map.setAttribute("width", W); map.setAttribute("height", H);
+    map.setAttribute("aria-label", `${den.name} map, ${leader.names[g]}'s segments starred`);
+    box.appendChild(map);
   }
   // put the screen back the way it was
   document.body.classList.remove("printing");
   layout(); leaderStyle(); ({ k, tx, ty } = keep); placedK = 0; commit();
   for (const id in segEls) if (segEls[id].tagBox) segEls[id].tagBox.setAttribute("stroke", "none");
   loadQr().then(() => {
-    for (const box of out.querySelectorAll(".print-qr")) box.insertBefore(qrSvg(groupLink(Number(box.dataset.group))), box.firstChild);
+    for (const box of out.querySelectorAll(".print-qr")) box.querySelector(".qr-slot").appendChild(qrSvg(groupLink(Number(box.dataset.group))));
   }).catch(() => { /* no QR without the library: the page still prints */ }).then(() => window.print());
 }
 
