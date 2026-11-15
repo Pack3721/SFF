@@ -493,7 +493,7 @@ body.printing #wrap { position: fixed; left: 0; top: 0; right: auto; bottom: aut
 .print-texts { flex: 1; min-width: 0; font-size: 8.5pt; }
 .print-texts ul { margin: 2px 0 0; padding-left: 14px; }
 .print-texts q { font-weight: 700; }
-.print-qr { flex: none; }
+.print-qr { flex: none; width: 1.9in; display: flex; align-items: center; gap: 8px; font-size: 7.5pt; }
 .print-qr svg { width: 1in; height: 1in; }
 .print-qr p { margin: 0; }
 @media print {
