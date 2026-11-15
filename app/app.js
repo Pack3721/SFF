@@ -3221,7 +3221,7 @@ function groupsTab(body) {
   const groups = {};
   for (const s of DATA.segments) { const g = rec(s.id).group; if (g) (groups[g] ||= []).push(s.id); }
   const names = Object.keys(groups);
-  if (!names.length) { h("p", "hint", "Groups show up here as you type their names on segments (W6 g Wolf B, or the Group column).", body); return; }
+  if (!names.length) h("p", "hint", "Groups show up here as you type their names on segments (W6 g Wolf B, or the Group column).", body);
   const homeOf = (ids) => {
     const own = ids.filter((id) => !covering(id)), count = {};
     for (const id of own.length ? own : ids) count[segById(id).den] = (count[segById(id).den] || 0) + 1;
@@ -3252,6 +3252,18 @@ function groupsTab(body) {
     for (const id of help) { const sp = h("span", "cov-seg", id, sc); sp.title = "sent to cover"; sc.append(" "); }
     const doneOwn = own.filter(isDone).length;
     h("td", "num", `${doneOwn} of ${exact ? "" : "~"}${Math.max(share, own.length)}` + (help.length ? ` +${help.filter(isDone).length}` : ""), tr);
+    if (wk2) h("td", "num", String(ids.reduce((a, id) => a + bagsOf(id), 0)), tr);
+  }
+  // segments done with no group name, by den: someone finished them, we don't know who
+  for (const d of DATA.dens) {
+    const ids = d.segments.filter((id) => isDone(id) && !rec(id).group);
+    if (!ids.length) continue;
+    const tr = h("tr", "unlabeled", null, tb);
+    h("td", "", "Unlabeled", tr);
+    const dc = h("td", "", d.short, tr); dc.style.color = d.color; dc.style.fontWeight = "700";
+    const sc = h("td", "segs", null, tr);
+    for (const id of ids) { h("span", "done-seg", id, sc); sc.append(" "); }
+    h("td", "num", String(ids.length), tr);
     if (wk2) h("td", "num", String(ids.reduce((a, id) => a + bagsOf(id), 0)), tr);
   }
   h("p", "hint", "“3 of ~18”: done of about how many – the den’s segments less what its other groups have finished, so it firms up as the den gets done. Red segments were covering for another group (+ counts them).", body);

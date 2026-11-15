@@ -584,6 +584,6 @@ body.dispatch #banner, body.dispatch #setup-status, body.dispatch #tools, body.d
 .dp-groups td.segs span { white-space: nowrap; }
 .dp-groups .done-seg { color: #1e7e34; font-weight: 700; }
 .dp-groups .cov-seg { color: #b00020; font-weight: 700; }
-.dp-groups tr.rest td { color: #666; font-style: italic; }
+.dp-groups tr.unlabeled td:first-child { color: #666; font-style: italic; }
 .dp-groups .dp-note { font-size: 11px; color: #b00020; font-style: normal; }
 .dp-groups td.num { white-space: nowrap; }
