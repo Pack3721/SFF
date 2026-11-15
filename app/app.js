@@ -2741,7 +2741,9 @@ function printHandouts(only) {
     const help = h("div", "print-help", null, page);
     const tips = h("div", "print-texts", null, help);
     help.appendChild(qr);
-    h("b", "", "Texting the dispatcher" + (settings.tel ? " \u2013 " + showTel(settings.tel) : "") + ":", tips);
+    const th = h("b", "", "Texting the dispatcher \u2013 ", tips);
+    if (settings.tel) th.append(showTel(settings.tel) + ":");
+    else { h("span", "print-blank", "", th); th.append(":"); }   // no number on this phone: a line to write it on
     const tl = h("ul", "", null, tips);
     const tip = (when, text) => { const li = h("li", "", when + " ", tl); h("q", "", text, li); };
     if (week() === 1) {

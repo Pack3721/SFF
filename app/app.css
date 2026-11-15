@@ -520,3 +520,4 @@ body.printing #wrap { position: fixed; left: 0; top: 0; right: auto; bottom: aut
 #settings .guide-links a { display: inline-flex; align-items: center; text-decoration: none; }
 #avail .pass2-btn { display: block; width: 100%; margin-top: 8px; font: inherit; font-size: 15px; font-weight: 600; min-height: 44px;
   border-radius: 12px; border: 2px solid #ddd; background: #fff; color: #333; }
+.print-texts .print-blank { display: inline-block; width: 1.6in; border-bottom: 1.2px solid #333; vertical-align: -2px; margin-left: 2px; }
