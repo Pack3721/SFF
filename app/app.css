@@ -477,8 +477,8 @@ body.printing #wrap { position: fixed; left: 0; top: 0; right: auto; bottom: aut
 .print-mapbox { flex: 1 1 0; min-height: 0; }
 .print-map { display: block; }
 .print-foot { flex: none; display: flex; gap: 14px; margin-top: 4px; }
-/* two columns, filled down then across (a grid: Safari's print layout ignores CSS columns here) */
-.print-segs { flex: 1; margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-auto-flow: column; min-width: 0; align-content: start; column-gap: 14px; font-size: 8pt; }
+.print-cols { flex: 1; min-width: 0; display: flex; gap: 14px; }
+.print-segs { flex: 1; min-width: 0; margin: 0; padding: 0; list-style: none; font-size: 8pt; }
 .print-segs li { break-inside: avoid; display: flex; align-items: flex-end; gap: 4px; color: #666; min-height: 0.24in; padding: 1px 0 2px;
   border-bottom: 1px dotted #bbb; }   /* a faint dotted line between segments, so each ID clearly owns its addresses */
 .print-segs li.mine { color: #111; }

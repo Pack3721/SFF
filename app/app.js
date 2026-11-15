@@ -2636,12 +2636,14 @@ function printHandouts(only) {
     h("span", "print-ver", BUILD === "dev" ? "dev" : BUILD.slice(0, 7), head);   // which version printed it
     boxes.push([g, h("div", "print-mapbox", null, page)]);
     const foot = h("div", "print-foot", null, page);
-    const list = h("ol", "print-segs" + (week() === 1 ? " ticks" : " tallies"), null, foot);
-    list.style.gridTemplateRows = `repeat(${Math.ceil(den.segments.length / 2)}, auto)`;
+    // two plain columns, the first half then the second (Safari's print layout gets a grid's row heights wrong)
+    const cols = h("div", "print-cols", null, foot);
+    const lists = [h("ol", "print-segs", null, cols), h("ol", "print-segs", null, cols)];
     const order = den.segments.map(segById).sort((a, b) => (leader.assign[b.id] === g) - (leader.assign[a.id] === g) || segOrder(a, b));
-    for (const sg of order) {
+    const half = Math.ceil(order.length / 2);
+    for (const [n, sg] of order.entries()) {
       const mine = leader.assign[sg.id] === g;
-      const li = h("li", mine ? "mine" : "", null, list);
+      const li = h("li", mine ? "mine" : "", null, lists[n < half ? 0 : 1]);
       h("span", week() === 1 ? "print-tick" : "print-tally", "", li);   // next to the ID: Week 1 a box to tick, Week 2 room for tally marks
       h("b", "", (mine ? "\u2605 " : "") + sg.id + (sg.main_road ? " \u26a0" : ""), li);
       // every street line in full (the addresses matter on paper), wrapping onto a second line if needed
