@@ -3259,7 +3259,7 @@ function groupsTab(body) {
     const ids = d.segments.filter((id) => isDone(id) && !rec(id).group);
     if (!ids.length) continue;
     const tr = h("tr", "unlabeled", null, tb);
-    h("td", "", "Unlabeled", tr);
+    h("td", "", `Unlabeled ${d.short}`, tr);
     const dc = h("td", "", d.short, tr); dc.style.color = d.color; dc.style.fontWeight = "700";
     const sc = h("td", "segs", null, tr);
     for (const id of ids) { h("span", "done-seg", id, sc); sc.append(" "); }
