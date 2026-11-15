@@ -438,6 +438,7 @@ function preview() {                    // cheap: move the picture drawn at (k0,
 }
 
 let placedK = 0;
+let printScale = 0;                       // while drawing a handout: how much smaller the ID tags are
 function commit() {                     // the full redraw at the current view
   const panOnly = k === k0 && k === placedK;   // labels and line widths only depend on the zoom
   k0 = k; tx0 = tx; ty0 = ty;
@@ -452,7 +453,8 @@ function commit() {                     // the full redraw at the current view
   const shrink = Math.min(Math.max(k / 0.8, 0.75), 1);   // labels a bit smaller when zoomed far out
   for (const s of scaled) {
     if (!s.box) measure(s);
-    s.el.setAttribute("transform", `translate(${f1(s.x)} ${f1(s.y)}) scale(${inv * shrink}) rotate(${f1(s.rot)})`);
+    const sm = printScale && s.el.kind === "tag" ? printScale : 1;   // smaller ID tags on printed handouts
+    s.el.setAttribute("transform", `translate(${f1(s.x)} ${f1(s.y)}) scale(${inv * shrink * sm}) rotate(${f1(s.rot)})`);
   }
   if (k !== placedK) { placedK = k; declutter(shrink); }  // panning doesn't change what overlaps
   syncFxCopies();
@@ -2645,7 +2647,9 @@ function printHandouts(only) {
       const mine = leader.assign[sg.id] === g;
       const li = h("li", mine ? "mine" : "", null, lists[n < half ? 0 : 1]);
       h("span", week() === 1 ? "print-tick" : "print-tally", "", li);   // next to the ID: Week 1 a box to tick, Week 2 room for tally marks
-      h("b", "", (mine ? "\u2605 " : "") + sg.id + (sg.main_road ? " \u26a0" : ""), li);
+      const idb = h("b", "", mine ? "\u2605 " : "", li);                 // the ID in its map colour, like the tag
+      const tag = h("span", "print-id", sg.id + (sg.main_road ? " \u26a0" : ""), idb);
+      tag.style.background = mine ? sg.color : tint(sg.color, 0.55);
       // every street line in full (the addresses matter on paper), wrapping onto a second line if needed
       h("span", "", sg.lines.filter((l) => !l.warning).map((l) => l.text + (l.numbers ? " " + l.numbers : "")).join("; "), li);
       h("i", "", String(sg.houses), li);
@@ -2685,7 +2689,7 @@ function printHandouts(only) {
     const pad = 12, bw = bbox[2] - bbox[0], bh = bbox[3] - bbox[1];
     k = Math.min((W - 2 * pad) / bw, (H - 2 * pad) / bh);
     tx = (W - bw * k) / 2 - bbox[0] * k; ty = (H - bh * k) / 2 - bbox[1] * k;
-    printStyle(g); placedK = 0; commit();
+    printStyle(g); printScale = 0.72; placedK = 0; commit(); printScale = 0;
     const map = svg.cloneNode(true);
     map.removeAttribute("id"); map.removeAttribute("style"); map.classList.add("print-map");
     map.setAttribute("viewBox", `${mx} ${my} ${W} ${H}`);
