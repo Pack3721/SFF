@@ -2611,13 +2611,7 @@ function printStyle(g) {
     e.route.setAttribute("opacity", mine ? 1 : 0.6); e.homes.setAttribute("opacity", mine ? 1 : 0.5);
     for (const x of e.extras) x.setAttribute("opacity", mine || x.kind === "tag" ? 1 : 0.5);
     if (e.tagText) {
-      e.tagText.textContent = e.tagLabel; e.tagText.style.fill = "";
-      if (mine) {                        // a yellow star with a black outline
-        const star = document.createElementNS(NS, "tspan");
-        star.textContent = " \u2605";
-        star.setAttribute("style", "fill:#ffd21f;stroke:#111;stroke-width:1.4px;paint-order:stroke;stroke-linejoin:round");
-        e.tagText.appendChild(star);
-      }
+      e.tagText.textContent = e.tagLabel + (mine ? " \u2605" : ""); e.tagText.style.fill = "";   // star in the tag's text colour
       const w = e.tagW[mine ? 1 : 0];
       e.tagBox.setAttribute("x", -w / 2); e.tagBox.setAttribute("width", w);
       e.tagBox.setAttribute("stroke", mine ? "#111" : "none"); e.tagBox.setAttribute("stroke-width", mine ? 2 : 0);
