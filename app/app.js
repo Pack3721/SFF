@@ -2764,8 +2764,8 @@ function printHandouts(only) {
   const keep = { k, tx, ty };
   document.body.classList.add("printing");
   for (const [g, box] of boxes) {
-    // leave about half an inch spare: Safari on iPhone wraps the list and texting help onto more lines than measured here
-    const W = Math.floor(box.clientWidth), H = Math.floor(box.clientHeight) - 48;
+    // leave about an inch spare: Safari on iPhone wraps the list and texting help onto more lines than measured here
+    const W = Math.floor(box.clientWidth), H = Math.floor(box.clientHeight) - 96;
     if (W < 50 || H < 50) continue;
     box.style.flex = "none"; box.style.height = H + "px";
     document.body.style.setProperty("--print-w", W + "px"); document.body.style.setProperty("--print-h", H + "px");
