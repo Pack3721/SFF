@@ -16,7 +16,8 @@ Written down after the 2026 Week 1 walk (bags, Sat Nov 14, 2026).
 
 ## Walking direction
 
-- Maybe have the segment arrows point against traffic, so walkers face oncoming cars, since most streets don't have sidewalks.
+- Week 1 (bags, door to door on foot): maybe have the segment arrows point against traffic, so walkers face oncoming cars, since most streets don't have sidewalks. Make it a preference, though: sometimes a car follows the walkers, and then going with traffic suits the car.
+- Week 2 (pickup by car): arrows should go with traffic.
 
 ## Bags for Week 1
 
