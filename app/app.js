@@ -2134,7 +2134,7 @@ function groupPane(pane) {
   });
   // the Home Screen app can't be reached by the phone's camera app (that opens the browser), so it scans itself
   if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    const scan = h("button", "share-btn", "Scan QR code", row); scan.type = "button";
+    const scan = iconBtn("scan", "Scan QR code", row);
     scan.addEventListener("click", openScanner);
   }
 }
@@ -2604,6 +2604,7 @@ function listIcon() {                    // same picture as the segments-list bu
 const BTN_ICONS = {
   share: "M12 3v12M7.5 7.5 12 3l4.5 4.5M5 11v8.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V11",       // box with an arrow up
   copy: "M9 9h10.5A1.5 1.5 0 0 1 21 10.5V20a1.5 1.5 0 0 1-1.5 1.5H10.5A1.5 1.5 0 0 1 9 20zM15 9V4.5A1.5 1.5 0 0 0 13.5 3H4.5A1.5 1.5 0 0 0 3 4.5v9A1.5 1.5 0 0 0 4.5 15H9",   // two sheets
+  scan: "M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3M3 12h18",   // corner brackets with a scan line
   paste: "M9 4H6.5A1.5 1.5 0 0 0 5 5.5v14A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-14A1.5 1.5 0 0 0 17.5 4H15M9 2.5h6v3H9zM9 11h6M9 15h6",   // clipboard
 };
 // a button with an icon before its label; btn.say(text) changes the label and keeps the icon
