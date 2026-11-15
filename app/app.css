@@ -425,7 +425,7 @@ body.leader #tools { bottom: calc(var(--leader-h, 0px) + 4px); }
 #avail .bag-ask { flex: 1 1 auto; min-width: 0; width: 4em; height: 48px; text-align: center; font: inherit; font-size: 20px; font-weight: 700;
   border: 1.5px solid #bbb; border-radius: 12px; }
 #banner .bag-total { flex: none; margin-left: 8px; font-size: 13px; font-weight: 700; color: #555; white-space: nowrap; }
-#avail .dir-btn { flex: 1 1 auto; display: inline-flex; align-items: center; justify-content: center; min-height: 48px;
+#avail .dir-btn { flex: 1 1 auto; display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 48px;
   border-radius: 12px; background: #1a5fb4; color: #fff; font-weight: 700; text-decoration: none; }
 
 /* the QR scanner, opened from Settings › Share › Group setup */

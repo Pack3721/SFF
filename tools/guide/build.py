@@ -82,7 +82,7 @@ WEEK2 = {
             "**All done? Optional second pass first.** For bags put out late, tap the green box, then **Optional second pass**, and drive your segments again. The box says **2nd pass**, the tally keeps adding, and Done only texts the dispatcher when a segment has new bags: \u201cWk2: Wolf A \u2013 W6 second pass, 2 more bags\u201d."],
             ["w2-pass2.jpg"]),
         (None, [
-            "**Then the drop-off.** Tap the green box: **Directions** to Fire Station 5 (11020 Mueller Rd) for the bags of food, or **Available to help** to take more segments. Tap the fire station on the map for its address."],
+            "**Then the drop-off.** Tap the green box: **Directions** to Fire Station 5 (11020 Mueller Rd) for the bags of food texts the dispatcher \u201cheading to Fire Station 5\u201d, then opens the directions. (With auto-texting off, it\u2019s a separate **Text heading there** button, like Text done.) Or **Available to help** to take more segments. Tap the fire station on the map for its address."],
             ["w2-alldone.jpg"]),
         ("Tips", [
             "- **One texter per car?** The others can turn off **Settings → Texting → Text the dispatcher when I tap Done**. Their Done then just marks the segment.",

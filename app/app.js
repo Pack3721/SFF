@@ -1564,6 +1564,7 @@ function directionsTo(a, to) {           // to: [lon, lat], or a street address
   a.rel = "noreferrer"; a.target = "_blank";
 }
 // Week 2, all done: take the bags to Fire Station 5 (directions), and text that you're available to help.
+let headingSent = false;                 // "heading to Fire Station 5" texted this visit: Directions just opens maps
 function allDoneWeek2() {
   const fire = DATA.landmarks.find((lm) => lm.icon === "fire");
   availPanel.textContent = "";
@@ -1578,9 +1579,23 @@ function allDoneWeek2() {
     p2.addEventListener("click", startPass2);
   }
   const row = h("div", "card-texts", null, availPanel);
-  const go = h("a", "dir-btn", "Directions \u203a", row);
+  // heading to the drop-off texts the dispatcher too, like Done: with auto-text on, one tap texts first and then
+  // offers the directions (a phone can't open Messages and Maps from one tap); off, two buttons
+  const go = h("a", "dir-btn", headingSent ? "Open directions \u203a" : "Directions \u203a", row);
   directionsTo(go, fire.address || fire.lonlat);
   go.setAttribute("aria-label", "Driving directions to Fire Station 5");
+  if (settings.autoText && !headingSent && textsReady()) {
+    msgIcon(go);
+    go.addEventListener("click", (e) => {
+      e.preventDefault();
+      sendText("heading"); headingSent = true;
+      allDoneWeek2();                    // back from Messages: the button opens the directions
+    });
+  } else if (!settings.autoText) {
+    const hd = h("button", "", "Text heading there", row); hd.type = "button"; msgIcon(hd);
+    hd.disabled = !textsReady();
+    hd.addEventListener("click", () => sendText("heading"));
+  }
   const tx = h("button", "", "Available to help", row); tx.type = "button"; msgIcon(tx);
   tx.addEventListener("click", () => sendAvailable());   // opens Settings if texting isn't set up yet
   closeSheet();
@@ -1888,13 +1903,17 @@ function applySetup(q) {                  // q: the parts after # of a setup lin
   }
   return mySegs.tracked.length;
 }
-function textBody(kind, id, extra) {
+function textBody(kind, id, extra) {     // each text is built only when asked for (some have no segment)
   const who = `Wk${week()}: ${settings.group}`;
-  const tally = tallying() && bags[id] ? `, ${bagWord(bags[id])}` : "";
-  return { done: `${who} \u2013 ${id} done${tally}`, coverage: `${who} \u2013 ${id} ${id.includes(",") ? "need" : "needs"} coverage`,
-           bags: `${who} \u2013 send bags to ${id}${bagsWhere(id)}`,
-           pass2: `${who} \u2013 ${id} second pass, ${extra} more bag${extra === 1 ? "" : "s"}`,
-           available: `${who} available` + (week() === 2 ? " to help" : "") + (extra ? ` \u2013 ${extra}` : "") }[kind];
+  const texts = {
+    done: () => `${who} \u2013 ${id} done` + (tallying() && bags[id] ? `, ${bagWord(bags[id])}` : ""),
+    coverage: () => `${who} \u2013 ${id} ${String(id).includes(",") ? "need" : "needs"} coverage`,
+    bags: () => `${who} \u2013 send bags to ${id}${bagsWhere(id)}`,
+    heading: () => `${who} heading to Fire Station 5`,
+    pass2: () => `${who} \u2013 ${id} second pass, ${extra} more bag${extra === 1 ? "" : "s"}`,
+    available: () => `${who} available` + (week() === 2 ? " to help" : "") + (extra ? ` \u2013 ${extra}` : ""),
+  };
+  return texts[kind]();
 }
 // iPhones want sms:NUMBER&body=…, Android sms:NUMBER?body=…
 const smsHref = (body) => `sms:${settings.tel}${isIOS() ? "&" : "?"}body=${encodeURIComponent(body)}`;
@@ -2736,7 +2755,7 @@ function printHandouts(only) {
       tip("Can\u2019t get to some:", `${wk} \u2013 ${ids.slice(0, 2).join(", ") || ex} need coverage`);
       tip("All done, and room for more:", `${wk} available to help`);
       tip("Optional second pass for late bags (only if there are new ones):", `${wk} \u2013 ${ex} second pass, 2 more bags`);
-      h("li", "", "Take the bags of food to Fire Station 5 (11020 Mueller Rd) when you\u2019re finished, or whenever the car fills up.", tl);
+      tip("Taking the bags of food to Fire Station 5 (11020 Mueller Rd) when you\u2019re finished, or whenever the car fills up:", `${wk} heading to Fire Station 5`);
     }
   }
   // 2. each page's map, drawn in exactly the space its list and help leave (pages sit off screen, so they measure)
