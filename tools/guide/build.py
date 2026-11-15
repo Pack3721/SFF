@@ -81,6 +81,9 @@ WEEK2 = {
         (None, [
             "**All done.** Tap the green box: **Directions** to Fire Station 5 (11020 Mueller Rd) for the bags of food, or **Available to help** to take more segments. Tap the fire station on the map for its address."],
             ["w2-alldone.jpg"]),
+        (None, [
+            "**Second pass (optional).** For bags put out late, tap **Second pass** on the all-done panel and drive your segments again. The box says **2nd pass**, the tally keeps adding, and Done only texts the dispatcher when a segment has new bags: \u201cWk2: Wolf A \u2013 W6 second pass, 2 more bags\u201d."],
+            ["w2-pass2.jpg"]),
         ("Tips", [
             "- **One texter per car?** The others can turn off **Settings → Texting → Text the dispatcher when I tap Done**. Their Done then just marks the segment.",
             "- **Setting up a phone, or the iPhone Home Screen app?** Settings → **Group** → **Scan QR code**, and scan the group’s code.",

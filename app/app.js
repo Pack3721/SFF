@@ -2736,6 +2736,7 @@ function printHandouts(only) {
       tip("Can\u2019t get to some:", `${wk} \u2013 ${ids.slice(0, 2).join(", ") || ex} need coverage`);
       tip("All done, and room for more:", `${wk} available to help`);
       h("li", "", "Take the bags of food to Fire Station 5 (11020 Mueller Rd) when you\u2019re finished, or whenever the car fills up.", tl);
+      tip("Second pass for late bags (only if there are new ones):", `${wk} \u2013 ${ex} second pass, 2 more bags`);
     }
   }
   // 2. each page's map, drawn in exactly the space its list and help leave (pages sit off screen, so they measure)
