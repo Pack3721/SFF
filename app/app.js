@@ -2650,13 +2650,15 @@ function printHandouts(only) {
       h("span", "", sg.lines.filter((l) => !l.warning).map((l) => l.text + (l.numbers ? " " + l.numbers : "")).join("; "), li);
       h("i", "", String(sg.houses), li);
     }
-    const qr = h("div", "print-qr", null, foot);
+    const qr = h("div", "print-qr", null);   // goes beside the texting help, below, so the list gets the full width
     qr.dataset.group = g;
-    h("div", "qr-slot", null, qr).style.cssText = "width:1in;height:1in;margin:0 auto";   // the QR code goes here
+    h("div", "qr-slot", null, qr).style.cssText = "flex:none;width:1in;height:1in";   // the QR code goes here
     h("p", "", "Scan to set up your phone for " + leader.names[g] + ". Then, on iPhone: Share \u2192 Add to Home Screen.", qr);
     // texting the dispatcher from the paper, written out for this group and this week
     const name = leader.names[g], wk = `Wk${week()}: ${name}`, ex = ids[0] || "W7";
-    const tips = h("div", "print-texts", null, page);
+    const help = h("div", "print-help", null, page);
+    const tips = h("div", "print-texts", null, help);
+    help.appendChild(qr);
     h("b", "", "Texting the dispatcher" + (settings.tel ? " \u2013 " + showTel(settings.tel) : "") + ":", tips);
     const tl = h("ul", "", null, tips);
     const tip = (when, text) => { const li = h("li", "", when + " ", tl); h("q", "", text, li); };
