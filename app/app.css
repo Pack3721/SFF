@@ -392,7 +392,7 @@ body.leader #tools { bottom: calc(var(--leader-h, 0px) + 4px); }
 #gqr .gqr-seg span { color: #555; white-space: nowrap; }
 #gqr .gqr-line { font-size: 13px; color: #555; line-height: 1.25; }
 #gqr .gqr-segs .gqr-total { border-bottom: 0; padding-top: 5px; }
-#gqr .move-row { display: flex; gap: 8px; justify-content: center; margin-top: 8px; }
+#gqr .move-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 8px; }
 #gqr .share-btn, #leader .share-btn { font: inherit; font-size: 15px; font-weight: 700; min-height: 44px; padding: 0 16px; color: #111; background: #fff; border: 2px solid #333; border-radius: 22px; }
 #leader .group .group-qr { padding: 0; }   /* beats #leader .share-btn's side padding, so the icon is centred */
 #leader .leader-warn { margin: 0 0 8px; padding: 8px 10px; border-radius: 10px; background: #fff4d6; color: #6b4b00; font-size: 13px; line-height: 1.35; }
@@ -507,4 +507,7 @@ body.printing #wrap { position: fixed; left: 0; top: 0; right: auto; bottom: aut
 }
 .print-star { color: #ffd21f; -webkit-text-stroke: 0.8px #111; margin-right: 3px; font-size: 1.15em; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .share-btn .print-icon { flex: none; vertical-align: -4px; margin-right: 6px; }
+.share-btn:has(.print-icon) { display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; }
+#gqr .move-row .share-btn:has(.print-icon) { padding: 0 12px; }
+#gqr .move-row .share-btn .print-icon { margin-right: 4px; }
 #leader .print-all { display: flex; align-items: center; justify-content: center; }

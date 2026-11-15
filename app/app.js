@@ -2101,10 +2101,10 @@ function mapPane(pane) {
   const link = shareLink();
   qrBox(pane, link);
   const row = h("div", "move-row", null, pane);
-  const btn = h("button", "share-btn", navigator.share ? "Share map link\u2026" : "Copy map link", row); btn.type = "button";
+  const btn = iconBtn(navigator.share ? "share" : "copy", navigator.share ? "Share map link\u2026" : "Copy map link", row);
   btn.addEventListener("click", () => {
     if (navigator.share) navigator.share({ title: "SFF 721 Map", text: "Scouting for Food walking map", url: link }).catch(() => {});
-    else if (navigator.clipboard) navigator.clipboard.writeText(link).then(() => { btn.textContent = "\u2714\ufe0e Copied"; });
+    else if (navigator.clipboard) navigator.clipboard.writeText(link).then(() => { btn.say("\u2714\ufe0e Copied"); });
   });
 }
 function groupPane(pane) {
@@ -2118,14 +2118,14 @@ function groupPane(pane) {
   const row = h("div", "move-row", null, pane);
   const say = h("p", "move-msg", null, pane);
   if (has) {
-    const copy = h("button", "share-btn", "Copy settings", row); copy.type = "button";
+    const copy = iconBtn("copy", "Copy settings", row);
     copy.addEventListener("click", () => {
       (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject())
         .then(() => { say.textContent = "\u2714\ufe0e Copied. On the other phone or app, tap Restore from paste."; })
         .catch(() => { say.textContent = link; });   // no clipboard: show it to copy by hand
     });
   }
-  const paste = h("button", "share-btn", "Restore from paste", row); paste.type = "button";
+  const paste = iconBtn("paste", "Restore from paste", row);
   paste.addEventListener("click", () => {
     if (!navigator.clipboard || !navigator.clipboard.readText) { say.textContent = "This browser can\u2019t paste here. Paste the link into the address bar instead."; return; }
     navigator.clipboard.readText().then((text) => {
@@ -2600,6 +2600,24 @@ function listIcon() {                    // same picture as the segments-list bu
   return svgEl;
 }
 
+// ---------- button icons: share, copy, paste ----------
+const BTN_ICONS = {
+  share: "M12 3v12M7.5 7.5 12 3l4.5 4.5M5 11v8.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V11",       // box with an arrow up
+  copy: "M9 9h10.5A1.5 1.5 0 0 1 21 10.5V20a1.5 1.5 0 0 1-1.5 1.5H10.5A1.5 1.5 0 0 1 9 20zM15 9V4.5A1.5 1.5 0 0 0 13.5 3H4.5A1.5 1.5 0 0 0 3 4.5v9A1.5 1.5 0 0 0 4.5 15H9",   // two sheets
+  paste: "M9 4H6.5A1.5 1.5 0 0 0 5 5.5v14A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-14A1.5 1.5 0 0 0 17.5 4H15M9 2.5h6v3H9zM9 11h6M9 15h6",   // clipboard
+};
+// a button with an icon before its label; btn.say(text) changes the label and keeps the icon
+function iconBtn(kind, text, parent) {
+  const b = h("button", "share-btn", null, parent); b.type = "button";
+  const svgEl = document.createElementNS(NS, "svg");
+  for (const [k_, v] of Object.entries({ viewBox: "0 0 24 24", width: 20, height: 20, class: "print-icon", "aria-hidden": "true" })) svgEl.setAttribute(k_, v);
+  el("path", { d: BTN_ICONS[kind], fill: "none", stroke: "currentColor", "stroke-width": 2, "stroke-linecap": "round", "stroke-linejoin": "round" }, svgEl);
+  b.appendChild(svgEl);
+  const label = h("span", "", text, b);
+  b.say = (t) => { label.textContent = t; };
+  return b;
+}
+
 // ---------- printed handouts (den leader mode) ----------
 function printIcon() {                   // a small printer: paper in, body, paper out
   const svgEl = document.createElementNS(NS, "svg");
@@ -2736,13 +2754,13 @@ function printFromSafari() {
   x.addEventListener("click", () => slideOut(groupPanel));
   h("p", "hint", "The Home Screen app can\u2019t print on iPhone. Copy this link, paste it into Safari\u2019s address bar, then tap Print there. Your groups come with it.", groupPanel);
   const row = h("div", "move-row", null, groupPanel);
-  const cp = h("button", "share-btn", "Copy link", row); cp.type = "button";
+  const cp = iconBtn("copy", "Copy link", row);
   cp.addEventListener("click", () => {
     (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject())
-      .then(() => { cp.textContent = "\u2714\ufe0e Copied"; }).catch(() => { cp.textContent = "Couldn\u2019t copy"; });
+      .then(() => { cp.say("\u2714\ufe0e Copied"); }).catch(() => { cp.say("Couldn\u2019t copy"); });
   });
   if (navigator.share) {
-    const sh = h("button", "share-btn", "Share\u2026", row); sh.type = "button";
+    const sh = iconBtn("share", "Share\u2026", row);
     sh.addEventListener("click", () => navigator.share({ title: "SFF 721 Map \u2013 den leader", url: link }).catch(() => {}));
   }
   slideIn(groupPanel);
@@ -2790,16 +2808,16 @@ function showGroupList(i) {
   const row = h("div", "move-row", null, groupPanel);
   const body = text.join("\n");
   if (navigator.share) {
-    const sh = h("button", "share-btn", "Share list\u2026", row); sh.type = "button";
+    const sh = iconBtn("share", "Share list\u2026", row);
     sh.addEventListener("click", () => navigator.share({ title: leader.names[i], text: body }).catch(() => {}));
   }
   const pr = h("button", "share-btn", null, row); pr.type = "button";
   pr.appendChild(printIcon()); h("span", "", "Print\u2026", pr);
   pr.addEventListener("click", () => printHandouts(i));
-  const cp = h("button", "share-btn", "Copy list", row); cp.type = "button";
+  const cp = iconBtn("copy", "Copy list", row);
   cp.addEventListener("click", () => {
     (navigator.clipboard ? navigator.clipboard.writeText(body) : Promise.reject())
-      .then(() => { cp.textContent = "\u2714\ufe0e Copied"; }).catch(() => { cp.textContent = "Couldn\u2019t copy"; });
+      .then(() => { cp.say("\u2714\ufe0e Copied"); }).catch(() => { cp.say("Couldn\u2019t copy"); });
   });
   slideIn(groupPanel);
 }
@@ -2819,13 +2837,13 @@ function showGroupQr(i) {
           .catch(() => { box.textContent = "QR code needs a signal the first time."; });
   const row = h("div", "move-row", null, groupPanel);
   if (navigator.share) {
-    const sh = h("button", "share-btn", "Share link\u2026", row); sh.type = "button";
+    const sh = iconBtn("share", "Share link\u2026", row);
     sh.addEventListener("click", () => navigator.share({ title: "SFF 721 Map \u2013 " + leader.names[i], url: link }).catch(() => {}));
   }
-  const cp = h("button", "share-btn", "Copy link", row); cp.type = "button";
+  const cp = iconBtn("copy", "Copy link", row);
   cp.addEventListener("click", () => {
     (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject())
-      .then(() => { cp.textContent = "\u2714\ufe0e Copied"; }).catch(() => { cp.textContent = "Couldn\u2019t copy"; });
+      .then(() => { cp.say("\u2714\ufe0e Copied"); }).catch(() => { cp.say("Couldn\u2019t copy"); });
   });
   slideIn(groupPanel);
 }
