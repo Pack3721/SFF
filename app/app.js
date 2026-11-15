@@ -2687,7 +2687,7 @@ function printHandouts(only) {
     const map = svg.cloneNode(true);
     map.removeAttribute("id"); map.removeAttribute("style"); map.classList.add("print-map");
     map.setAttribute("viewBox", `${mx} ${my} ${W} ${H}`);
-    map.setAttribute("width", W); map.setAttribute("height", H);
+    // no fixed size: if the printer lays the list out taller than measured, the map shrinks instead of overlapping
     map.setAttribute("aria-label", `${den.name} map, ${leader.names[g]}'s segments starred`);
     box.appendChild(map);
   }
