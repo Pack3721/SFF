@@ -518,3 +518,5 @@ body.printing #wrap { position: fixed; left: 0; top: 0; right: auto; bottom: aut
 #settings .guides h3 { margin: 0 0 8px; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: #555; }
 #settings .guide-links { display: flex; flex-wrap: wrap; gap: 8px; }
 #settings .guide-links a { display: inline-flex; align-items: center; text-decoration: none; }
+#avail .pass2-btn { display: block; width: 100%; margin-top: 8px; font: inherit; font-size: 15px; font-weight: 600; min-height: 44px;
+  border-radius: 12px; border: 2px solid #ddd; background: #fff; color: #333; }

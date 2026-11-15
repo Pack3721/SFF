@@ -869,6 +869,10 @@ const SEG_KEY = "sff.segments";
 let mySegs = { tracked: [], target: null, done: [], covered: [] };   // covered: asked someone else to cover, this week   // done: segments you've texted Done for, this week
 // Done is kept separately for each week (Week 2 starts with nothing done); tracked and target carry over.
 let doneByWeek = {};                     // week -> ids, as saved; mySegs.done is this week's
+// Second pass (Week 2): after all done, drive your segments again for bags put out late. The first pass's done
+// marks are kept aside, done starts over, and a text goes only when a segment has new bags.
+let pass2 = null;                        // {firstDone: [...], start: {id: bags at the start}} while on a second pass
+let pass2ByWeek = {};
 let coveredByWeek = {};                  // week -> ids crossed out after a "needs coverage" text
 let bagsByWeek = {};                     // week -> {segment id: bags picked up}; Week 2's tally
 let bags = {};                           // this week's tally
@@ -890,6 +894,7 @@ function loadSegs() {
     doneByWeek = v.doneByWeek || (v.done ? { 1: v.done } : {});
     bagsByWeek = v.bagsByWeek || {};
     coveredByWeek = v.coveredByWeek || {};
+    pass2ByWeek = v.pass2ByWeek || {};
   } catch (_) { /* nothing saved, or no storage */ }
   segWeek = weekKey();
   const ok = new Set(DATA.segments.map((s) => s.id));
@@ -899,6 +904,7 @@ function loadSegs() {
   if (mySegs.covered.includes(mySegs.target)) mySegs.target = null;
   bags = {};
   for (const [id, n] of Object.entries(bagsByWeek[segWeek] || {})) if (ok.has(id) && n > 0) bags[id] = n;
+  pass2 = pass2ByWeek[segWeek] || null;
 }
 // the date moved into another week while the page was open (or asleep): show that week's done marks
 function checkWeek() {
@@ -909,7 +915,8 @@ function saveSegs() {
   doneByWeek[segWeek || weekKey()] = mySegs.done;
   bagsByWeek[segWeek || weekKey()] = bags;
   coveredByWeek[segWeek || weekKey()] = mySegs.covered;
-  try { localStorage.setItem(SEG_KEY, JSON.stringify({ tracked: mySegs.tracked, target: mySegs.target, doneByWeek, bagsByWeek, coveredByWeek })); }
+  if (pass2) pass2ByWeek[segWeek || weekKey()] = pass2; else delete pass2ByWeek[segWeek || weekKey()];
+  try { localStorage.setItem(SEG_KEY, JSON.stringify({ tracked: mySegs.tracked, target: mySegs.target, doneByWeek, bagsByWeek, coveredByWeek, pass2ByWeek })); }
   catch (_) { /* ignore */ }
 }
 
@@ -1213,8 +1220,22 @@ function askBags(id) {
   slideIn(availPanel);
 }
 function finishSegment(id) {             // marks done either way; texts too when texting is set up
+  if (pass2) {                           // second pass: a text only when there are new bags
+    const more = (bags[id] || 0) - (pass2.start[id] || 0);
+    if (more > 0 && textsReady()) sendText("pass2", id, more);
+    markDone(id, true);
+    return;
+  }
   if (textsReady()) sendText("done", id);
   markDone(id, true);
+}
+function startPass2() {
+  pass2 = { firstDone: mySegs.done.slice(), start: { ...bags } };
+  mySegs.done = []; mySegs.target = null;
+  autoTarget(); nearestTarget();
+  if (!mySegs.target) mySegs.target = cycleList().length ? cycleList()[0].id : null;
+  saveSegs(); slideOut(availPanel); segmentsChanged(false);
+  if (mySegs.target && !me.following) fitBox(segBox(segById(mySegs.target)));
 }
 
 // a landmark's card: full name, address and a Directions link
@@ -1281,7 +1302,7 @@ function renderCard() {
     dn.addEventListener("click", () => {
       if (isDone) markDone(s.id, false);   // undo: no text
       else if (!auto) markDone(s.id, true);
-      else if (tallying() && textsReady() && !bags[s.id]) askBags(s.id);   // no tally: ask roughly how many
+      else if (tallying() && textsReady() && !bags[s.id] && !pass2) askBags(s.id);   // no tally: ask roughly how many
       else finishSegment(s.id);
     });
     if (!auto) {
@@ -1289,7 +1310,7 @@ function renderCard() {
       td.disabled = !textsReady();
       td.addEventListener("click", () => {
         if (isDone) sendText("done", s.id);                                  // already marked: just the text
-        else if (tallying() && !bags[s.id]) askBags(s.id);
+        else if (tallying() && !bags[s.id] && !pass2) askBags(s.id);
         else finishSegment(s.id);
       });
     }
@@ -1314,7 +1335,7 @@ function renderBanner() {
   const box = h("span", "content", null, banner);   // slides sideways on a swipe; the frame and dots stay put
   const row = h("span", "row", null, box);
   if (s) {
-    h("span", "label", "Target", row);
+    h("span", "label", pass2 ? "2nd pass" : "Target", row);
     chip(s, row);
     const first = s.lines.find((l) => !l.warning);
     h("span", "what", first ? first.text : "", row);
@@ -1322,7 +1343,7 @@ function renderBanner() {
     n.setAttribute("aria-label", s.houses + (s.houses === 1 ? " house" : " houses") + " on target");
   } else if (allDone()) {
     banner.classList.add("alldone");
-    if (week() === 2) h("span", "what", "\u2714\ufe0e All done \u2013 tap for drop-off", row);
+    if (week() === 2) h("span", "what", pass2 ? "\u2714\ufe0e 2nd pass done \u2013 tap for drop-off" : "\u2714\ufe0e All done \u2013 tap for drop-off", row);
     else { h("span", "what", "\u2714\ufe0e All done \u2013 tap to text \u201cavailable\u201d", row); msgIcon(row); }
   } else {
     h("span", "what", "No target \u2013 tap to pick one", row);
@@ -1547,7 +1568,7 @@ function allDoneWeek2() {
   const fire = DATA.landmarks.find((lm) => lm.icon === "fire");
   availPanel.textContent = "";
   const top = h("div", "card-top", null, availPanel);
-  h("h2", "", "You\u2019re all done!", top);
+  h("h2", "", pass2 ? "Second pass done!" : "You\u2019re all done!", top);
   h("span", "card-gap", null, top);
   const x = h("button", "close", "\u2715", top); x.type = "button"; x.setAttribute("aria-label", "Close");
   x.addEventListener("click", () => slideOut(availPanel));
@@ -1558,6 +1579,10 @@ function allDoneWeek2() {
   go.setAttribute("aria-label", "Driving directions to Fire Station 5");
   const tx = h("button", "", "Available to help", row); tx.type = "button"; msgIcon(tx);
   tx.addEventListener("click", () => sendAvailable());   // opens Settings if texting isn't set up yet
+  if (!pass2) {                          // once: drive your segments again for bags put out late
+    const p2 = h("button", "pass2-btn", "Second pass: drive your segments again", availPanel); p2.type = "button";
+    p2.addEventListener("click", startPass2);
+  }
   closeSheet();
   slideIn(availPanel);
 }
@@ -1853,6 +1878,7 @@ function applySetup(q) {                  // q: the parts after # of a setup lin
     // done marks only count in the week they were made (links from before "w" existed were Week 1)
     const sameWeek = Number(q.get("w") || 1) === week();
     mySegs.done = sameWeek ? ids(q.get("d")).filter((x) => mySegs.tracked.includes(x)) : [];
+    pass2 = null;                        // a new setup starts on a first pass
     autoTarget();
     saveSegs();
   }
@@ -1867,6 +1893,7 @@ function textBody(kind, id, extra) {
   const tally = tallying() && bags[id] ? `, ${bagWord(bags[id])}` : "";
   return { done: `${who} \u2013 ${id} done${tally}`, coverage: `${who} \u2013 ${id} ${id.includes(",") ? "need" : "needs"} coverage`,
            bags: `${who} \u2013 send bags to ${id}${bagsWhere(id)}`,
+           pass2: `${who} \u2013 ${id} second pass, ${extra} more bag${extra === 1 ? "" : "s"}`,
            available: `${who} available` + (week() === 2 ? " to help" : "") + (extra ? ` \u2013 ${extra}` : "") }[kind];
 }
 // iPhones want sms:NUMBER&body=…, Android sms:NUMBER?body=…
