@@ -514,3 +514,7 @@ body.printing #wrap { position: fixed; left: 0; top: 0; right: auto; bottom: aut
 #gqr .move-row .share-btn:has(.print-icon) { padding: 0 12px; }
 #gqr .move-row .share-btn .print-icon { margin-right: 4px; }
 #leader .print-all { display: flex; align-items: center; justify-content: center; }
+#settings .guides { text-align: left; margin: 4px 0 16px; }
+#settings .guides h3 { margin: 0 0 8px; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: #555; }
+#settings .guide-links { display: flex; flex-wrap: wrap; gap: 8px; }
+#settings .guide-links a { display: inline-flex; align-items: center; text-decoration: none; }

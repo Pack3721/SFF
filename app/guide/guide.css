@@ -1,0 +1,25 @@
+/* the den leader guides: plain pages, readable on a phone, screenshots beside the text on a wide screen */
+:root { color-scheme: light; }
+body { margin: 0 auto; max-width: 900px; padding: 0 16px 32px; font: 17px/1.5 -apple-system, "Helvetica Neue", Arial, sans-serif; color: #111; background: #fff; }
+.top { display: flex; justify-content: space-between; gap: 12px; padding: 14px 0 6px; font-size: 15px; }
+.top a { color: #1a5fb4; text-decoration: none; font-weight: 600; }
+h1 { margin: 8px 0 4px; font-size: 26px; line-height: 1.2; }
+.lead { margin: 0 0 18px; color: #444; }
+h2 { margin: 26px 0 8px; font-size: 20px; border-bottom: 2px solid #c0392b; padding-bottom: 3px; }
+.step { break-inside: avoid; }
+.body { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: flex-start; margin: 10px 0; }
+.text { flex: 1 1 300px; min-width: 0; }
+.text p { margin: 0 0 10px; }
+.text ul { margin: 0 0 10px; padding-left: 20px; }
+.text li { margin-bottom: 8px; }
+.shots { flex: 0 1 auto; display: flex; flex-wrap: wrap; gap: 10px; }
+.shots img { display: block; width: 210px; max-width: 100%; height: auto; border: 1px solid #ccc; border-radius: 10px; }
+.shots.wide { flex-basis: 100%; }
+.shots.wide img { width: 100%; max-width: 640px; border-radius: 4px; }
+.foot { margin-top: 30px; color: #888; font-size: 13px; }
+@media (max-width: 520px) {
+  .shots { width: 100%; }
+  .shots img { width: calc(50% - 5px); }
+  .shots a:only-child { width: 70%; } .shots a:only-child img { width: 100%; }
+  .shots.wide a { width: 100%; }
+}
