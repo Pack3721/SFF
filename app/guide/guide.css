@@ -4,7 +4,11 @@ body { margin: 0 auto; max-width: 900px; padding: 0 16px 32px; font: 17px/1.5 -a
 .top { display: flex; justify-content: space-between; gap: 12px; padding: 14px 0 6px; font-size: 15px; }
 .top a { color: #1a5fb4; text-decoration: none; font-weight: 600; }
 h1 { margin: 8px 0 4px; font-size: 26px; line-height: 1.2; }
-.lead { margin: 0 0 18px; color: #444; }
+.lead { margin: 0 0 10px; color: #444; }
+.jump { margin: 0 0 18px; }
+.jump a { display: inline-block; padding: 8px 14px; border: 2px solid #333; border-radius: 22px; color: #111; font-weight: 700; text-decoration: none; }
+html { scroll-behavior: smooth; }
+h2 { scroll-margin-top: 12px; }
 h2 { margin: 26px 0 8px; font-size: 20px; border-bottom: 2px solid #c0392b; padding-bottom: 3px; }
 .step { break-inside: avoid; }
 .body { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: flex-start; margin: 10px 0; }

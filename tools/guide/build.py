@@ -105,9 +105,13 @@ def page(g, other):
            f'<title>{html.escape(g["title"])} – SFF 721 Map</title>', '<link rel="stylesheet" href="guide.css">', '</head>', '<body>',
            '<nav class="top"><a href="../">‹ Back to the map</a>' + f'<a href="{other[0]}">{html.escape(other[1])} ›</a></nav>',
            f'<h1>{html.escape(g["title"])}</h1>', f'<p class="lead">{inline(g["lead"])}</p>']
+    parents = next((h for h, _, _ in g["sections"] if h and h.startswith("What parents")), None)
+    if parents: out.append(f'<p class="jump"><a href="#parents">Jump to {html.escape(parents.lower())} \u2193</a></p>')
     for head, paras, imgs in g["sections"]:
         out.append('<section class="step">')
-        if head: out.append(f'<h2>{html.escape(head)}</h2>')
+        if head:
+            anchor = ' id="parents"' if head.startswith("What parents") else ""
+            out.append(f'<h2{anchor}>{html.escape(head)}</h2>')
         out.append('<div class="body"><div class="text">')
         bullets = [p for p in paras if p.startswith("- ")]
         for p in paras:
