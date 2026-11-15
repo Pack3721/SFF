@@ -2650,7 +2650,7 @@ function printHandouts(only) {
       const idb = h("b", "", null, li);                                   // the ID in its map colour, like the tag
       if (mine) h("span", "print-star", "\u2605", idb);
       const tag = h("span", "print-id", sg.id + (sg.main_road ? " \u26a0" : ""), idb);
-      tag.style.background = mine ? sg.color : tint(sg.color, 0.3);
+      tag.style.background = mine ? sg.color : tint(sg.color, 0.55);   // the same shade as its tag on the map
       // every street line in full (the addresses matter on paper), wrapping onto a second line if needed
       h("span", "", sg.lines.filter((l) => !l.warning).map((l) => l.text + (l.numbers ? " " + l.numbers : "")).join("; "), li);
       h("i", "", String(sg.houses), li);
