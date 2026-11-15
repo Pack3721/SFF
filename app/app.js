@@ -2611,7 +2611,13 @@ function printStyle(g) {
     e.route.setAttribute("opacity", mine ? 1 : 0.6); e.homes.setAttribute("opacity", mine ? 1 : 0.5);
     for (const x of e.extras) x.setAttribute("opacity", mine || x.kind === "tag" ? 1 : 0.5);
     if (e.tagText) {
-      e.tagText.textContent = e.tagLabel + (mine ? " \u2605" : ""); e.tagText.style.fill = "";
+      e.tagText.textContent = e.tagLabel; e.tagText.style.fill = "";
+      if (mine) {                        // a yellow star with a black outline
+        const star = document.createElementNS(NS, "tspan");
+        star.textContent = " \u2605";
+        star.setAttribute("style", "fill:#ffd21f;stroke:#111;stroke-width:1.4px;paint-order:stroke;stroke-linejoin:round");
+        e.tagText.appendChild(star);
+      }
       const w = e.tagW[mine ? 1 : 0];
       e.tagBox.setAttribute("x", -w / 2); e.tagBox.setAttribute("width", w);
       e.tagBox.setAttribute("stroke", mine ? "#111" : "none"); e.tagBox.setAttribute("stroke-width", mine ? 2 : 0);
@@ -2647,7 +2653,8 @@ function printHandouts(only) {
       const mine = leader.assign[sg.id] === g;
       const li = h("li", mine ? "mine" : "", null, lists[n < half ? 0 : 1]);
       h("span", week() === 1 ? "print-tick" : "print-tally", "", li);   // next to the ID: Week 1 a box to tick, Week 2 room for tally marks
-      const idb = h("b", "", mine ? "\u2605 " : "", li);                 // the ID in its map colour, like the tag
+      const idb = h("b", "", null, li);                                   // the ID in its map colour, like the tag
+      if (mine) h("span", "print-star", "\u2605", idb);
       const tag = h("span", "print-id", sg.id + (sg.main_road ? " \u26a0" : ""), idb);
       tag.style.background = mine ? sg.color : tint(sg.color, 0.55);
       // every street line in full (the addresses matter on paper), wrapping onto a second line if needed
