@@ -498,3 +498,7 @@ body.printing #wrap { position: fixed; left: 0; top: 0; right: auto; bottom: aut
   .print-qr svg { width: 1in; height: 1in; }
   .print-qr p { margin: 2px 0 0; }
 }
+@media print {
+  /* other groups' segments: faint boxes and lines, still there in case coverage sends you */
+  .print-segs li:not(.mine) .print-tick, .print-segs li:not(.mine) .print-tally { border-color: #ccc; }
+}
