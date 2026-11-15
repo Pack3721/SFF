@@ -484,7 +484,7 @@ body.printing #wrap { position: fixed; left: 0; top: 0; right: auto; bottom: aut
 .print-segs li.mine { color: #111; }
 .print-segs b { flex: none; min-width: 4.4em; }
 .print-segs .print-id { display: inline-block; padding: 0 3px; border-radius: 3px; color: #fff; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-.print-segs li:not(.mine) .print-id { color: #111; }   /* pale tag: black text reads better */
+.print-segs li:not(.mine) .print-id { color: #444; }   /* pale tag: black text reads better */
 .print-segs span:not(.print-tick):not(.print-tally):not(.print-id):not(.print-star) { flex: 1; min-width: 0; line-height: 1.15; }
 .print-segs i { flex: none; font-style: normal; }
 .print-segs .print-tick { flex: none; width: 0.16in; height: 0.16in; border: 1.2px solid #333; border-radius: 2px; }

@@ -2611,7 +2611,8 @@ function printStyle(g) {
     e.route.setAttribute("opacity", mine ? 1 : 0.6); e.homes.setAttribute("opacity", mine ? 1 : 0.5);
     for (const x of e.extras) x.setAttribute("opacity", mine || x.kind === "tag" ? 1 : 0.5);
     if (e.tagText) {
-      e.tagText.textContent = e.tagLabel + (mine ? " \u2605" : ""); e.tagText.style.fill = "";   // star in the tag's text colour
+      e.tagText.textContent = e.tagLabel + (mine ? " \u2605" : ""); e.tagText.style.fill = mine ? "" : "#444";   // star in the tag's text colour
+      if (!mine) e.tagBox.setAttribute("fill", tint(e.color, 0.3));   // other groups' tags: faint, with dark text
       const w = e.tagW[mine ? 1 : 0];
       e.tagBox.setAttribute("x", -w / 2); e.tagBox.setAttribute("width", w);
       e.tagBox.setAttribute("stroke", mine ? "#111" : "none"); e.tagBox.setAttribute("stroke-width", mine ? 2 : 0);
@@ -2650,7 +2651,7 @@ function printHandouts(only) {
       const idb = h("b", "", null, li);                                   // the ID in its map colour, like the tag
       if (mine) h("span", "print-star", "\u2605", idb);
       const tag = h("span", "print-id", sg.id + (sg.main_road ? " \u26a0" : ""), idb);
-      tag.style.background = mine ? sg.color : tint(sg.color, 0.55);
+      tag.style.background = mine ? sg.color : tint(sg.color, 0.3);
       // every street line in full (the addresses matter on paper), wrapping onto a second line if needed
       h("span", "", sg.lines.filter((l) => !l.warning).map((l) => l.text + (l.numbers ? " " + l.numbers : "")).join("; "), li);
       h("i", "", String(sg.houses), li);
