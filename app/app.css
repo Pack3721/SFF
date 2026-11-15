@@ -479,12 +479,12 @@ body.printing #wrap { position: fixed; left: 0; top: 0; right: auto; bottom: aut
 .print-foot { flex: none; display: flex; gap: 14px; margin-top: 4px; }
 .print-cols { flex: 1; min-width: 0; display: flex; gap: 14px; }
 .print-segs { flex: 1; min-width: 0; margin: 0; padding: 0; list-style: none; font-size: 8pt; }
-.print-segs li { break-inside: avoid; display: flex; align-items: flex-end; gap: 4px; color: #666; min-height: 0.24in; padding: 1px 0 2px;
+.print-segs li { break-inside: avoid; display: flex; align-items: flex-end; gap: 4px; color: #111; min-height: 0.24in; padding: 1px 0 2px;
   border-bottom: 1px dotted #bbb; }   /* a faint dotted line between segments, so each ID clearly owns its addresses */
 .print-segs li.mine { color: #111; }
 .print-segs b { flex: none; min-width: 4.4em; }
 .print-segs .print-id { display: inline-block; padding: 0 3px; border-radius: 3px; color: #fff; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-.print-segs li:not(.mine) .print-id { color: #fff; }
+.print-segs li:not(.mine) .print-id { color: #111; }   /* pale tag: black text reads better */
 .print-segs span:not(.print-tick):not(.print-tally):not(.print-id) { flex: 1; min-width: 0; line-height: 1.15; }
 .print-segs i { flex: none; font-style: normal; }
 .print-segs .print-tick { flex: none; width: 0.16in; height: 0.16in; border: 1.2px solid #333; border-radius: 2px; }
