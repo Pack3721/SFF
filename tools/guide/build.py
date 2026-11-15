@@ -2,7 +2,8 @@
 
     python3 tools/guide/build.py
 
-Screenshots live in app/guide/img/ (w1-*.jpg, w2-*.jpg). Text uses **bold**.
+Screenshots live in app/guide/img/ (w1-*.jpg, w2-*.jpg). Text uses **bold**. The ?v=dev on the stylesheet
+and screenshots becomes the git SHA when pages.yml deploys (cache busting), as for the map.
 """
 import html, os, re
 
@@ -102,7 +103,7 @@ def page(g, other):
            '<meta name="viewport" content="width=device-width, initial-scale=1">',
            '<meta http-equiv="Content-Security-Policy" content="default-src \'self\'; img-src \'self\'; object-src \'none\'; base-uri \'none\'; form-action \'none\'">',
            '<meta name="referrer" content="no-referrer">',
-           f'<title>{html.escape(g["title"])} – SFF 721 Map</title>', '<link rel="stylesheet" href="guide.css">', '</head>', '<body>',
+           f'<title>{html.escape(g["title"])} – SFF 721 Map</title>', '<link rel="stylesheet" href="guide.css?v=dev">', '</head>', '<body>',
            '<nav class="top"><a href="../">‹ Back to the map</a>' + f'<a href="{other[0]}">{html.escape(other[1])} ›</a></nav>',
            f'<h1>{html.escape(g["title"])}</h1>', f'<p class="lead">{inline(g["lead"])}</p>']
     parents = next((h for h, _, _ in g["sections"] if h and h.startswith("What parents")), None)
@@ -121,7 +122,7 @@ def page(g, other):
         if imgs:
             wide = any("handout.jpg" in i for i in imgs)
             out.append(f'<div class="shots{" wide" if wide else ""}">' + "".join(
-                f'<a href="img/{i}"><img src="img/{i}" alt="" loading="lazy"></a>' for i in imgs) + '</div>')
+                f'<a href="img/{i}?v=dev"><img src="img/{i}?v=dev" alt="" loading="lazy"></a>' for i in imgs) + '</div>')
         out.append('</div></section>')
     out += ['<p class="foot">Pack 721 Scouting for Food • SFF 721 Map</p>', '</body>', '</html>', '']
     return "\n".join(out)

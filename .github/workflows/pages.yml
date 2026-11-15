@@ -36,12 +36,12 @@ jobs:
 
       # Cache busting: pages load their files with ?v=dev; stamp in the commit SHA so a new deploy
       # never mixes with an old cached file. Fails if the map's three references aren't all stamped,
-      # or if any ?v=dev is left anywhere.
+      # or if any ?v=dev is left anywhere (the den leader guides in guide/ included).
       - name: Stamp git SHA into resource URLs
         run: |
-          sed -i "s/?v=dev/?v=${GITHUB_SHA::12}/g" _site/*.html _site/*.js
+          sed -i "s/?v=dev/?v=${GITHUB_SHA::12}/g" _site/*.html _site/*.js _site/guide/*.html
           test "$(grep -o "?v=${GITHUB_SHA::12}" _site/index.html _site/app.js | wc -l)" -eq 3
-          ! grep -q "?v=dev" _site/*.html _site/*.js
+          ! grep -q "?v=dev" _site/*.html _site/*.js _site/guide/*.html
 
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
