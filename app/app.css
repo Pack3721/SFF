@@ -495,8 +495,9 @@ body.printing #wrap { position: fixed; left: 0; top: 0; right: auto; bottom: aut
 /* other groups' segments: faint boxes and lines, still there in case coverage sends you */
 .print-segs li:not(.mine) .print-tick, .print-segs li:not(.mine) .print-tally { border-color: #ccc; }
 .print-help { flex: none; display: flex; align-items: center; gap: 10px; margin-top: 6px; padding: 4px 8px; border: 1px solid #999; border-radius: 6px; }
-.print-texts { flex: 1; min-width: 0; font-size: 8.5pt; }
+.print-texts { flex: 1; min-width: 0; font-size: 8pt; line-height: 1.25; }
 .print-texts ul { margin: 2px 0 0; padding-left: 14px; }
+.print-texts li { margin: 0; }
 .print-texts q { font-weight: 700; }
 .print-qr { flex: none; width: 1.9in; display: flex; align-items: center; gap: 8px; font-size: 7.5pt; }
 .print-qr svg { width: 1in; height: 1in; }
