@@ -483,16 +483,18 @@ body.printing #wrap { position: fixed; left: 0; top: 0; right: auto; bottom: aut
   .print-map { display: block; flex: 1 1 0; min-height: 0; width: 100%; height: 100%; }
   .print-foot { flex: none; display: flex; gap: 14px; margin-top: 4px; }
   /* two columns, filled down then across (a grid: Safari's print layout ignores CSS columns here) */
-  .print-segs { flex: 1; margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr 1fr; grid-auto-flow: column; align-content: start; column-gap: 14px; font-size: 8.5pt; }
-  .print-segs li { break-inside: avoid; display: flex; gap: 4px; color: #666; }
+  .print-segs { flex: 1; margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-auto-flow: column; min-width: 0; align-content: start; column-gap: 14px; font-size: 8.5pt; }
+  .print-segs li { break-inside: avoid; display: flex; align-items: flex-end; gap: 4px; color: #666; min-height: 0.24in; }
   .print-segs li.mine { color: #111; }
   .print-segs b { flex: none; min-width: 3.6em; }
-  .print-segs span { flex: 1; }
+  .print-segs span:not(.print-tick):not(.print-tally) { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .print-segs i { flex: none; font-style: normal; }
+  .print-segs .print-tick { flex: none; width: 0.16in; height: 0.16in; border: 1.2px solid #333; border-radius: 2px; }
+  .print-segs .print-tally { flex: none; width: 0.7in; height: 0.2in; border-bottom: 1.2px solid #333; }
   .print-texts { flex: none; margin-top: 6px; padding: 4px 8px; border: 1px solid #999; border-radius: 6px; font-size: 8.5pt; }
   .print-texts ul { margin: 2px 0 0; padding-left: 14px; }
   .print-texts q { font-weight: 700; }
-  .print-qr { flex: none; width: 1.5in; text-align: center; font-size: 8pt; }
-  .print-qr svg { width: 1.4in; height: 1.4in; }
+  .print-qr { flex: none; width: 1.1in; text-align: center; font-size: 7.5pt; }
+  .print-qr svg { width: 1in; height: 1in; }
   .print-qr p { margin: 2px 0 0; }
 }
