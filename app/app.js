@@ -3209,26 +3209,53 @@ function boardTab(body) {
   }
   if (dispatchWide() && !dispatch.msg.some((m) => m.ask)) setTimeout(() => { const n = dispatchPanel.querySelector(".dq-input"); if (n && document.activeElement === document.body) n.focus(); }, 0);
 }
-// groups, worked out from the names typed in (no setup): their segments, how many done, their bags
+// groups, worked out from the names typed in (no setup). Each group's den is the den of its own segments, the
+// ones it was given rather than sent to cover (a segment marked needs coverage before it got a group was
+// reassigned). Under each den, "Rest of <den>" starts as the whole den and shrinks as named groups claim segments.
 function groupsTab(body) {
-  const groups = {};
-  for (const s of DATA.segments) { const g = rec(s.id).group; if (g) (groups[g] ||= []).push(s.id); }
+  const wk2 = week() === 2;
   const unassigned = DATA.segments.filter((s) => segStatus(s.id) === "cov" && !rec(s.id).group).map((s) => s.id);
   if (unassigned.length) h("p", "dp-alert", `Needs coverage, no group yet: ${unassigned.join(", ")}`, body);
-  const names = Object.keys(groups).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-  if (!names.length) { h("p", "hint", "Groups show up here as you type their names on segments (W6 g Wolf B, or the Group column).", body); return; }
-  const table = h("table", "dp-grid", null, body);
+  const covered = (id) => !!rec(id).covAt && (!rec(id).groupAt || rec(id).covAt <= rec(id).groupAt);   // sent there to cover
+  const groups = {};
+  for (const s of DATA.segments) { const g = rec(s.id).group; if (g) (groups[g] ||= []).push(s.id); }
+  const homeOf = (ids) => {              // the den most of its own (not covering) segments are in
+    const own = ids.filter((id) => !covered(id)), count = {};
+    for (const id of own.length ? own : ids) count[segById(id).den] = (count[segById(id).den] || 0) + segById(id).houses;
+    return Object.keys(count).sort((a, b) => count[b] - count[a])[0];
+  };
+  const byDen = {};
+  for (const [n, ids] of Object.entries(groups)) (byDen[homeOf(ids)] ||= []).push(n);
+  const table = h("table", "dp-grid dp-groups", null, body);
   const hr = h("tr", "", null, h("thead", "", null, table));
-  for (const l of ["Group", "Segments", "Done", ...(week() === 2 ? ["Bags"] : [])]) h("th", "", l, hr);
+  for (const l of ["Group", "Segments", "Done", "Houses", ...(wk2 ? ["Bags"] : [])]) h("th", "", l, hr);
   const tb = h("tbody", "", null, table);
-  for (const n of names) {
-    const ids = groups[n], done = ids.filter((id) => segStatus(id) === "done");
-    const tr = h("tr", "", null, tb);
-    h("td", "", n, tr);
-    h("td", "", ids.join(", "), tr);
+  const sumH = (ids) => ids.reduce((a, id) => a + segById(id).houses, 0), sumB = (ids) => ids.reduce((a, id) => a + bagsOf(id), 0);
+  const row = (cls, name, ids, note) => {
+    const tr = h("tr", cls, null, tb);
+    const c = h("td", "", name, tr); if (note) h("span", "dp-note", " " + note, c);
+    const sc = h("td", "segs", null, tr);
+    for (const id of ids) { const sp = h("span", covered(id) && cls !== "rest" ? "cov-seg" : segStatus(id) === "done" ? "done-seg" : "", id, sc); sp.title = segStatus(id) === "done" ? "done" : ""; sc.append(" "); }
+    const done = ids.filter((id) => segStatus(id) === "done");
     h("td", "num", `${done.length} of ${ids.length}`, tr);
-    if (week() === 2) h("td", "num", String(ids.reduce((a, id) => a + bagsOf(id), 0)), tr);
+    h("td", "num", `${sumH(done)} of ${sumH(ids)}`, tr);
+    if (wk2) h("td", "num", String(sumB(ids)), tr);
+  };
+  for (const d of DATA.dens) {
+    const names = (byDen[d.key] || []).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    const head = h("tr", "dp-den", null, tb);
+    const all = d.segments, done = all.filter((id) => segStatus(id) === "done");
+    const hc = h("td", "", `${d.short}: ${done.length} of ${all.length} done • ${sumH(done)} of ${d.houses} houses` + (wk2 ? ` • ${sumB(all)} bags` : ""), head);
+    hc.colSpan = wk2 ? 5 : 4; hc.style.borderLeftColor = d.color;
+    for (const n of names) {
+      const ids = groups[n], helping = ids.filter((id) => segById(id).den !== d.key || covered(id));
+      row("", n, ids, helping.length ? `(covering ${helping.join(", ")})` : "");
+    }
+    // the rest of the den: segments no named group has yet (its bags so far count too)
+    const rest = all.filter((id) => !rec(id).group);
+    if (rest.length) row("rest", names.length ? `Rest of ${d.short}` : `${d.short} (no groups named yet)`, rest);
   }
+  h("p", "hint", "Groups appear as you type their names on segments (W6 g Wolf B, or the Group column). A group belongs to the den of the segments it was given; segments it was sent to cover are shown in red.", body);
 }
 function exportTab(body) {
   // CSV: one row per segment, and a den summary (open in Numbers, Excel or Google Sheets)
