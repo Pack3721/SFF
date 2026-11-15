@@ -2054,7 +2054,9 @@ function about(body) {
   for (const [href, label] of [["guide/week1.html", "Week 1 (bags)"], ["guide/week2.html", "Week 2 (pickup)"]]) {
     const a = h("a", "share-btn", label + " \u203a", row); a.href = href;
   }
-  const p = h("p", "about", null, body);
+  const ack = h("div", "guides", null, body);
+  h("h3", "", "Acknowledgments", ack);
+  const p = h("p", "about", null, ack);
   p.append("Map data: St. Louis County GIS Service Center. Building outlines: Microsoft Global ML Building Footprints (CDLA-Permissive-2.0). " +
            "App \u00a9 2026 Jay Tuley and contributors, PolyForm Noncommercial 1.0.0. Made by Pack 721 volunteers; not an official Scouting America product. ");
   const a = h("a", "", "Licences & credits", p);

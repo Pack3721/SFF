@@ -352,7 +352,7 @@ body.card-open #tools { bottom: calc(var(--card-h, 0px) + 4px); }
 #settings .share-tabs button { font-size: 15px; min-height: 40px; }
 #settings .share-pane .hint { display: block; text-align: left; margin: 0 0 8px; }
 #settings .share-pane .move-row { margin-top: 8px; }
-#settings .about { margin: 6px 0 0; font-size: 14px; line-height: 1.5; color: #555; text-align: left; }
+#settings .about { margin: 0; font-size: 14px; line-height: 1.5; color: #555; text-align: left; }
 #settings .about a { color: #555; }
 #avail { z-index: 5; }
 #avail h2 { margin: 6px 0; font-size: 20px; color: #1e7e34; }
