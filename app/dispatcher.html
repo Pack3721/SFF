@@ -3,37 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- Everything comes from this host; the QR code is made right here, never by an online service. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
-<meta name="robots" content="noindex">
-<title>SFF 721 Dispatcher QR</title>
-<link rel="icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="dispatcher.css?v=dev">
-<script src="vendor/qrcode-generator-2.0.4.js?v=dev" defer></script>
-<script src="dispatcher.js?v=dev" defer></script>
+<!-- The old dispatcher QR page is gone: the dispatcher is now a mode of the map (the den menu's "Dispatcher"). -->
+<meta http-equiv="refresh" content="0; url=./?dispatch">
+<title>SFF 721 Map – Dispatcher</title>
 </head>
 <body>
-<main>
-  <section class="setup">
-    <h1>Dispatcher QR code</h1>
-    <p>Type your mobile number. You'll get one QR code for the whole pack: families scan it and their texts come to you.</p>
-    <label class="field">
-      <span>Your mobile number</span>
-      <input id="tel" type="tel" inputmode="tel" autocomplete="off" placeholder="10 digits">
-    </label>
-    <p id="err" class="err" hidden>Needs 10 digits, like (314) 555-0100.</p>
-    <p class="small">Your number is remembered on this device only and never sent anywhere. The QR codes are made right here. <button id="forget" type="button" class="linkish" hidden>Forget this number</button></p>
-  </section>
-
-  <fieldset id="mode" class="mode" hidden>
-    <legend>Print</legend>
-    <label><input type="radio" name="mode" id="mode-pack" value="pack" checked> One page for the whole pack</label>
-    <label><input type="radio" name="mode" id="mode-dens" value="dens"> A page for each den (6 pages)</label>
-  </fieldset>
-  <div id="sheets"></div>
-  <button id="print" type="button" class="print" hidden>Print</button>
-  <p class="version">Version <span id="build">dev</span></p>
-</main>
+<p><a href="./?dispatch">Open the dispatcher board</a></p>
 </body>
 </html>

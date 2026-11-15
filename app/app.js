@@ -390,13 +390,15 @@ function fitBox(box, instant) {
   follow(false);
   layout();
   const r = wrap.getBoundingClientRect();
+  const side = dispatch && dispatchWide() ? dispatchPanel.getBoundingClientRect().width : 0;   // the dispatcher's side panel
   const cardH = leader ? leaderPanel.getBoundingClientRect().height
+              : dispatch ? (side ? 0 : dispatchPanel.getBoundingClientRect().height)
               : card.classList.contains("open") ? card.getBoundingClientRect().height : 0;
   const below = setupStatus.hidden ? banner : setupStatus;
-  const padTop = leader ? 56 : below.getBoundingClientRect().bottom - r.top + 12, padSide = 12;           // room for the north arrow, banner,
+  const padTop = leader || dispatch ? 56 : below.getBoundingClientRect().bottom - r.top + 12, padSide = 12;           // room for the north arrow, banner,
   const padBottom = Math.max(60, cardH + 16);                      // scale, buttons and the segment card
   const bw = box[2] - box[0], bh = box[3] - box[1];
-  const W = r.width - 2 * padSide, H = r.height - padTop - padBottom;
+  const W = r.width - 2 * padSide - side, H = r.height - padTop - padBottom;
   const nk = Math.min(W / bw, H / bh, 4);
   if (box === bbox) fitK = nk;
   goTo(nk, padSide + (W - bw * nk) / 2 - box[0] * nk, padTop + (H - bh * nk) / 2 - box[1] * nk, instant);
@@ -999,6 +1001,7 @@ function segmentsChanged(redraw) {
 // tapping a grey segment shows it in colour while it's selected
 function styleSegments() {
   if (leader) { leaderStyle(); return; }
+  if (dispatch) { dispatchStyle(); return; }
   const any = mySegs.tracked.length > 0;
   for (const id in segEls) {
     const e = segEls[id];
@@ -1097,6 +1100,7 @@ function tapAt(p) {
     }
   }
   if (leader) { if (best) assignGroup(best); return; }
+  if (dispatch) { if (best) dispatchSelect(best, true); return; }
   if (cover) { if (best) { if (cover.has(best)) cover.delete(best); else cover.add(best); styleSegments(); renderCover(); } return; }
   if (best) select(best, false);
   else if (selected) select(null);
@@ -2905,6 +2909,360 @@ function showGroupQr(i) {
   slideIn(groupPanel);
 }
 
+// ---------- dispatcher: the walk's board, on one computer ----------
+// Picked from the den drop-down, like Den leader. The whole pack's map, and a panel (beside the map on a
+// computer, below it on a phone) where the dispatcher records what the texts say: a quick box by segment code
+// (W6, W6 12, W6 +3, W6 c, W6 g Wolf B, W6 u), a grid to edit, a passive list of groups from the names typed
+// in, and exports. Saved on this computer only (localStorage, per week), with a backup file.
+const DISPATCH = "DISPATCH";
+const BOARD_KEY = "sff.board";
+let dispatch = null;                     // {tab, sel, den, status, msg, undo} while in this mode
+let board = {};                          // segment id -> {done, at, bags, bags2, cov, group}, this week
+const dispatchPanel = document.getElementById("dispatch");
+const dispatchWide = () => window.matchMedia("(min-width: 900px)").matches;
+
+function boardAll() { try { return JSON.parse(localStorage.getItem(BOARD_KEY) || "{}") || {}; } catch (_) { return {}; } }
+function loadBoard() { board = boardAll()[weekKey()] || {}; }
+function saveBoard() {
+  const all = boardAll(); all[weekKey()] = board;
+  try { localStorage.setItem(BOARD_KEY, JSON.stringify(all)); } catch (_) { /* ignore */ }
+}
+const rec = (id) => board[id] || {};
+const segStatus = (id) => (rec(id).done ? "done" : rec(id).cov ? "cov" : "todo");
+const bagsOf = (id) => (rec(id).bags || 0) + (rec(id).bags2 || 0);
+
+function enterDispatch() {
+  loadBoard();
+  dispatch = { tab: "board", sel: null, den: "", status: "", msg: [], undo: null };
+  selected = null; renderCard(); closeSheet(); slideOut(availPanel); slideOut(contactPanel);
+  document.body.classList.add("dispatch");
+  try { localStorage.setItem(STORE_KEY, DISPATCH); } catch (_) { /* ignore */ }
+  denKey = PACK;
+  draw();
+  picker.value = DISPATCH;
+  renderDispatch();
+  slideIn(dispatchPanel);
+  fit();
+}
+function exitDispatch(quiet) {
+  dispatch = null;
+  document.body.classList.remove("dispatch");
+  slideOut(dispatchPanel);
+  ants.style.display = "none";
+  if (!quiet) pick(PACK);
+}
+
+// the map: grey until done, the den's colour when done (bags on the tag); "needs coverage" with no group yet
+// gets the marching ants, so unassigned coverage stands out until someone takes it
+function dispatchStyle() {
+  const antsD = [];
+  for (const id in segEls) {
+    const e = segEls[id], st = segStatus(id), r = rec(id);
+    e.faded = st === "todo";
+    for (const [part, attr, colour, grey] of e.paint) part.setAttribute(attr, st === "todo" ? grey : colour);
+    e.route.setAttribute("opacity", st === "done" ? 1 : 0.8); e.homes.setAttribute("opacity", 1);
+    for (const x of e.extras) x.setAttribute("opacity", 1);
+    if (e.tagText) {
+      const n = bagsOf(id);
+      e.tagText.textContent = e.tagLabel + (st === "done" ? " ✔︎" : "") + (n ? ` ${n}` : "");
+      e.tagText.style.fill = "";
+      const w = e.tagW[st === "done" ? 1 : 0] + (n ? String(n).length * 9 + 4 : 0);
+      e.tagBox.setAttribute("x", -w / 2); e.tagBox.setAttribute("width", w);
+      e.tagBox.setAttribute("stroke", st === "cov" ? "#d0021b" : e.seg.main_road ? "#222" : "#fff");
+    }
+    const sel = dispatch && dispatch.sel === id;
+    e.halo.style.display = sel ? "" : "none";
+    if (sel) { e.halo.setAttribute("stroke", "#111"); e.halo.setAttribute("stroke-opacity", 0.45); }
+    if (st === "cov" && !r.group) antsD.push(e.d);
+  }
+  ants.style.display = antsD.length ? "" : "none";
+  if (antsD.length) ants.setAttribute("d", antsD.join(""));
+  for (const [, copy] of fxCopies) copy.remove();
+  fxCopies = [];
+  if (bbox) { placedK = 0; commit(); }
+}
+
+// ---- quick entry: "W6", "W6 12", "W6 +3", "W6 c", "W6 g Wolf B", "W6 u"; several with commas ----
+function parseQuick(text) {
+  const out = [];
+  for (const part of text.split(/[,;\n]+/)) {
+    const m = part.trim().match(/^([A-Za-z]+\s?\d+)\s*(.*)$/);
+    if (!part.trim()) continue;
+    if (!m) { out.push({ error: `Didn’t understand “${part.trim()}”. Start with a segment code, like W6.` }); continue; }
+    const id = m[1].replace(/\s/g, "").toUpperCase(), rest = m[2].trim();
+    if (!segById(id)) { out.push({ error: `There’s no segment ${id}.` }); continue; }
+    let cmd;
+    if (!rest) cmd = { kind: "done" };
+    else if (/^\d+$/.test(rest)) cmd = { kind: "bags", n: Number(rest) };
+    else if (/^\+\s*\d+$/.test(rest)) cmd = { kind: "more", n: Number(rest.replace(/\D/g, "")) };
+    else if (/^(c|cov|coverage|needs coverage)$/i.test(rest)) cmd = { kind: "cov" };
+    else if (/^(g|group)\s+\S/i.test(rest)) cmd = { kind: "group", name: rest.replace(/^(g|group)\s+/i, "").slice(0, 24) };
+    else if (/^(u|undo|clear)$/i.test(rest)) cmd = { kind: "clear" };
+    else { out.push({ error: `Didn’t understand “${rest}” after ${id}.` }); continue; }
+    out.push({ id, ...cmd });
+  }
+  return out;
+}
+// what a command would overwrite, if anything (asked about before it changes)
+function conflictOf(c) {
+  const r = rec(c.id);
+  if (c.kind === "bags" && (r.bags || 0) > 0 && r.bags !== c.n) return `${c.id} already has ${r.bags} bags.`;
+  if (c.kind === "done" && r.done) return `${c.id} is already done.`;
+  if (c.kind === "group" && r.group && r.group !== c.name) return `${c.id} is already with ${r.group}.`;
+  return null;
+}
+function applyCmd(c, how) {               // how: "replace" | "add" for a conflict
+  const r = { ...rec(c.id) }, now = Date.now();
+  if (c.kind === "done") { r.done = true; r.cov = false; r.at = now; }
+  else if (c.kind === "bags") { r.bags = how === "add" ? (r.bags || 0) + c.n : c.n; r.done = true; r.cov = false; r.at = now; }
+  else if (c.kind === "more") { r.bags2 = (r.bags2 || 0) + c.n; r.at2 = now; }
+  else if (c.kind === "cov") { r.cov = true; r.done = false; r.covAt = now; }
+  else if (c.kind === "group") { r.group = c.name; r.groupAt = now; }
+  else if (c.kind === "clear") { delete board[c.id]; return; }
+  board[c.id] = r;
+}
+const describe = (c) => ({
+  done: `${c.id} done`, bags: `${c.id} done, ${c.n} bag${c.n === 1 ? "" : "s"}`, more: `${c.id} +${c.n} second pass`,
+  cov: `${c.id} needs coverage`, group: `${c.id} → ${c.name}`, clear: `${c.id} cleared` }[c.kind]);
+function runQuick(text) {
+  const cmds = parseQuick(text);
+  const before = {};                       // for one-step undo
+  const done = [], asks = [], errors = [];
+  for (const c of cmds) {
+    if (c.error) { errors.push(c.error); continue; }
+    if (!(c.id in before)) before[c.id] = board[c.id] ? { ...board[c.id] } : null;
+    const clash = conflictOf(c);
+    if (clash) { asks.push({ c, clash }); continue; }
+    applyCmd(c); done.push(describe(c));
+  }
+  if (done.length) dispatch.undo = before;
+  dispatch.msg = [...done.map((t) => ({ ok: t })), ...errors.map((t) => ({ err: t })), ...asks.map((a) => ({ ask: a }))];
+  if (cmds.length && !errors.length && !asks.length) dispatch.sel = cmds[cmds.length - 1].id;
+  saveBoard(); styleSegments(); renderDispatch();
+  return !errors.length && !asks.length;
+}
+function dispatchSelect(id, fromMap) {
+  dispatch.sel = id; dispatch.tab = "board";
+  styleSegments(); renderDispatch();
+  const q = dispatchPanel.querySelector(".dq-input");
+  if (q && fromMap) { q.value = id + " "; q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
+  const row = dispatchPanel.querySelector(`tr[data-id="${id}"]`);
+  if (row) row.scrollIntoView({ block: "nearest" });
+}
+
+function renderDispatch() {
+  const keepScroll = dispatchPanel.querySelector(".dp-body") ? dispatchPanel.querySelector(".dp-body").scrollTop : 0;
+  dispatchPanel.textContent = "";
+  const top = h("div", "card-top", null, dispatchPanel);
+  h("h2", "", `Dispatcher • Week ${week()}`, top);
+  h("span", "card-gap", null, top);
+  const x = h("button", "close", "✕", top); x.type = "button"; x.setAttribute("aria-label", "Leave dispatcher");
+  x.addEventListener("click", () => exitDispatch());
+  const tabs = h("div", "tabs dp-tabs", null, dispatchPanel);
+  for (const [key, label] of [["board", "Board"], ["groups", "Groups"], ["export", "Export"]]) {
+    const b = h("button", key === dispatch.tab ? "on" : "", label, tabs); b.type = "button";
+    b.addEventListener("click", () => { dispatch.tab = key; renderDispatch(); });
+  }
+  totalsBar(dispatchPanel);
+  const body = h("div", "dp-body", null, dispatchPanel);
+  if (dispatch.tab === "board") boardTab(body);
+  else if (dispatch.tab === "groups") groupsTab(body);
+  else exportTab(body);
+  body.scrollTop = keepScroll;
+  if (!dispatchWide()) document.body.style.setProperty("--dispatch-h", dispatchPanel.getBoundingClientRect().height + "px");
+}
+function totals() {
+  const ids = DATA.segments.map((s) => s.id);
+  const done = ids.filter((id) => segStatus(id) === "done");
+  return { segs: ids.length, done: done.length, houses: DATA.houses.length,
+           housesDone: done.reduce((a, id) => a + segById(id).houses, 0),
+           bags: ids.reduce((a, id) => a + bagsOf(id), 0), cov: ids.filter((id) => segStatus(id) === "cov").length };
+}
+function totalsBar(parent) {
+  const t = totals();
+  const bar = h("div", "dp-totals", null, parent);
+  const cell = (big, small) => { const c = h("div", "", null, bar); h("b", "", big, c); h("span", "", small, c); };
+  cell(`${t.housesDone.toLocaleString()} / ${t.houses.toLocaleString()}`, "houses done");
+  cell(`${t.done} / ${t.segs}`, "segments");
+  if (week() === 2) cell(t.bags.toLocaleString(), "bags of food");
+  cell(String(t.cov), "need coverage");
+}
+function boardTab(body) {
+  const qf = h("form", "dq", null, body);
+  const q = h("input", "dq-input", null, qf);
+  Object.assign(q, { type: "text", autocomplete: "off", spellcheck: false, placeholder: week() === 2 ? "W6 12   (W6 +3, W6 c, W6 g Wolf B, W6 u)" : "W6   (W6 c, W6 g Wolf B, W6 u)" });
+  q.setAttribute("aria-label", "Quick entry by segment code");
+  q.autocapitalize = "characters";
+  const go = h("button", "share-btn", "Enter", qf); go.type = "submit";
+  qf.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (!q.value.trim()) return;
+    if (runQuick(q.value)) { const n = dispatchPanel.querySelector(".dq-input"); if (n) { n.value = ""; n.focus(); } }
+    else { const n = dispatchPanel.querySelector(".dq-input"); if (n) { n.value = q.value; n.focus(); } }
+  });
+  h("p", "dq-help", week() === 2
+    ? "W6 = done • W6 12 = done, 12 bags • W6 +3 = 3 more (second pass) • W6 c = needs coverage • W6 g Wolf B = group • W6 u = clear. Commas for several."
+    : "W6 = done • W6 c = needs coverage • W6 g Wolf B = group • W6 u = clear. Commas for several.", body);
+  // what the last entry did, and anything to decide
+  if (dispatch.msg.length || dispatch.undo) {
+    const box = h("div", "dq-msg", null, body);
+    for (const m of dispatch.msg) {
+      if (m.ok) h("p", "ok", "✔︎ " + m.ok, box);
+      else if (m.err) h("p", "err", m.err, box);
+      else {
+        const { c, clash } = m.ask;
+        const p = h("p", "ask", clash + " ", box);
+        const btn = (label, how) => {
+          const b = h("button", "share-btn", label, p); b.type = "button";
+          b.addEventListener("click", () => {
+            if (how) { applyCmd(c, how); saveBoard(); }
+            dispatch.msg = dispatch.msg.filter((x) => x !== m).concat(how ? [{ ok: describe(c) + (how === "add" ? " (added)" : "") }] : []);
+            styleSegments(); renderDispatch();
+          });
+        };
+        if (c.kind === "bags") { btn(`Replace with ${c.n}`, "replace"); btn(`Add ${c.n}`, "add"); }
+        else if (c.kind === "group") btn(`Move to ${c.name}`, "replace");
+        btn(c.kind === "done" ? "OK" : "Cancel", null);
+      }
+    }
+    if (dispatch.undo) {
+      const u = h("button", "dq-undo", "Undo last entry", box); u.type = "button";
+      u.addEventListener("click", () => {
+        for (const [id, r] of Object.entries(dispatch.undo)) { if (r) board[id] = r; else delete board[id]; }
+        dispatch.undo = null; dispatch.msg = [{ ok: "Undone." }];
+        saveBoard(); styleSegments(); renderDispatch();
+      });
+    }
+  }
+  // filters
+  const f = h("div", "dp-filters", null, body);
+  const den = h("select", "", null, f); den.setAttribute("aria-label", "Den");
+  for (const [v, l] of [["", "All dens"], ...DATA.dens.map((d) => [d.key, d.short])]) { const o = h("option", "", l, den); o.value = v; }
+  den.value = dispatch.den;
+  den.addEventListener("change", () => { dispatch.den = den.value; renderDispatch(); });
+  const stat = h("select", "", null, f); stat.setAttribute("aria-label", "Status");
+  for (const [v, l] of [["", "Any status"], ["todo", "To do"], ["done", "Done"], ["cov", "Needs coverage"]]) { const o = h("option", "", l, stat); o.value = v; }
+  stat.value = dispatch.status;
+  stat.addEventListener("change", () => { dispatch.status = stat.value; renderDispatch(); });
+  // the grid
+  const wk2 = week() === 2;
+  const table = h("table", "dp-grid", null, body);
+  const hr = h("tr", "", null, h("thead", "", null, table));
+  for (const l of ["Seg", "Street", "Hses", "Status", ...(wk2 ? ["Bags", "2nd"] : []), "Group"]) h("th", "", l, hr);
+  const tb = h("tbody", "", null, table);
+  for (const d of DATA.dens) {
+    if (dispatch.den && d.key !== dispatch.den) continue;
+    const ids = d.segments.filter((id) => !dispatch.status || segStatus(id) === dispatch.status);
+    if (!ids.length) continue;
+    const sub = h("tr", "dp-den", null, tb);
+    const dd = d.segments.filter((id) => segStatus(id) === "done");
+    const subBags = d.segments.reduce((a, id) => a + bagsOf(id), 0);
+    const sc = h("td", "", `${d.short}: ${dd.length} of ${d.segments.length} done` + (wk2 ? ` • ${subBags} bags` : ""), sub);
+    sc.colSpan = wk2 ? 7 : 5; sc.style.borderLeftColor = d.color;
+    for (const id of ids) {
+      const sg = segById(id), r = rec(id), st = segStatus(id);
+      const tr = h("tr", "st-" + st + (dispatch.sel === id ? " sel" : ""), null, tb);
+      tr.dataset.id = id;
+      if (r.at || r.covAt) tr.title = "Entered " + new Date(r.at || r.covAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+      const idc = h("td", "", null, tr); chip(sg, idc);
+      idc.addEventListener("click", () => dispatchSelect(id, false));
+      const first = sg.lines.find((l) => !l.warning);
+      h("td", "street", first ? first.text : "", tr).addEventListener("click", () => dispatchSelect(id, false));
+      h("td", "num", String(sg.houses), tr);
+      const sc2 = h("td", "", null, tr);
+      const ss = h("select", "", null, sc2); ss.setAttribute("aria-label", `Status of ${id}`);
+      for (const [v, l] of [["todo", "–"], ["done", "Done"], ["cov", "Coverage"]]) { const o = h("option", "", l, ss); o.value = v; }
+      ss.value = st;
+      ss.addEventListener("change", () => {
+        dispatch.undo = { [id]: board[id] ? { ...board[id] } : null };
+        const nr = { ...rec(id), done: ss.value === "done", cov: ss.value === "cov" };
+        if (ss.value === "done") nr.at = Date.now(); if (ss.value === "cov") nr.covAt = Date.now();
+        board[id] = nr; dispatch.msg = [{ ok: `${id}: ${ss.options[ss.selectedIndex].text}` }];
+        saveBoard(); styleSegments(); renderDispatch();
+      });
+      const numCell = (key) => {
+        const c = h("td", "", null, tr);
+        const inp = h("input", "num-in", null, c);
+        Object.assign(inp, { type: "text", inputMode: "numeric", value: r[key] ? String(r[key]) : "" });
+        inp.setAttribute("aria-label", `${key === "bags" ? "Bags" : "Second pass bags"} for ${id}`);
+        inp.addEventListener("change", () => {
+          dispatch.undo = { [id]: board[id] ? { ...board[id] } : null };
+          const n = Number(inp.value.replace(/\D/g, "")) || 0, nr = { ...rec(id) };
+          nr[key] = n; if (key === "bags" && n && !nr.done) { nr.done = true; nr.cov = false; nr.at = Date.now(); }
+          board[id] = nr; dispatch.msg = [{ ok: `${id} ${key === "bags" ? "bags" : "second pass"}: ${n}` }];
+          saveBoard(); styleSegments(); renderDispatch();
+        });
+      };
+      if (wk2) { numCell("bags"); numCell("bags2"); }
+      const gc = h("td", "", null, tr);
+      const gi = h("input", "grp-in", null, gc);
+      Object.assign(gi, { type: "text", value: r.group || "", maxLength: 24, placeholder: "" });
+      gi.setAttribute("aria-label", `Group for ${id}`);
+      gi.addEventListener("change", () => {
+        dispatch.undo = { [id]: board[id] ? { ...board[id] } : null };
+        const nr = { ...rec(id) }; const v = gi.value.trim();
+        if (v) { nr.group = v; nr.groupAt = Date.now(); } else delete nr.group;
+        board[id] = nr; dispatch.msg = [{ ok: v ? `${id} → ${v}` : `${id}: no group` }];
+        saveBoard(); styleSegments(); renderDispatch();
+      });
+    }
+  }
+  if (dispatchWide() && !dispatch.msg.some((m) => m.ask)) setTimeout(() => { const n = dispatchPanel.querySelector(".dq-input"); if (n && document.activeElement === document.body) n.focus(); }, 0);
+}
+// groups, worked out from the names typed in (no setup): their segments, how many done, their bags
+function groupsTab(body) {
+  const groups = {};
+  for (const s of DATA.segments) { const g = rec(s.id).group; if (g) (groups[g] ||= []).push(s.id); }
+  const unassigned = DATA.segments.filter((s) => segStatus(s.id) === "cov" && !rec(s.id).group).map((s) => s.id);
+  if (unassigned.length) h("p", "dp-alert", `Needs coverage, no group yet: ${unassigned.join(", ")}`, body);
+  const names = Object.keys(groups).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  if (!names.length) { h("p", "hint", "Groups show up here as you type their names on segments (W6 g Wolf B, or the Group column).", body); return; }
+  const table = h("table", "dp-grid", null, body);
+  const hr = h("tr", "", null, h("thead", "", null, table));
+  for (const l of ["Group", "Segments", "Done", ...(week() === 2 ? ["Bags"] : [])]) h("th", "", l, hr);
+  const tb = h("tbody", "", null, table);
+  for (const n of names) {
+    const ids = groups[n], done = ids.filter((id) => segStatus(id) === "done");
+    const tr = h("tr", "", null, tb);
+    h("td", "", n, tr);
+    h("td", "", ids.join(", "), tr);
+    h("td", "num", `${done.length} of ${ids.length}`, tr);
+    if (week() === 2) h("td", "num", String(ids.reduce((a, id) => a + bagsOf(id), 0)), tr);
+  }
+}
+function exportTab(body) {
+  h("p", "hint", "CSV, share picture and backup come next.", body);
+  backupTools(body);
+}
+// backup: the whole board (both weeks) as a file, to keep or move to another computer
+function backupTools(body) {
+  h("h3", "", "Backup", body);
+  h("p", "hint", "Everything is saved in this browser only. Save a backup now and then, or to move to another computer.", body);
+  const row = h("div", "move-row", null, body);
+  const sv = iconBtn("share", "Save backup", row);
+  sv.addEventListener("click", () => download(`sff-board-${today()}.json`, "application/json", JSON.stringify({ sff: "board", saved: new Date().toISOString(), board: boardAll() }, null, 1)));
+  const ld = h("label", "share-btn file-btn", "Restore…", row);
+  const fi = h("input", "", null, ld); fi.type = "file"; fi.accept = ".json,application/json";
+  fi.addEventListener("change", () => {
+    const f = fi.files && fi.files[0]; if (!f) return;
+    f.text().then((t) => {
+      const v = JSON.parse(t);
+      if (!v || v.sff !== "board" || typeof v.board !== "object") throw new Error("not a board backup");
+      if (!confirm("Replace this computer’s board with the backup from " + (v.saved || "the file").slice(0, 16).replace("T", " ") + "?")) return;
+      localStorage.setItem(BOARD_KEY, JSON.stringify(v.board));
+      loadBoard(); dispatch.msg = [{ ok: "Restored the backup." }]; dispatch.tab = "board";
+      styleSegments(); renderDispatch();
+    }).catch(() => { alert("That file isn’t a board backup."); });
+  });
+}
+function download(name, type, data) {    // a file to save, made here (nothing is uploaded)
+  const url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data], { type }));
+  const a = document.createElement("a"); a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+window.addEventListener("resize", () => { if (dispatch) { renderDispatch(); fit(true); } });
+
 // ---------- den picker ----------
 const picker = document.getElementById("den");
 function pick(key, instant) {
@@ -2924,8 +3282,10 @@ let pickerChanged = false;
 picker.addEventListener("focus", () => { pickerChanged = false; });
 picker.addEventListener("change", () => {
   pickerChanged = true;
-  if (picker.value === LEADER) { enterLeader(); return; }
+  if (picker.value === LEADER) { if (dispatch) exitDispatch(true); enterLeader(); return; }
+  if (picker.value === DISPATCH) { if (leader) exitLeader(true); enterDispatch(); return; }
   if (leader) exitLeader(true);
+  if (dispatch) exitDispatch(true);
   pick(picker.value);
 });
 picker.addEventListener("blur", () => { if (!pickerChanged) fit(); });
@@ -2943,6 +3303,9 @@ function start(data) {
   const lo = document.createElement("option");
   lo.value = LEADER; lo.textContent = "Den leader";
   picker.appendChild(lo);
+  const dop = document.createElement("option");
+  dop.value = DISPATCH; dop.textContent = "Dispatcher";
+  picker.appendChild(dop);
   const ok = (key) => key === PACK || data.dens.some((d) => d.key === key);
   loadSegs();
   autoTarget();
@@ -2955,6 +3318,7 @@ function start(data) {
   renderBanner();
   pick(ok(saved) ? saved : PACK, true);
   if (pendingLeader) { enterLeader(pendingLeader); pendingLeader = null; }
+  else if (saved === DISPATCH || new URLSearchParams(location.search).has("dispatch")) enterDispatch();
   resumeGps();
 }
 
