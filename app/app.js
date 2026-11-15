@@ -2695,7 +2695,8 @@ function printHandouts(only) {
       tip("Can\u2019t get to some:", `${wk} \u2013 ${ids.slice(0, 2).join(", ") || ex} need coverage`);
       tip("All done:", `${wk} available \u2013 a few bags left`);
     } else {
-      tip("Finished a segment:", `${wk} \u2013 ${ex} done, 12 bags`);
+      h("li", "", "Tally the bags of food on the line by each segment as you pick them up.", tl);
+      tip("Finished a segment, with its tally:", `${wk} \u2013 ${ex} done, 12 bags`);
       tip("Can\u2019t get to some:", `${wk} \u2013 ${ids.slice(0, 2).join(", ") || ex} need coverage`);
       tip("All done, and room for more:", `${wk} available to help`);
       h("li", "", "Take the bags of food to Fire Station 5 (11020 Mueller Rd) when you\u2019re finished, or whenever the car fills up.", tl);
