@@ -1,12 +1,10 @@
-"""Builds the den leader guides from one place: app/guide/week1.html and week2.html (linked from the map's
-Settings > About), and, given an output folder, Word copies of the same text and pictures.
+"""Builds the den leader guides: app/guide/week1.html and week2.html, linked from the map's Settings > About.
 
-    python3 tools/guide/build.py                 # the web pages
-    python3 tools/guide/build.py --docx OUTDIR   # also .docx files (needs python-docx)
+    python3 tools/guide/build.py
 
 Screenshots live in app/guide/img/ (w1-*.jpg, w2-*.jpg). Text uses **bold**.
 """
-import html, os, re, sys
+import html, os, re
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 APP = os.path.join(HERE, "..", "..", "app")
@@ -121,60 +119,7 @@ def page(g, other):
     out += ['<p class="foot">Pack 721 Scouting for Food • SFF 721 Map</p>', '</body>', '</html>', '']
     return "\n".join(out)
 
-def joined(imgs):                      # screenshots side by side as one picture
-    from PIL import Image
-    import tempfile
-    ims = [Image.open(os.path.join(APP, "guide", "img", i)).convert("RGB") for i in imgs]
-    hh = min(i.height for i in ims)
-    ims = [i.resize((round(i.width * hh / i.height), hh)) for i in ims]
-    out = Image.new("RGB", (sum(i.width for i in ims) + 16 * (len(ims) - 1), hh), "white")
-    x = 0
-    for i in ims: out.paste(i, (x, 0)); x += i.width + 16
-    f = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False); out.save(f, "JPEG", quality=82); return f.name
-
-def docx(g, path):
-    from docx import Document
-    from docx.shared import Inches, Pt
-    from docx.oxml.ns import qn
-    from docx.oxml import OxmlElement
-    doc = Document()
-    s = doc.sections[0]
-    s.page_width, s.page_height = Inches(8.5), Inches(11)
-    s.left_margin = s.right_margin = Inches(0.7); s.top_margin = s.bottom_margin = Inches(0.6)
-    doc.styles['Normal'].font.name = 'Arial'; doc.styles['Normal'].font.size = Pt(11)
-    def runs(p, t):
-        for i, part in enumerate(re.split(r'\*\*', t)):
-            if part: p.add_run(part).bold = i % 2 == 1
-    doc.add_paragraph(g["title"], style='Title')
-    runs(doc.add_paragraph(), g["lead"] + " Map: pack3721.github.io/SFF")
-    for head, paras, imgs in g["sections"]:
-        if head: doc.add_paragraph(head, style='Heading 1')
-        t = doc.add_table(rows=1, cols=2)
-        b = OxmlElement('w:tblBorders')
-        for e in ('top', 'left', 'bottom', 'right', 'insideH', 'insideV'):
-            x = OxmlElement(f'w:{e}'); x.set(qn('w:val'), 'nil'); b.append(x)
-        t._tbl.tblPr.append(b)
-        left, right = t.rows[0].cells
-        wide = any("handout.jpg" in i for i in imgs)
-        if wide or not paras:
-            left.paragraphs[0].add_run().add_picture(os.path.join(APP, "guide", "img", imgs[0]), width=Inches(5.2)) if imgs else None
-            for p in paras: runs(right.add_paragraph(), p)
-            continue
-        left.paragraphs[0]._p.getparent().remove(left.paragraphs[0]._p)
-        for p in paras:
-            runs(left.add_paragraph(style='List Bullet') if p.startswith("- ") else left.add_paragraph(), p[2:] if p.startswith("- ") else p)
-        if not imgs: continue
-        rp = right.paragraphs[0]
-        pic, w = joined(imgs), min(1.65 * len(imgs), 3.6)   # Word stacks side-by-side pictures in a table cell, so join them
-        rp.add_run().add_picture(pic, width=Inches(w))
-        left.width = Inches(7.1 - w - 0.3); right.width = Inches(w + 0.3)
-    doc.save(path)
-
 if __name__ == "__main__":
     open(os.path.join(APP, "guide", "week1.html"), "w").write(page(WEEK1, ("week2.html", "Week 2 guide")))
     open(os.path.join(APP, "guide", "week2.html"), "w").write(page(WEEK2, ("week1.html", "Week 1 guide")))
-    if "--docx" in sys.argv:
-        d = sys.argv[sys.argv.index("--docx") + 1]
-        docx(WEEK1, os.path.join(d, "Den leader guide - Week 1.docx"))
-        docx(WEEK2, os.path.join(d, "Den leader guide - Week 2.docx"))
     print("built")
