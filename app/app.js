@@ -3468,7 +3468,8 @@ function shareCanvas(mode, W, H) {
   for (let y = 0; y < H; y += 40 * u) { g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); }
   // layout: wide = map left, stats right; square = map top, stats below
   const wide = W / H > 1.2;
-  const map = wide ? { x: 30 * u, y: 150 * u, w: W * 0.6, h: H - 205 * u } : { x: 30 * u, y: 150 * u, w: W - 60 * u, h: H * 0.48 };
+  const foot = done ? 120 * u : 60 * u;   // finished: room for the thank-you banner
+  const map = wide ? { x: 30 * u, y: 150 * u, w: W * 0.6, h: H - 150 * u - foot - 10 * u } : { x: 30 * u, y: 150 * u, w: W - 60 * u, h: H * 0.48 - (done ? 40 * u : 0) };
   const side = wide ? { x: map.x + map.w + 30 * u, y: 150 * u, w: W - map.w - 90 * u } : { x: 40 * u, y: map.y + map.h + 20 * u, w: W - 80 * u };
   // title
   const day = new Date(WEEK_DAYS[week()] + "T12:00").toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
@@ -3527,7 +3528,7 @@ function shareCanvas(mode, W, H) {
   // per den: name, a glowing bar of houses done, and its number
   // wide: one column of bars; square: two columns of three
   const cols = wide ? 1 : 2, perCol = Math.ceil(DATA.dens.length / cols), colW = (side.w - (cols - 1) * 30 * u) / cols;
-  const rowsY = side.y + 132 * u, rowH = Math.min(92 * u, (H - rowsY - 76 * u) / perCol);
+  const rowsY = side.y + 132 * u, rowH = Math.min(92 * u, (H - rowsY - foot - 16 * u) / perCol);
   DATA.dens.forEach((d, i) => {
     const y = rowsY + (i % perCol) * rowH, sx = side.x + Math.floor(i / perCol) * (colW + 30 * u);
     const side_ = { x: sx, w: colW };
@@ -3543,9 +3544,26 @@ function shareCanvas(mode, W, H) {
       g.beginPath(); g.roundRect(side_.x, by, Math.max(bh, side_.w * frac), bh, bh / 2); g.fill(); g.shadowBlur = 0;
     }
   });
-  // footer
-  g.textAlign = "left"; g.fillStyle = "#dfe8f7"; g.font = font(30, 700);
-  g.fillText("Pack 721 • Thank you to every scout, family and neighbor!", 40 * u, H - 24 * u);
+  // footer. Finished: a glowing thank-you banner across the bottom. Progress: just the pack and any coverage.
+  if (done) {
+    const bx = 40 * u, by = H - foot + 10 * u, bw = W - 80 * u, bh = foot - 36 * u;
+    const grad = g.createLinearGradient(bx, 0, bx + bw, 0);
+    DATA.dens.forEach((d, i) => grad.addColorStop(i / (DATA.dens.length - 1), d.color));
+    g.shadowColor = "rgba(127,178,255,.55)"; g.shadowBlur = 24 * u;
+    g.fillStyle = "rgba(10,16,32,.85)"; g.beginPath(); g.roundRect(bx, by, bw, bh, bh / 2); g.fill(); g.shadowBlur = 0;
+    g.strokeStyle = grad; g.lineWidth = 3 * u; g.stroke();
+    g.textAlign = "center"; g.textBaseline = "middle";
+    let fs = 38; g.font = font(fs, 800);
+    const msg = "Thank you to every scout, family and neighbor!";
+    while (g.measureText(msg).width > bw - 60 * u && fs > 20) { fs -= 2; g.font = font(fs, 800); }
+    g.fillStyle = "#fff"; g.shadowColor = "rgba(255,255,255,.35)"; g.shadowBlur = 10 * u;
+    g.fillText(msg, bx + bw / 2, by + bh / 2 + 1 * u); g.shadowBlur = 0;
+    g.textBaseline = "alphabetic"; g.textAlign = "right"; g.fillStyle = "#8ea4c6"; g.font = font(20, 700);
+    g.fillText("Pack 721", W - 44 * u, H - 8 * u);
+  } else {
+    g.textAlign = "left"; g.fillStyle = "#8ea4c6"; g.font = font(22, 700);
+    g.fillText("Pack 721", 40 * u, H - 24 * u);
+  }
   if (!done && t.cov) { g.textAlign = "right"; g.fillStyle = "#ff7d93"; g.fillText(`${t.cov} segment${t.cov === 1 ? "" : "s"} need coverage`, W - 40 * u, H - 24 * u); }
   return c;
 }
