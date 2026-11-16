@@ -3448,6 +3448,36 @@ function xlsx(sheets) {                   // [[sheet name, rows]], first row bol
   ];
   return zipFiles(files);
 }
+// letters drawn as tube strokes on a 4 x 6 grid (y down), rounded like bent neon
+const TUBE = {
+  P: [[[0, 6], [0, 0], [3, 0], [4, 1], [4, 2], [3, 3], [0, 3]]],
+  A: [[[0, 6], [0, 1.5], [1.5, 0], [2.5, 0], [4, 1.5], [4, 6]], [[0, 3.5], [4, 3.5]]],
+  C: [[[4, 0.8], [3.2, 0], [0.8, 0], [0, 0.8], [0, 5.2], [0.8, 6], [3.2, 6], [4, 5.2]]],
+  K: [[[0, 0], [0, 6]], [[4, 0], [0.4, 3.2]], [[1.4, 2.4], [4, 6]]],
+  7: [[[0, 0], [4, 0], [4, 1], [1.5, 6]]],
+  2: [[[0, 1], [1, 0], [3, 0], [4, 1], [4, 2.2], [0, 6], [4, 6]]],
+  1: [[[0.8, 1.2], [2, 0], [2, 6]], [[0.8, 6], [3.2, 6]]],
+};
+// words: [[text, colour]], right-aligned at x, top at y, letters h tall
+function neonWord(g, words, x, y, h, u) {
+  const k = h / 6, adv = 4 * k + 0.9 * k, space = 1.6 * k;
+  const total = words.reduce((a, [t], i) => a + t.length * adv + (i ? space : 0), 0) - 0.9 * k;
+  let cx = x - total;
+  g.lineCap = "round"; g.lineJoin = "round";
+  words.forEach(([text, col], wi) => {
+    if (wi) cx += space;
+    for (const ch of text) {
+      for (const [blur, width, colour, alpha] of [[22, 6.5, col, 1], [8, 4.5, col, 1], [0, 1.6, "#ffffff", 0.8]]) {
+        g.save(); g.globalAlpha = alpha; g.shadowColor = col; g.shadowBlur = blur * u; g.strokeStyle = colour; g.lineWidth = width * u;
+        for (const line of TUBE[ch] || []) {
+          g.beginPath(); line.forEach(([px, py], i) => { const X0 = cx + px * k, Y0 = y + py * k; if (i) g.lineTo(X0, Y0); else g.moveTo(X0, Y0); }); g.stroke();
+        }
+        g.restore();
+      }
+      cx += adv;
+    }
+  });
+}
 // ---- the share picture, drawn on a canvas: a dark "mission control" look ----
 // Glowing segments in den colours over a faint street grid, a title, big totals, and a bar per den.
 // Progress (for the group chat) dims what's left and pulses coverage red; Finished (for social media) lights
@@ -3558,14 +3588,9 @@ function shareCanvas(mode, W, H) {
     while (g.measureText(msg).width > bw - 60 * u && fs > 20) { fs -= 2; g.font = font(fs, 800); }
     g.fillStyle = "#fff"; g.shadowColor = "rgba(255,255,255,.35)"; g.shadowBlur = 10 * u;
     g.fillText(msg, bx + bw / 2, by + bh / 2 + 1 * u); g.shadowBlur = 0;
-    // "PACK 721" in the corner, in the picture's own type and blue glow, like the bars and tiles
-    g.textBaseline = "alphabetic"; g.textAlign = "right";
-    const nx = W - 44 * u, ny = 62 * u;
-    g.font = font(30, 800);
-    if ("letterSpacing" in g) g.letterSpacing = `${Math.round(4 * u)}px`;
-    g.shadowColor = "#7fb2ff"; g.shadowBlur = 18 * u; g.fillStyle = "#cfe0ff"; g.fillText("PACK 721", nx, ny);
-    g.shadowBlur = 0; g.fillStyle = "#fff"; g.fillText("PACK 721", nx, ny);
-    if ("letterSpacing" in g) g.letterSpacing = "0px";
+    // "PACK 721" drawn as glowing tubes, like the segments: PACK in one den's colour, 7, 2 and 1 in three others
+    neonWord(g, [["PACK", DATA.dens[1].color], ["7", DATA.dens[2].color], ["2", DATA.dens[3].color], ["1", DATA.dens[5].color]],
+             W - 44 * u, 34 * u, 40 * u, u);
   } else {
     g.textAlign = "left"; g.fillStyle = "#8ea4c6"; g.font = font(22, 700);
     g.fillText("Pack 721", 40 * u, H - 24 * u);
