@@ -135,7 +135,10 @@ DISPATCH = {
             "In the map\u2019s den menu, pick **Dispatcher** (the last choice). Or open **pack3721.github.io/SFF/?dispatch**.",
             "The whole pack\u2019s map is on the left and the board on the right (on a phone, the board is below the map). It\u2019s Week 1 or Week 2 by the date."],
             ["d-board.jpg"]),
-        ("2. Type what the texts say", [
+        ("2. Two ways to enter texts", [
+            "Use whichever suits you, or both: **quick entry** (type a short code) or **tabular entry** (fill in the grid). They change the same thing."],
+            []),
+        ("Quick entry", [
             "Click in the box at the top and type a **segment code**, then Enter:",
             "- **W6** \u2013 done",
             "- **W6 5** \u2013 done, 5 bags (Week 2)",
@@ -148,20 +151,20 @@ DISPATCH = {
             "Copied a text from the app? Paste it in; it\u2019s read the same way.",
             "**It checks before changing anything.** An unknown code is turned down, and if W10 already has bags it asks **Replace / Add / Cancel**. **Undo last entry** takes back the last one."],
             ["d-ask.jpg"]),
-        ("3. The grid", [
-            "Under the box, every segment by den: **Status**, **Bags**, **2nd** pass and **Group**, right next to the code, each editable in place. Filter by den or status at the top. Hover a row to see when it was entered."],
+        ("Tabular entry", [
+            "Under the box, every segment by den, like a spreadsheet: pick its **Status**, type **Bags**, **2nd** pass and **Group** right next to the code. Changes save as you leave each cell. Filter by den or status at the top, and hover a row to see when it was entered."],
             []),
-        ("4. The map", [
-            "Grey until done, then the den\u2019s colour with the bags on the label. **Needs coverage** with no group yet has the moving white dashes, so it stands out until someone takes it. Click a segment to put its code in the box."],
+        ("3. The map", [
+            "Grey until done, then the den\u2019s colour with the bags on the label. **Needs coverage** with no group yet has the moving white dashes, so it stands out until someone takes it. Click a segment to put its code in the quick entry box and highlight its row."],
             ["d-map.jpg"]),
         ("Sending someone to cover", [
             "When **W12!** comes in, find a group with time, text them, then type **W12 #Wolf B**. The dashes stop. When they finish, **W12 4**.",
             "Wolf B adds W12 on their phone with **Add by ID** on the Mine tab."],
             []),
-        ("5. Groups", [
+        ("4. Groups", [
             "Built from the group names you type; nothing to set up. Each group\u2019s den comes from the segments it was given. \u201c2 of ~19\u201d is about how many: the den\u2019s segments less what its other groups have finished, firming up as the den gets done. Segments a group was sent to cover are red. Segments done with no group name sit in **Unlabeled** rows until you add one."],
             ["d-groups.jpg"]),
-        ("6. Share and export", [
+        ("5. Share and export", [
             "- **Share picture:** **Progress** for the pack\u2019s group chat during the walk, **Finished** for social media. Wide or square. **Save picture**, or **Share\u2026** on a phone.",
             "- **Excel:** a Dens sheet with totals and a Segments sheet.",
             "- **Backup:** everything is saved only in this browser. **Save backup** now and then, and **Restore\u2026** it on another computer if you switch."],
