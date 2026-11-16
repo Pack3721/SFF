@@ -607,3 +607,4 @@ body.dispatch #banner, body.dispatch #setup-status, body.dispatch #tools, body.d
 @keyframes cel-in { from { opacity: 0; } }
 @keyframes cel-pop { from { transform: scale(.6); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { #celebrate, .cel-card { animation: none; } }
+.dq .share-btn { white-space: nowrap; }

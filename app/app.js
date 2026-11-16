@@ -3206,7 +3206,7 @@ function boardTab(body) {
     e.preventDefault();
     runQuick(t);
   });
-  const go = h("button", "share-btn", "Enter", qf); go.type = "submit";
+  const go = h("button", "share-btn", "Quick Enter", qf); go.type = "submit";
   qf.addEventListener("submit", (e) => {
     e.preventDefault();
     if (!q.value.trim()) return;
