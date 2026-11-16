@@ -3426,6 +3426,16 @@ function exportTab(body) {
   const row = h("div", "move-row", null, body);
   iconBtn("download", "Excel (.xlsx)", row).addEventListener("click", () => download(`sff-week${week()}.xlsx`,
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", xlsx([["Dens", densRows()], ["Segments", segmentsRows()]])));
+  // a paper log: every segment with boxes to fill in by hand, and whatever is on the board already written in
+  h("h3", "", "Paper log", body);
+  h("p", "hint", "A printable log of every segment, to keep by hand or as a backup on paper. Anything already on the board is filled in. Print, or save as PDF from the print dialog.", body);
+  const prow2 = h("div", "move-row", null, body);
+  const pl = h("button", "share-btn", null, prow2); pl.type = "button";
+  pl.appendChild(printIcon()); h("span", "", "Print log\u2026", pl);
+  pl.addEventListener("click", () => printLog(false));
+  const pb = h("button", "share-btn", null, prow2); pb.type = "button";
+  pb.appendChild(printIcon()); h("span", "", "Print blank log\u2026", pb);
+  pb.addEventListener("click", () => printLog(true));
   backupTools(body);
 }
 // ---- CSV ----
@@ -3450,6 +3460,49 @@ function densRows() {
   const t = totals();
   rows.push([{ total: "Total" }, t.segs, t.done, t.houses, t.housesDone, { pct: t.housesDone / t.houses }, ...(week() === 2 ? [t.bags] : []), t.cov]);
   return rows;
+}
+// ---- the paper log: one table per den (each den starts a new page), boxes to write in ----
+function printLog(blank) {
+  const out = document.getElementById("print");
+  out.textContent = "";
+  const wk2 = week() === 2;
+  const day = new Date(WEEK_DAYS[week()] + "T12:00").toLocaleDateString([], { weekday: "long", month: "short", day: "numeric", year: "numeric" });
+  for (const d of DATA.dens) {
+    const page = h("section", "log-page", null, out);
+    const head = h("div", "log-head", null, page);
+    const t = h("h1", "", d.name, head); t.style.color = d.color;
+    h("p", "", `Dispatcher log • Week ${week()} ${wk2 ? "(pickup)" : "(bags)"} • ${day} • ${d.segments.length} segments, ${d.houses} houses`, head);
+    h("span", "print-ver", BUILD === "dev" ? "dev" : BUILD.slice(0, 7), head);
+    const table = h("table", "log-table", null, page);
+    const hr = h("tr", "", null, h("thead", "", null, table));
+    for (const l of ["Seg", "Streets", "Hses", "Done", ...(wk2 ? ["Bags", "2nd"] : []), "Cov.", "Group", "Time", "Notes"]) h("th", "", l, hr);
+    const tb = h("tbody", "", null, table);
+    for (const id of d.segments) {
+      const sg = segById(id), r = blank ? {} : rec(id), st = blank ? "todo" : segStatus(id);
+      const tr = h("tr", "", null, tb);
+      const ic = h("td", "", null, tr); const tag = h("span", "print-id", sg.id + (sg.main_road ? " ⚠" : ""), ic); tag.style.background = sg.color;
+      h("td", "streets", sg.lines.filter((l) => !l.warning).map((l) => l.text + (l.numbers ? " " + l.numbers : "")).join("; "), tr);
+      h("td", "num", String(sg.houses), tr);
+      h("td", "box", st === "done" ? "✔" : "", tr);
+      if (wk2) { h("td", "box", r.bags ? String(r.bags) : "", tr); h("td", "box", r.bags2 ? String(r.bags2) : "", tr); }
+      h("td", "box", st === "cov" ? "!" : "", tr);
+      h("td", "write", r.group || "", tr);
+      h("td", "write sm", r.at && st === "done" ? new Date(r.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "", tr);
+      h("td", "write notes", "", tr);
+    }
+    const tot = h("tr", "log-total", null, tb);
+    const tc = h("td", "", "Total", tot); tc.colSpan = 3;
+    h("td", "box", "", tot);
+    if (wk2) { h("td", "box", "", tot); h("td", "box", "", tot); }
+    const rest = h("td", "", "", tot); rest.colSpan = 4;
+  }
+  const notes = h("section", "log-page", null, out);
+  const nh = h("div", "log-head", null, notes);
+  h("h1", "", "Notes", nh);
+  h("p", "", "Texts, calls, groups sent to cover, anything else", nh);
+  const nl = h("div", "log-lines", null, notes);
+  for (let i = 0; i < 30; i++) h("div", "", "", nl);
+  window.print();
 }
 // ---- Excel: a small .xlsx made here (a zip of a few XML files, stored without compression) ----
 const CRC_TABLE = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
