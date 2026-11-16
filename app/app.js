@@ -3558,8 +3558,14 @@ function shareCanvas(mode, W, H) {
     while (g.measureText(msg).width > bw - 60 * u && fs > 20) { fs -= 2; g.font = font(fs, 800); }
     g.fillStyle = "#fff"; g.shadowColor = "rgba(255,255,255,.35)"; g.shadowBlur = 10 * u;
     g.fillText(msg, bx + bw / 2, by + bh / 2 + 1 * u); g.shadowBlur = 0;
-    g.textBaseline = "alphabetic"; g.textAlign = "right"; g.fillStyle = "#8ea4c6"; g.font = font(20, 700);
-    g.fillText("Pack 721", W - 44 * u, H - 8 * u);
+    // "Pack 721" as a neon sign in the top corner: a pink glow tube with a white-hot core
+    g.textBaseline = "alphabetic"; g.textAlign = "right";
+    const nx = W - 44 * u, ny = 118 * u;
+    g.font = `italic 800 ${Math.round(64 * u)}px "Brush Script MT", "Snell Roundhand", "Segoe Script", cursive`;
+    for (const [blur, col, lw] of [[40, "#ff2fa8", 7], [20, "#ff5cc0", 5], [6, "#ffb3e3", 3]]) {
+      g.shadowColor = col; g.shadowBlur = blur * u; g.strokeStyle = col; g.lineWidth = lw * u; g.strokeText("Pack 721", nx, ny);
+    }
+    g.shadowBlur = 0; g.fillStyle = "#fff0fa"; g.fillText("Pack 721", nx, ny);
   } else {
     g.textAlign = "left"; g.fillStyle = "#8ea4c6"; g.font = font(22, 700);
     g.fillText("Pack 721", 40 * u, H - 24 * u);
