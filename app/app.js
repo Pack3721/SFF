@@ -3461,47 +3461,46 @@ function densRows() {
   rows.push([{ total: "Total" }, t.segs, t.done, t.houses, t.housesDone, { pct: t.housesDone / t.houses }, ...(week() === 2 ? [t.bags] : []), t.cov]);
   return rows;
 }
-// ---- the paper log: one table per den (each den starts a new page), boxes to write in ----
+// ---- the paper log: the whole pack on one sheet, three columns of segments grouped by den, boxes to write in ----
 function printLog(blank) {
   const out = document.getElementById("print");
   out.textContent = "";
   const wk2 = week() === 2;
-  const day = new Date(WEEK_DAYS[week()] + "T12:00").toLocaleDateString([], { weekday: "long", month: "short", day: "numeric", year: "numeric" });
-  for (const d of DATA.dens) {
-    const page = h("section", "log-page", null, out);
-    const head = h("div", "log-head", null, page);
-    const t = h("h1", "", d.name, head); t.style.color = d.color;
-    h("p", "", `Dispatcher log • Week ${week()} ${wk2 ? "(pickup)" : "(bags)"} • ${day} • ${d.segments.length} segments, ${d.houses} houses`, head);
-    h("span", "print-ver", BUILD === "dev" ? "dev" : BUILD.slice(0, 7), head);
-    const table = h("table", "log-table", null, page);
+  const day = new Date(WEEK_DAYS[week()] + "T12:00").toLocaleDateString([], { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+  const page = h("section", "log-page", null, out);
+  const head = h("div", "log-head", null, page);
+  h("h1", "", "Dispatcher log", head);
+  h("p", "", `Pack 721 Scouting for Food • Week ${week()} ${wk2 ? "(pickup)" : "(bags)"} • ${day} • ✔ done, ! needs coverage`, head);
+  h("span", "print-ver", BUILD === "dev" ? "dev" : BUILD.slice(0, 7), head);
+  // rows in order: a den header, then its segments; split into three even columns
+  const rows = [];
+  for (const d of DATA.dens) { rows.push({ den: d }); for (const id of d.segments) rows.push({ id }); }
+  const per = Math.ceil(rows.length / 3);
+  const cols = h("div", "log-cols", null, page);
+  for (let c = 0; c < 3; c++) {
+    const table = h("table", "log-table", null, cols);
     const hr = h("tr", "", null, h("thead", "", null, table));
-    for (const l of ["Seg", "Streets", "Hses", "Done", ...(wk2 ? ["Bags", "2nd"] : []), "Cov.", "Group", "Time", "Notes"]) h("th", "", l, hr);
+    for (const l of ["Seg", "Hs", "✔", ...(wk2 ? ["Bags", "2nd"] : []), "!", "Group"]) h("th", "", l, hr);
     const tb = h("tbody", "", null, table);
-    for (const id of d.segments) {
-      const sg = segById(id), r = blank ? {} : rec(id), st = blank ? "todo" : segStatus(id);
+    let chunk = rows.slice(c * per, (c + 1) * per);
+    // a column that starts mid-den repeats the den's name
+    if (chunk.length && !chunk[0].den) { const d = DATA.dens.find((x) => x.segments.includes(chunk[0].id)); chunk = [{ den: d, cont: true }, ...chunk]; }
+    for (const row of chunk) {
+      if (row.den) {
+        const tr = h("tr", "log-den", null, tb);
+        const td = h("td", "", row.den.short + (row.cont ? " (cont.)" : ` • ${row.den.houses} houses`), tr); td.colSpan = wk2 ? 7 : 5; td.style.color = row.den.color;
+        continue;
+      }
+      const sg = segById(row.id), r = blank ? {} : rec(row.id), st = blank ? "todo" : segStatus(row.id);
       const tr = h("tr", "", null, tb);
-      const ic = h("td", "", null, tr); const tag = h("span", "print-id", sg.id + (sg.main_road ? " ⚠" : ""), ic); tag.style.background = sg.color;
-      h("td", "streets", sg.lines.filter((l) => !l.warning).map((l) => l.text + (l.numbers ? " " + l.numbers : "")).join("; "), tr);
+      const ic = h("td", "", null, tr); const tag = h("span", "print-id", sg.id + (sg.main_road ? "⚠" : ""), ic); tag.style.background = sg.color;
       h("td", "num", String(sg.houses), tr);
       h("td", "box", st === "done" ? "✔" : "", tr);
       if (wk2) { h("td", "box", r.bags ? String(r.bags) : "", tr); h("td", "box", r.bags2 ? String(r.bags2) : "", tr); }
       h("td", "box", st === "cov" ? "!" : "", tr);
       h("td", "write", r.group || "", tr);
-      h("td", "write sm", r.at && st === "done" ? new Date(r.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "", tr);
-      h("td", "write notes", "", tr);
     }
-    const tot = h("tr", "log-total", null, tb);
-    const tc = h("td", "", "Total", tot); tc.colSpan = 3;
-    h("td", "box", "", tot);
-    if (wk2) { h("td", "box", "", tot); h("td", "box", "", tot); }
-    const rest = h("td", "", "", tot); rest.colSpan = 4;
   }
-  const notes = h("section", "log-page", null, out);
-  const nh = h("div", "log-head", null, notes);
-  h("h1", "", "Notes", nh);
-  h("p", "", "Texts, calls, groups sent to cover, anything else", nh);
-  const nl = h("div", "log-lines", null, notes);
-  for (let i = 0; i < 30; i++) h("div", "", "", nl);
   window.print();
 }
 // ---- Excel: a small .xlsx made here (a zip of a few XML files, stored without compression) ----
