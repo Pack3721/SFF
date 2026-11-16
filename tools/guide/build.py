@@ -138,7 +138,7 @@ DISPATCH = {
             "The whole pack\u2019s map is on the left and the board on the right (on a phone, the board is below the map). It\u2019s Week 1 or Week 2 by the date."],
             ["d-board.jpg"]),
         ("2. Entering texts", [
-            "Two ways, both fine; use either or mix them. **In the grid** (tabular entry): under the box, every segment by den, like a spreadsheet. **Quick entry**: type a short code in the box at the top and press Return (Enter on Windows), or the **Quick Enter** button. Each step below shows both.",
+            "Two ways, both fine; use either or mix them. **In the grid** (tabular entry): under the box, every segment by den, like a spreadsheet. **Quick entry**: type a short code in the box at the top and press **Return** or **Enter**, or the **Quick Enter** button. Each step below shows both.",
             "Copied a text from the app? Paste it into the quick entry box; it\u2019s read the same way."],
             ["d-grid.jpg"]),
         ("A segment is done", [
