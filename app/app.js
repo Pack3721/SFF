@@ -2656,6 +2656,8 @@ function listIcon() {                    // same picture as the segments-list bu
 
 // ---------- button icons: share, copy, paste ----------
 const BTN_ICONS = {
+  upload: "M12 15V3M7.5 7.5 12 3l4.5 4.5M4 17v2.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V17",   // arrow up out of a tray
+  download: "M12 3v12M7.5 10.5 12 15l4.5-4.5M4 17v2.5A1.5 1.5 0 0 0 5.5 21h13a1.5 1.5 0 0 0 1.5-1.5V17",   // arrow down into a tray
   share: "M12 3v12M7.5 7.5 12 3l4.5 4.5M5 11v8.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V11",       // box with an arrow up
   copy: "M9 9h10.5A1.5 1.5 0 0 1 21 10.5V20a1.5 1.5 0 0 1-1.5 1.5H10.5A1.5 1.5 0 0 1 9 20zM15 9V4.5A1.5 1.5 0 0 0 13.5 3H4.5A1.5 1.5 0 0 0 3 4.5v9A1.5 1.5 0 0 0 4.5 15H9",   // two sheets
   scan: "M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3M3 12h18",   // corner brackets with a scan line
@@ -3366,7 +3368,7 @@ function exportTab(body) {
   const prow = h("div", "move-row", null, body);
   const name = () => `sff-week${week()}-${dispatch.picMode === "done" ? "finished" : "progress"}.png`;
   const blob = () => new Promise((ok) => { const [W, H] = size.value.split("x").map(Number); shareCanvas(mode.value, W, H).toBlob(ok, "image/png"); });
-  iconBtn("copy", "Save picture", prow).addEventListener("click", () => blob().then((b) => download(name(), "image/png", b)));
+  iconBtn("download", "Save picture", prow).addEventListener("click", () => blob().then((b) => download(name(), "image/png", b)));
   if (navigator.canShare) {
     const sh = iconBtn("share", "Share…", prow);
     sh.addEventListener("click", () => blob().then((b) => {
@@ -3375,37 +3377,34 @@ function exportTab(body) {
       else download(name(), "image/png", b);
     }));
   }
-  // spreadsheets: one row per segment, and a den summary
+  // a spreadsheet: a Dens sheet with totals, and a Segments sheet
   h("h3", "", "Spreadsheet", body);
   const row = h("div", "move-row", null, body);
-  iconBtn("copy", "Excel (.xlsx)", row).addEventListener("click", () => download(`sff-week${week()}.xlsx`,
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", xlsx([["Segments", segmentsRows()], ["Dens", densRows()]])));
-  iconBtn("copy", "Segments CSV", row).addEventListener("click", () => download(`sff-week${week()}-segments.csv`, "text/csv", csvRows(segmentsRows())));
-  iconBtn("copy", "Dens CSV", row).addEventListener("click", () => download(`sff-week${week()}-dens.csv`, "text/csv", csvRows(densRows())));
+  iconBtn("download", "Excel (.xlsx)", row).addEventListener("click", () => download(`sff-week${week()}.xlsx`,
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", xlsx([["Dens", densRows()], ["Segments", segmentsRows()]])));
   backupTools(body);
 }
 // ---- CSV ----
-const csvCell = (v) => { v = v == null ? "" : String(v); return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v; };
-const csvRows = (rows) => "\ufeff" + rows.map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";   // BOM: Excel reads it as UTF-8
-const stamp = (t) => (t ? new Date(t).toLocaleString() : "");
+const stamp = (t) => (t ? new Date(t).toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" }) : "");
 function segmentsRows() {
-  const rows = [["week", "den", "segment", "streets", "houses", "status", "bags", "second_pass_bags", "group", "entered_at"]];
+  const rows = [["Den", "Segment", "Status", ...(week() === 2 ? ["Bags", "2nd pass"] : []), "Group", "Houses", "Streets", "Entered"]];
   for (const d of DATA.dens) for (const id of d.segments) {
     const sg = segById(id), r = rec(id), st = segStatus(id);
-    rows.push([week(), d.short, id, sg.lines.filter((l) => !l.warning).map((l) => l.text + (l.numbers ? " " + l.numbers : "")).join("; "),
-               sg.houses, { done: "done", cov: "needs coverage", todo: "" }[st], r.bags || "", r.bags2 || "", r.group || "", stamp(r.at || r.covAt)]);
+    rows.push([d.short, id, { done: "Done", cov: "Needs coverage", todo: "" }[st], ...(week() === 2 ? [r.bags || "", r.bags2 || ""] : []), r.group || "",
+               sg.houses, sg.lines.filter((l) => !l.warning).map((l) => l.text + (l.numbers ? " " + l.numbers : "")).join("; "), stamp(r.at || r.covAt)]);
   }
   return rows;
 }
 function densRows() {
-  const rows = [["week", "den", "segments", "segments_done", "houses", "houses_done", "bags", "needs_coverage"]];
+  const rows = [["Den", "Segments", "Done", "Houses", "Houses done", "% done", ...(week() === 2 ? ["Bags"] : []), "Need coverage"]];
   for (const d of DATA.dens) {
     const done = d.segments.filter((id) => segStatus(id) === "done");
-    rows.push([week(), d.short, d.segments.length, done.length, d.houses, done.reduce((a, id) => a + segById(id).houses, 0),
-               d.segments.reduce((a, id) => a + bagsOf(id), 0), d.segments.filter((id) => segStatus(id) === "cov").length]);
+    const hd = done.reduce((a, id) => a + segById(id).houses, 0);
+    rows.push([d.short, d.segments.length, done.length, d.houses, hd, { pct: hd / d.houses },
+               ...(week() === 2 ? [d.segments.reduce((a, id) => a + bagsOf(id), 0)] : []), d.segments.filter((id) => segStatus(id) === "cov").length]);
   }
   const t = totals();
-  rows.push([week(), "Total", t.segs, t.done, t.houses, t.housesDone, t.bags, t.cov]);
+  rows.push([{ total: "Total" }, t.segs, t.done, t.houses, t.housesDone, { pct: t.housesDone / t.houses }, ...(week() === 2 ? [t.bags] : []), t.cov]);
   return rows;
 }
 // ---- Excel: a small .xlsx made here (a zip of a few XML files, stored without compression) ----
@@ -3427,23 +3426,63 @@ function zipFiles(files) {                // [[name, text]] -> Blob, "stored" en
   const end = new Uint8Array([...u32(0x06054b50), ...u16(0), ...u16(0), ...u16(files.length), ...u16(files.length), ...u32(csize), ...u32(off), ...u16(0)]);
   return new Blob([...parts, ...central, end], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
 }
-function xlsx(sheets) {                   // [[sheet name, rows]], first row bold-free headers; numbers stay numbers
+// sheets: [[name, rows]]; row 1 is the header. A cell can be a number, text, {pct: 0.5} (shown as 50%) or
+// {total: "Total"} (marks a bold total row). Styled: a dark header row frozen at the top with filters, banded
+// rows, widths to fit, percentages, a bold total.
+function xlsx(sheets) {
   const esc = (v) => String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   const col = (i) => { let s = ""; i++; while (i) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
-  const sheetXml = (rows) => '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>' +
-    rows.map((r, ri) => `<row r="${ri + 1}">` + r.map((v, ci) => {
-      const ref = col(ci) + (ri + 1);
-      if (v === "" || v == null) return "";
-      return typeof v === "number" ? `<c r="${ref}"><v>${v}</v></c>` : `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${esc(v)}</t></is></c>`;
-    }).join("") + "</row>").join("") + "</sheetData></worksheet>";
+  // styles: 0 plain, 1 header, 2 banded, 3 % , 4 % banded, 5 total, 6 total %
+  const styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+    '<numFmts count="1"><numFmt numFmtId="164" formatCode="0%"/></numFmts>' +
+    '<fonts count="3"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>' +
+    '<fills count="5"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>' +
+    '<fill><patternFill patternType="solid"><fgColor rgb="FF14213D"/></patternFill></fill>' +
+    '<fill><patternFill patternType="solid"><fgColor rgb="FFF1F4F9"/></patternFill></fill>' +
+    '<fill><patternFill patternType="solid"><fgColor rgb="FFDCE6F5"/></patternFill></fill></fills>' +
+    '<borders count="2"><border/><border><top style="thin"><color rgb="FF14213D"/></top></border></borders>' +
+    '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="7">' +
+    '<xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>' +
+    '<xf numFmtId="0" fontId="1" fillId="2" borderId="0" applyFont="1" applyFill="1"/>' +
+    '<xf numFmtId="0" fontId="0" fillId="3" borderId="0" applyFill="1"/>' +
+    '<xf numFmtId="164" fontId="0" fillId="0" borderId="0" applyNumberFormat="1"/>' +
+    '<xf numFmtId="164" fontId="0" fillId="3" borderId="0" applyNumberFormat="1" applyFill="1"/>' +
+    '<xf numFmtId="0" fontId="2" fillId="4" borderId="1" applyFont="1" applyFill="1" applyBorder="1"/>' +
+    '<xf numFmtId="164" fontId="2" fillId="4" borderId="1" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1"/>' +
+    '</cellXfs></styleSheet>';
+  const sheetXml = (rows) => {
+    const ncol = rows[0].length;
+    const width = (i) => Math.min(60, Math.max(8, ...rows.map((r) => {
+      const v = r[i]; const t = v && typeof v === "object" ? (v.total || "100%") : v == null ? "" : String(v);
+      return t.length * 1.1 + 2;
+    })));
+    const cols = "<cols>" + rows[0].map((_, i) => `<col min="${i + 1}" max="${i + 1}" width="${width(i).toFixed(1)}" customWidth="1"/>`).join("") + "</cols>";
+    const body = rows.map((r, ri) => {
+      const total = r.some((v) => v && typeof v === "object" && "total" in v), band = ri > 0 && ri % 2 === 0;
+      return `<row r="${ri + 1}"${ri === 0 ? ' ht="20" customHeight="1"' : ""}>` + r.map((v, ci) => {
+        const ref = col(ci) + (ri + 1);
+        let st = ri === 0 ? 1 : total ? 5 : band ? 2 : 0;
+        if (v && typeof v === "object" && "pct" in v) { st = total ? 6 : band ? 4 : 3; return `<c r="${ref}" s="${st}"><v>${v.pct}</v></c>`; }
+        if (v && typeof v === "object" && "total" in v) v = v.total;
+        if (v === "" || v == null) return `<c r="${ref}" s="${st}"/>`;
+        return typeof v === "number" ? `<c r="${ref}" s="${st}"><v>${v}</v></c>` : `<c r="${ref}" s="${st}" t="inlineStr"><is><t xml:space="preserve">${esc(v)}</t></is></c>`;
+      }).join("") + "</row>";
+    }).join("");
+    return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+      '<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>' +
+      cols + `<sheetData>${body}</sheetData><autoFilter ref="A1:${col(ncol - 1)}${rows.length}"/></worksheet>`;
+  };
   const files = [
-    ["[Content_Types].xml", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+    ["[Content_Types].xml", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
       sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("") + "</Types>"],
     ["_rels/.rels", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
     ["xl/workbook.xml", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>' +
-      sheets.map(([n], i) => `<sheet name="${esc(n)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join("") + "</sheets></workbook>"],
+      sheets.map(([n], i) => `<sheet name="${esc(n)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join("") + "</sheets>" +
+      '<definedNames>' + sheets.map(([n, rows], i) => `<definedName name="_xlnm._FilterDatabase" localSheetId="${i}" hidden="1">'${esc(n)}'!$A$1:$${col(rows[0].length - 1)}$${rows.length}</definedName>`).join("") + '</definedNames></workbook>'],
     ["xl/_rels/workbook.xml.rels", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
-      sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join("") + "</Relationships>"],
+      sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join("") +
+      `<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+    ["xl/styles.xml", styles],
     ...sheets.map(([, rows], i) => [`xl/worksheets/sheet${i + 1}.xml`, sheetXml(rows)]),
   ];
   return zipFiles(files);
@@ -3603,9 +3642,11 @@ function backupTools(body) {
   h("h3", "", "Backup", body);
   h("p", "hint", "Everything is saved in this browser only. Save a backup now and then, or to move to another computer.", body);
   const row = h("div", "move-row", null, body);
-  const sv = iconBtn("share", "Save backup", row);
+  const sv = iconBtn("download", "Save backup", row);
   sv.addEventListener("click", () => download(`sff-board-${today()}.json`, "application/json", JSON.stringify({ sff: "board", saved: new Date().toISOString(), board: boardAll() }, null, 1)));
-  const ld = h("label", "share-btn file-btn", "Restore…", row);
+  const ld = h("label", "share-btn file-btn", null, row);
+  ld.appendChild(iconBtn("upload", "", document.createElement("div")).querySelector("svg"));   // the same icon, on a label
+  h("span", "", "Restore\u2026", ld);
   const fi = h("input", "", null, ld); fi.type = "file"; fi.accept = ".json,application/json";
   fi.addEventListener("change", () => {
     const f = fi.files && fi.files[0]; if (!f) return;
