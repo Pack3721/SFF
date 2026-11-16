@@ -3384,7 +3384,7 @@ function shareCanvas(mode, W, H) {
   for (let y = 0; y < H; y += 40 * u) { g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); }
   // layout: wide = map left, stats right; square = map top, stats below
   const wide = W / H > 1.2;
-  const map = wide ? { x: 30 * u, y: 150 * u, w: W * 0.6, h: H - 190 * u } : { x: 30 * u, y: 150 * u, w: W - 60 * u, h: H * 0.48 };
+  const map = wide ? { x: 30 * u, y: 150 * u, w: W * 0.6, h: H - 205 * u } : { x: 30 * u, y: 150 * u, w: W - 60 * u, h: H * 0.48 };
   const side = wide ? { x: map.x + map.w + 30 * u, y: 150 * u, w: W - map.w - 90 * u } : { x: 40 * u, y: map.y + map.h + 20 * u, w: W - 80 * u };
   // title
   const day = new Date(WEEK_DAYS[week()] + "T12:00").toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
@@ -3443,7 +3443,7 @@ function shareCanvas(mode, W, H) {
   // per den: name, a glowing bar of houses done, and its number
   // wide: one column of bars; square: two columns of three
   const cols = wide ? 1 : 2, perCol = Math.ceil(DATA.dens.length / cols), colW = (side.w - (cols - 1) * 30 * u) / cols;
-  const rowsY = side.y + 132 * u, rowH = Math.min(92 * u, (H - rowsY - 64 * u) / perCol);
+  const rowsY = side.y + 132 * u, rowH = Math.min(92 * u, (H - rowsY - 76 * u) / perCol);
   DATA.dens.forEach((d, i) => {
     const y = rowsY + (i % perCol) * rowH, sx = side.x + Math.floor(i / perCol) * (colW + 30 * u);
     const side_ = { x: sx, w: colW };
@@ -3460,7 +3460,7 @@ function shareCanvas(mode, W, H) {
     }
   });
   // footer
-  g.textAlign = "left"; g.fillStyle = "#8ea4c6"; g.font = font(22, 600);
+  g.textAlign = "left"; g.fillStyle = "#dfe8f7"; g.font = font(30, 700);
   g.fillText("Pack 721 • Thank you to every scout, family and neighbor!", 40 * u, H - 24 * u);
   if (!done && t.cov) { g.textAlign = "right"; g.fillStyle = "#ff7d93"; g.fillText(`${t.cov} segment${t.cov === 1 ? "" : "s"} need coverage`, W - 40 * u, H - 24 * u); }
   return c;
