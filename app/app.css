@@ -542,7 +542,10 @@ body.dispatch #banner, body.dispatch #setup-status, body.dispatch #tools, body.d
 }
 .dq-input::placeholder { font-weight: 400; color: #999; }
 #dispatch .share-btn { font: inherit; font-size: 15px; font-weight: 700; min-height: 44px; padding: 0 14px; color: #111; background: #fff; border: 2px solid #333; border-radius: 22px; }
-.dq-help { margin: 4px 0 6px; font-size: 12px; color: #666; }
+.dq-help { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 6px 0 8px; font-size: 12px; color: #666; }
+.dq-help span { white-space: nowrap; }
+.dq-help code, .dq-input { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+.dq-help code { padding: 1px 5px; border-radius: 4px; background: #eef1f5; color: #111; font-size: 12.5px; font-weight: 700; }
 .dq-msg { margin: 0 0 8px; padding: 6px 8px; border-radius: 8px; background: #f7f7f7; font-size: 14px; }
 .dq-msg p { margin: 2px 0; }
 .dq-msg .ok { color: #1e7e34; font-weight: 600; }

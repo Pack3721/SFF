@@ -3167,9 +3167,12 @@ function boardTab(body) {
     if (runQuick(q.value)) { const n = dispatchPanel.querySelector(".dq-input"); if (n) { n.value = ""; n.focus(); } }
     else { const n = dispatchPanel.querySelector(".dq-input"); if (n) { n.value = q.value; n.focus(); } }
   });
-  h("p", "dq-help", week() === 2
-    ? "W6 = done • W6 12 = done, 12 bags • W6 +3 = 3 more (second pass) • W6! = needs coverage • add #Wolf B to any for the group (W6 12 #Wolf B) • W6 u = clear. Commas for several."
-    : "W6 = done • W6! = needs coverage • add #Wolf B for the group (W6 #Wolf B) • W6 u = clear. Commas for several.", body);
+  // the codes in a typewriter font, each with what it means
+  const help = h("div", "dq-help", null, body);
+  const items = week() === 2
+    ? [["W6", "done"], ["W6 12", "done, 12 bags"], ["W6 +3", "3 more (second pass)"], ["W6!", "needs coverage"], ["#Wolf B", "group, after any of them"], ["W6 u", "clear"], [",", "several at once"]]
+    : [["W6", "done"], ["W6!", "needs coverage"], ["#Wolf B", "group, after either"], ["W6 u", "clear"], [",", "several at once"]];
+  for (const [code, what] of items) { const it = h("span", "", null, help); h("code", "", code, it); it.append(" " + what); }
   // what the last entry did, and anything to decide
   if (dispatch.msg.length || dispatch.undo) {
     const box = h("div", "dq-msg", null, body);
