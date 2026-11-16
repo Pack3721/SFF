@@ -2924,10 +2924,54 @@ const dispatchPanel = document.getElementById("dispatch");
 const dispatchWide = () => window.matchMedia("(min-width: 900px)").matches;
 
 function boardAll() { try { return JSON.parse(localStorage.getItem(BOARD_KEY) || "{}") || {}; } catch (_) { return {}; } }
-function loadBoard() { board = boardAll()[weekKey()] || {}; }
+function loadBoard() { board = boardAll()[weekKey()] || {}; wasAllDone = DATA.segments.every((s) => (board[s.id] || {}).done); }
 function saveBoard() {
   const all = boardAll(); all[weekKey()] = board;
   try { localStorage.setItem(BOARD_KEY, JSON.stringify(all)); } catch (_) { /* ignore */ }
+  // the last segment just got done: celebrate (once each time it goes from not-all-done to all done)
+  const nowAll = DATA.segments.every((s) => segStatus(s.id) === "done");
+  if (nowAll && wasAllDone === false && dispatch) setTimeout(celebrate, 300);
+  wasAllDone = nowAll;
+}
+let wasAllDone = null;                    // null until first checked, so opening a finished board doesn't fire it
+// "All done!": confetti in the den colours over the map, and a banner with the totals. Tap to close.
+function celebrate() {
+  const old = document.getElementById("celebrate"); if (old) old.remove();
+  const t = totals();
+  const box = document.createElement("div"); box.id = "celebrate";
+  const cv = document.createElement("canvas"); box.appendChild(cv);
+  const card2 = h("div", "cel-card", null, box);
+  h("div", "cel-big", "All done!", card2);
+  h("div", "cel-sub", week() === 2 ? `${t.bags.toLocaleString()} bags of food • ${t.houses.toLocaleString()} houses` : `Every one of ${t.houses.toLocaleString()} houses`, card2);
+  h("div", "cel-thanks", "Thank you, Pack 721!", card2);
+  const share = h("button", "share-btn", "Share the picture", card2); share.type = "button";
+  share.addEventListener("click", (e) => { e.stopPropagation(); close(); dispatch.tab = "export"; dispatch.picMode = "done"; renderDispatch(); });
+  document.body.appendChild(box);
+  const close = () => { stop = true; box.classList.add("bye"); setTimeout(() => box.remove(), 400); };
+  box.addEventListener("click", close);
+  let stop = false;
+  if (calm) return;                       // reduced motion: just the banner
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const W = cv.width = innerWidth * dpr, H = cv.height = innerHeight * dpr;
+  const g = cv.getContext("2d"), cols = DATA.dens.map((d) => d.color).concat(["#ffffff", "#ffd21f"]);
+  const bits = Array.from({ length: 220 }, () => ({
+    x: Math.random() * W, y: -Math.random() * H * 0.8, vx: (Math.random() - 0.5) * 3 * dpr, vy: (2 + Math.random() * 4) * dpr,
+    r: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.3, w: (6 + Math.random() * 7) * dpr, hh: (4 + Math.random() * 5) * dpr,
+    c: cols[Math.floor(Math.random() * cols.length)], wob: Math.random() * 6 }));
+  const start = performance.now();
+  const step = (now) => {
+    if (stop) return;
+    g.clearRect(0, 0, W, H);
+    const fade = Math.max(0, Math.min(1, (9000 - (now - start)) / 1500));
+    for (const b of bits) {
+      b.x += b.vx + Math.sin((now / 400) + b.wob) * dpr; b.y += b.vy; b.r += b.vr;
+      if (b.y > H + 20 && now - start < 6000) { b.y = -20; b.x = Math.random() * W; }
+      g.save(); g.globalAlpha = fade; g.translate(b.x, b.y); g.rotate(b.r); g.fillStyle = b.c;
+      g.fillRect(-b.w / 2, -b.hh / 2, b.w, b.hh * Math.abs(Math.cos(b.r * 2)) + 1); g.restore();
+    }
+    if (fade > 0) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
 }
 const rec = (id) => board[id] || {};
 const segStatus = (id) => (rec(id).done ? "done" : rec(id).cov ? "cov" : "todo");
