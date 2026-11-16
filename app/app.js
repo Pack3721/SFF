@@ -3168,7 +3168,7 @@ function boardTab(body) {
     else { const n = dispatchPanel.querySelector(".dq-input"); if (n) { n.value = q.value; n.focus(); } }
   });
   h("p", "dq-help", week() === 2
-    ? "W6 = done • W6 12 = done, 12 bags • W6 +3 = 3 more (second pass) • W6 c = needs coverage • W6 g Wolf B = group • W6 u = clear. Commas for several."
+    ? "W6 = done • W6 12 = done, 12 bags • W6 +3 = 3 more (second pass) • W6 c = needs coverage • add g Wolf B to any for the group (W6 12 g Wolf B) • W6 u = clear. Commas for several."
     : "W6 = done • W6 c = needs coverage • add g Wolf B for the group (W6 g Wolf B) • W6 u = clear. Commas for several.", body);
   // what the last entry did, and anything to decide
   if (dispatch.msg.length || dispatch.undo) {
