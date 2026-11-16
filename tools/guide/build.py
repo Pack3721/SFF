@@ -116,7 +116,9 @@ def page(g, other):
         out.append('<div class="body"><div class="text">')
         bullets = [p for p in paras if p.startswith("- ")]
         for p in paras:
-            if not p.startswith("- "): out.append(f'<p>{inline(p)}</p>')
+            if p.startswith("> "):
+                out.append(f'<aside class="quick"><span>Quick entry</span><code>{html.escape(p[2:])}</code></aside>')
+            elif not p.startswith("- "): out.append(f'<p>{inline(p)}</p>')
         if bullets: out.append('<ul>' + "".join(f'<li>{inline(b[2:])}</li>' for b in bullets) + '</ul>')
         out.append('</div>')
         if imgs:
@@ -135,30 +137,48 @@ DISPATCH = {
             "In the map\u2019s den menu, pick **Dispatcher** (the last choice). Or open **pack3721.github.io/SFF/?dispatch**.",
             "The whole pack\u2019s map is on the left and the board on the right (on a phone, the board is below the map). It\u2019s Week 1 or Week 2 by the date."],
             ["d-board.jpg"]),
-        ("2. Two ways to enter texts", [
-            "Use whichever suits you, or both: **quick entry** (type a short code) or **tabular entry** (fill in the grid). They change the same thing."],
+        ("2. Entering texts", [
+            "Two ways, both fine; use either or mix them. **In the grid** (tabular entry): under the box, every segment by den, like a spreadsheet. **Quick entry**: type a short code in the box at the top and press Enter. Each step below shows both.",
+            "Copied a text from the app? Paste it into the quick entry box; it\u2019s read the same way."],
+            ["d-grid.jpg"]),
+        ("A segment is done", [
+            "**In the grid:** set its **Status** to **Done**.",
+            "> W6"],
             []),
-        ("Quick entry", [
-            "Click in the box at the top and type a **segment code**, then Enter:",
-            "- **W6** \u2013 done",
-            "- **W6 5** \u2013 done, 5 bags (Week 2)",
-            "- **W6 +2** \u2013 2 more bags on a second pass",
-            "- **W6!** \u2013 needs coverage",
-            "- **#Wolf B** after any of them \u2013 the group: **W6 5 #Wolf B**. Start typing a name and the ones already used pop up; Tab picks the first.",
-            "- **W6--** \u2013 clear it; **commas** for several at once: **W10 5, W11!, W12**"],
+        ("Bags (Week 2)", [
+            "**In the grid:** type the count in **Bags**. That marks it done too.",
+            "> W6 5"],
+            []),
+        ("Second pass bags (Week 2)", [
+            "**In the grid:** type them in **2nd**, next to Bags.",
+            "> W6 +2"],
+            []),
+        ("Needs coverage", [
+            "**In the grid:** set its **Status** to **Coverage**.",
+            "> W12!"],
+            []),
+        ("Which group", [
+            "**In the grid:** type the name in **Group**. Names already used are offered as you type. Any capitals are fine: wolf b is Wolf B.",
+            "> W6 5 #Wolf B",
+            "In quick entry, #Wolf B goes after any of the others; start the name and the ones already used pop up, and Tab picks the first."],
+            []),
+        ("Clear a mistake", [
+            "**In the grid:** set **Status** back to **\u2013** and empty its Bags and Group. **Undo last entry** (under the box) takes back the last change either way.",
+            "> W6--"],
+            []),
+        ("Several at once", [
+            "**In the grid:** one row at a time; filter by den or status at the top to find them quickly. Hover a row to see when it was entered.",
+            "> W10 5, W11!, W12"],
             []),
         (None, [
-            "Copied a text from the app? Paste it in; it\u2019s read the same way.",
-            "**It checks before changing anything.** An unknown code is turned down, and if W10 already has bags it asks **Replace / Add / Cancel**. **Undo last entry** takes back the last one."],
+            "**Quick entry checks first.** An unknown code is turned down, and if W10 already has bags it asks **Replace / Add / Cancel**. (In the grid, what you type is what it saves.)"],
             ["d-ask.jpg"]),
-        ("Tabular entry", [
-            "Under the box, every segment by den, like a spreadsheet: pick its **Status**, type **Bags**, **2nd** pass and **Group** right next to the code. Changes save as you leave each cell. Filter by den or status at the top, and hover a row to see when it was entered."],
-            []),
         ("3. The map", [
             "Grey until done, then the den\u2019s colour with the bags on the label. **Needs coverage** with no group yet has the moving white dashes, so it stands out until someone takes it. Click a segment to put its code in the quick entry box and highlight its row."],
             ["d-map.jpg"]),
         ("Sending someone to cover", [
-            "When **W12!** comes in, find a group with time, text them, then type **W12 #Wolf B**. The dashes stop. When they finish, **W12 4**.",
+            "When W12 needs coverage, find a group with time and text them. **In the grid:** type their name in W12\u2019s **Group**; the dashes stop. When they finish, set **Status** to Done (or type the Bags).",
+            "> W12 #Wolf B   then   W12 4",
             "Wolf B adds W12 on their phone with **Add by ID** on the Mine tab."],
             []),
         ("4. Groups", [

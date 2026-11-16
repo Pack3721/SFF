@@ -30,3 +30,7 @@ h2 { margin: 26px 0 8px; font-size: 20px; border-bottom: 2px solid #c0392b; padd
 .shots img[src*="img/d-"] { width: 320px; }
 .shots img[src*="img/d-phone"] { width: 220px; }
 .shots.wide img[src*="img/d-"] { width: 100%; max-width: 860px; }
+.quick { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 4px 0 12px; padding: 8px 12px; border-left: 4px solid #1a5fb4; border-radius: 6px; background: #eef4fc; }
+.quick span { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: #1a5fb4; }
+.quick code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 18px; font-weight: 700; color: #111; white-space: pre; }
+.shots img[src*="img/d-grid"] { width: 440px; }
