@@ -27,3 +27,6 @@ h2 { margin: 26px 0 8px; font-size: 20px; border-bottom: 2px solid #c0392b; padd
   .shots a:only-child { width: 70%; } .shots a:only-child img { width: 100%; }
   .shots.wide a { width: 100%; }
 }
+.shots img[src*="img/d-"] { width: 320px; }
+.shots img[src*="img/d-phone"] { width: 220px; }
+.shots.wide img[src*="img/d-"] { width: 100%; max-width: 860px; }

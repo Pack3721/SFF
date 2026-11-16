@@ -2099,9 +2099,9 @@ function renderSettings() {
 function about(body) {
   // the den leader guides: plain pages on this site
   const g = h("div", "guides", null, body);
-  h("h3", "", "Den leader guides", g);
+  h("h3", "", "Guides", g);
   const row = h("div", "guide-links", null, g);
-  for (const [href, label] of [["guide/week1.html", "Week 1 (bags)"], ["guide/week2.html", "Week 2 (pickup)"]]) {
+  for (const [href, label] of [["guide/week1.html", "Week 1 (bags)"], ["guide/week2.html", "Week 2 (pickup)"], ["guide/dispatcher.html", "Dispatcher"]]) {
     const a = h("a", "share-btn", label + " \u203a", row); a.href = href;
   }
   const ack = h("div", "guides", null, body);

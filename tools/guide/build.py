@@ -120,14 +120,63 @@ def page(g, other):
         if bullets: out.append('<ul>' + "".join(f'<li>{inline(b[2:])}</li>' for b in bullets) + '</ul>')
         out.append('</div>')
         if imgs:
-            wide = any("handout.jpg" in i for i in imgs)
+            wide = any("handout.jpg" in i or i in ("d-board.jpg", "d-map.jpg") for i in imgs)
             out.append(f'<div class="shots{" wide" if wide else ""}">' + "".join(
                 f'<a href="img/{i}?v=dev"><img src="img/{i}?v=dev" alt="" loading="lazy"></a>' for i in imgs) + '</div>')
         out.append('</div></section>')
     out += ['<p class="foot">Pack 721 Scouting for Food • SFF 721 Map</p>', '</body>', '</html>', '']
     return "\n".join(out)
 
+DISPATCH = {
+    "title": "Dispatcher guide",
+    "lead": "The dispatcher\u2019s board: record what the texts say, see the whole pack at a glance, and share the results. Best on a computer; it works on a phone too.",
+    "sections": [
+        ("1. Open the board", [
+            "In the map\u2019s den menu, pick **Dispatcher** (the last choice). Or open **pack3721.github.io/SFF/?dispatch**.",
+            "The whole pack\u2019s map is on the left and the board on the right (on a phone, the board is below the map). It\u2019s Week 1 or Week 2 by the date."],
+            ["d-board.jpg"]),
+        ("2. Type what the texts say", [
+            "Click in the box at the top and type a **segment code**, then Enter:",
+            "- **W6** \u2013 done",
+            "- **W6 5** \u2013 done, 5 bags (Week 2)",
+            "- **W6 +2** \u2013 2 more bags on a second pass",
+            "- **W6!** \u2013 needs coverage",
+            "- **#Wolf B** after any of them \u2013 the group: **W6 5 #Wolf B**. Start typing a name and the ones already used pop up; Tab picks the first.",
+            "- **W6 u** \u2013 clear it; **commas** for several at once: **W10 5, W11!, W12**"],
+            []),
+        (None, [
+            "Copied a text from the app? Paste it in; it\u2019s read the same way.",
+            "**It checks before changing anything.** An unknown code is turned down, and if W10 already has bags it asks **Replace / Add / Cancel**. **Undo last entry** takes back the last one."],
+            ["d-ask.jpg"]),
+        ("3. The grid", [
+            "Under the box, every segment by den: **Status**, **Bags**, **2nd** pass and **Group**, right next to the code, each editable in place. Filter by den or status at the top. Hover a row to see when it was entered."],
+            []),
+        ("4. The map", [
+            "Grey until done, then the den\u2019s colour with the bags on the label. **Needs coverage** with no group yet has the moving white dashes, so it stands out until someone takes it. Click a segment to put its code in the box."],
+            ["d-map.jpg"]),
+        ("Sending someone to cover", [
+            "When **W12!** comes in, find a group with time, text them, then type **W12 #Wolf B**. The dashes stop. When they finish, **W12 4**.",
+            "Wolf B adds W12 on their phone with **Add by ID** on the Mine tab."],
+            []),
+        ("5. Groups", [
+            "Built from the group names you type; nothing to set up. Each group\u2019s den comes from the segments it was given. \u201c2 of ~19\u201d is about how many: the den\u2019s segments less what its other groups have finished, firming up as the den gets done. Segments a group was sent to cover are red. Segments done with no group name sit in **Unlabeled** rows until you add one."],
+            ["d-groups.jpg"]),
+        ("6. Share and export", [
+            "- **Share picture:** **Progress** for the pack\u2019s group chat during the walk, **Finished** for social media. Wide or square. **Save picture**, or **Share\u2026** on a phone.",
+            "- **Excel:** a Dens sheet with totals and a Segments sheet.",
+            "- **Backup:** everything is saved only in this browser. **Save backup** now and then, and **Restore\u2026** it on another computer if you switch."],
+            ["d-export.jpg"]),
+        ("Tips", [
+            "- Use one computer for the whole walk. A backup moves it to another.",
+            "- Texts come in late or out of order; just type them as they arrive. The time saved is when you typed it, not when it was walked.",
+            "- Week 2 bags: the app adds the count to the Done text (\u201cW6 done, 5 bags\u201d), so **W6 5** is all you need.",
+            "- On a phone the board sits under the map; drag the map to see the rest."],
+            ["d-phone.jpg"]),
+    ],
+}
+
 if __name__ == "__main__":
     open(os.path.join(APP, "guide", "week1.html"), "w").write(page(WEEK1, ("week2.html", "Week 2 guide")))
     open(os.path.join(APP, "guide", "week2.html"), "w").write(page(WEEK2, ("week1.html", "Week 1 guide")))
+    open(os.path.join(APP, "guide", "dispatcher.html"), "w").write(page(DISPATCH, ("week2.html", "Den leader guide")))
     print("built")
