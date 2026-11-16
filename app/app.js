@@ -3333,11 +3333,6 @@ function groupsTab(body) {
   h("p", "hint", "“3 of ~18”: done of about how many – the den’s segments less what its other groups have finished, so it firms up as the den gets done. Red segments were covering for another group (+ counts them).", body);
 }
 function exportTab(body) {
-  // CSV: one row per segment, and a den summary (open in Numbers, Excel or Google Sheets)
-  h("h3", "", "Spreadsheet (CSV)", body);
-  const row = h("div", "move-row", null, body);
-  iconBtn("copy", "Segments CSV", row).addEventListener("click", () => download(`sff-week${week()}-segments.csv`, "text/csv", segmentsCsv()));
-  iconBtn("copy", "Dens CSV", row).addEventListener("click", () => download(`sff-week${week()}-dens.csv`, "text/csv", densCsv()));
   // a picture to share: progress for the group chat during the walk, or the finished map for social media
   h("h3", "", "Share picture", body);
   const t = totals();
@@ -3369,22 +3364,29 @@ function exportTab(body) {
       else download(name(), "image/png", b);
     }));
   }
+  // spreadsheets: one row per segment, and a den summary
+  h("h3", "", "Spreadsheet", body);
+  const row = h("div", "move-row", null, body);
+  iconBtn("copy", "Excel (.xlsx)", row).addEventListener("click", () => download(`sff-week${week()}.xlsx`,
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", xlsx([["Segments", segmentsRows()], ["Dens", densRows()]])));
+  iconBtn("copy", "Segments CSV", row).addEventListener("click", () => download(`sff-week${week()}-segments.csv`, "text/csv", csvRows(segmentsRows())));
+  iconBtn("copy", "Dens CSV", row).addEventListener("click", () => download(`sff-week${week()}-dens.csv`, "text/csv", csvRows(densRows())));
   backupTools(body);
 }
 // ---- CSV ----
 const csvCell = (v) => { v = v == null ? "" : String(v); return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v; };
 const csvRows = (rows) => "\ufeff" + rows.map((r) => r.map(csvCell).join(",")).join("\r\n") + "\r\n";   // BOM: Excel reads it as UTF-8
 const stamp = (t) => (t ? new Date(t).toLocaleString() : "");
-function segmentsCsv() {
+function segmentsRows() {
   const rows = [["week", "den", "segment", "streets", "houses", "status", "bags", "second_pass_bags", "group", "entered_at"]];
   for (const d of DATA.dens) for (const id of d.segments) {
     const sg = segById(id), r = rec(id), st = segStatus(id);
     rows.push([week(), d.short, id, sg.lines.filter((l) => !l.warning).map((l) => l.text + (l.numbers ? " " + l.numbers : "")).join("; "),
                sg.houses, { done: "done", cov: "needs coverage", todo: "" }[st], r.bags || "", r.bags2 || "", r.group || "", stamp(r.at || r.covAt)]);
   }
-  return csvRows(rows);
+  return rows;
 }
-function densCsv() {
+function densRows() {
   const rows = [["week", "den", "segments", "segments_done", "houses", "houses_done", "bags", "needs_coverage"]];
   for (const d of DATA.dens) {
     const done = d.segments.filter((id) => segStatus(id) === "done");
@@ -3393,7 +3395,47 @@ function densCsv() {
   }
   const t = totals();
   rows.push([week(), "Total", t.segs, t.done, t.houses, t.housesDone, t.bags, t.cov]);
-  return csvRows(rows);
+  return rows;
+}
+// ---- Excel: a small .xlsx made here (a zip of a few XML files, stored without compression) ----
+const CRC_TABLE = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+const crc32 = (b) => { let c = 0xffffffff; for (const x of b) c = CRC_TABLE[(c ^ x) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+function zipFiles(files) {                // [[name, text]] -> Blob, "stored" entries
+  const enc = new TextEncoder(), parts = [], central = [];
+  let off = 0;
+  const u16 = (v) => [v & 255, (v >>> 8) & 255], u32 = (v) => [v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255];
+  for (const [name, text] of files) {
+    const nb = enc.encode(name), data = enc.encode(text), crc = crc32(data);
+    const head = [...u32(0x04034b50), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(crc), ...u32(data.length), ...u32(data.length), ...u16(nb.length), ...u16(0)];
+    parts.push(new Uint8Array(head), nb, data);
+    central.push(new Uint8Array([...u32(0x02014b50), ...u16(20), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(crc), ...u32(data.length), ...u32(data.length),
+                                 ...u16(nb.length), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(off)]), nb);
+    off += head.length + nb.length + data.length;
+  }
+  const csize = central.reduce((a, x) => a + x.length, 0);
+  const end = new Uint8Array([...u32(0x06054b50), ...u16(0), ...u16(0), ...u16(files.length), ...u16(files.length), ...u32(csize), ...u32(off), ...u16(0)]);
+  return new Blob([...parts, ...central, end], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+}
+function xlsx(sheets) {                   // [[sheet name, rows]], first row bold-free headers; numbers stay numbers
+  const esc = (v) => String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const col = (i) => { let s = ""; i++; while (i) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
+  const sheetXml = (rows) => '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>' +
+    rows.map((r, ri) => `<row r="${ri + 1}">` + r.map((v, ci) => {
+      const ref = col(ci) + (ri + 1);
+      if (v === "" || v == null) return "";
+      return typeof v === "number" ? `<c r="${ref}"><v>${v}</v></c>` : `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${esc(v)}</t></is></c>`;
+    }).join("") + "</row>").join("") + "</sheetData></worksheet>";
+  const files = [
+    ["[Content_Types].xml", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+      sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("") + "</Types>"],
+    ["_rels/.rels", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
+    ["xl/workbook.xml", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>' +
+      sheets.map(([n], i) => `<sheet name="${esc(n)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join("") + "</sheets></workbook>"],
+    ["xl/_rels/workbook.xml.rels", '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      sheets.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`).join("") + "</Relationships>"],
+    ...sheets.map(([, rows], i) => [`xl/worksheets/sheet${i + 1}.xml`, sheetXml(rows)]),
+  ];
+  return zipFiles(files);
 }
 // ---- the share picture, drawn on a canvas: a dark "mission control" look ----
 // Glowing segments in den colours over a faint street grid, a title, big totals, and a bar per den.

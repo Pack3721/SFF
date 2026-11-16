@@ -167,7 +167,7 @@ The den menu's **Dispatcher** choice (or `?dispatch`; the old `dispatcher.html` 
 - **Board:** a quick entry box by segment code: `W6` done, `W6 12` done with 12 bags, `W6 +3` second-pass bags, `W6 c` needs coverage, `W6 g Wolf B` group, `W6 u` clear; several with commas. Unknown codes are refused, and overwriting bags, a done segment or a group asks first (Replace / Add / Cancel). One-step undo. Below it, a grid by den: status, bags, second pass, group, each editable. Totals across the top. Entry times are kept quietly (tooltip and CSV only).
 - **Map:** grey to do, the den's colour when done, bags on the tag. Needs coverage with no group yet gets the marching ants. Clicking a segment selects its row and puts its code in the box.
 - **Groups:** worked out from the group names typed in; no setup.
-- **Export:** segments and dens CSV; a share picture (PNG, wide or square) in two kinds: **Progress** for the group chat during the walk (done in colour, needs coverage outlined, each den's count) and **Finished** for social media (every den in colour with its bag total). Save, or Share on a phone.
+- **Export:** a share picture first, then spreadsheets (an Excel .xlsx with Segments and Dens sheets, made in the page with no library, or the same as two CSVs), then backup; the share picture (PNG, wide or square) in two kinds: **Progress** for the group chat during the walk (done in colour, needs coverage outlined, each den's count) and **Finished** for social media (every den in colour with its bag total). Save, or Share on a phone.
 
 ## Decisions
 
