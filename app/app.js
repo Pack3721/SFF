@@ -2930,6 +2930,13 @@ function saveBoard() {
 const rec = (id) => board[id] || {};
 const segStatus = (id) => (rec(id).done ? "done" : rec(id).cov ? "cov" : "todo");
 const bagsOf = (id) => (rec(id).bags || 0) + (rec(id).bags2 || 0);
+// group names aren't case sensitive: "wolf b" is Wolf B. A name already on the board keeps its spelling.
+const groupKey = (n) => String(n || "").trim().replace(/\s+/g, " ").toLowerCase();
+function groupName(n) {
+  n = String(n || "").trim().replace(/\s+/g, " ");
+  for (const r of Object.values(board)) if (r.group && groupKey(r.group) === groupKey(n)) return r.group;
+  return n;
+}
 
 function enterDispatch() {
   loadBoard();
@@ -3008,7 +3015,7 @@ function conflictOf(c) {
   const r = rec(c.id);
   if (c.kind === "bags" && (r.bags || 0) > 0 && r.bags !== c.n) return `${c.id} already has ${r.bags} bags.`;
   if (c.kind === "done" && r.done) return `${c.id} is already done.`;
-  if (c.kind === "group" && r.group && r.group !== c.name) return `${c.id} is already with ${r.group}.`;
+  if (c.kind === "group" && r.group && groupKey(r.group) !== groupKey(c.name)) return `${c.id} is already with ${r.group}.`;
   return null;
 }
 function applyCmd(c, how) {               // how: "replace" | "add" for a conflict
@@ -3017,7 +3024,7 @@ function applyCmd(c, how) {               // how: "replace" | "add" for a confli
   else if (c.kind === "bags") { r.bags = how === "add" ? (r.bags || 0) + c.n : c.n; r.done = true; r.cov = false; r.at = now; }
   else if (c.kind === "more") { r.bags2 = (r.bags2 || 0) + c.n; r.at2 = now; }
   else if (c.kind === "cov") { r.cov = true; r.done = false; r.covAt = now; }
-  else if (c.kind === "group") { r.group = c.name; r.groupAt = now; }
+  else if (c.kind === "group") { r.group = groupName(c.name); r.groupAt = now; }
   else if (c.kind === "clear") { delete board[c.id]; return; }
   board[c.id] = r;
 }
@@ -3224,7 +3231,7 @@ function boardTab(body) {
       gi.addEventListener("change", () => {
         dispatch.undo = { [id]: board[id] ? { ...board[id] } : null };
         const nr = { ...rec(id) }; const v = gi.value.trim();
-        if (v) { nr.group = v; nr.groupAt = Date.now(); } else delete nr.group;
+        if (v) { nr.group = groupName(v); nr.groupAt = Date.now(); } else delete nr.group;
         board[id] = nr; dispatch.msg = [{ ok: v ? `${id} → ${v}` : `${id}: no group` }];
         saveBoard(); styleSegments(); renderDispatch();
       });
@@ -3245,7 +3252,7 @@ function groupsTab(body) {
   if (unassigned.length) h("p", "dp-alert", `Needs coverage, no group yet: ${unassigned.join(", ")}`, body);
   const covering = (id) => !!rec(id).covAt && (!rec(id).groupAt || rec(id).covAt <= rec(id).groupAt);
   const groups = {};
-  for (const s of DATA.segments) { const g = rec(s.id).group; if (g) (groups[g] ||= []).push(s.id); }
+  for (const s of DATA.segments) { const g = rec(s.id).group; if (g) (groups[groupName(g)] ||= []).push(s.id); }
   const names = Object.keys(groups);
   if (!names.length) h("p", "hint", "Groups show up here as you type their names on segments (W6 g Wolf B, or the Group column).", body);
   const homeOf = (ids) => {
@@ -3267,7 +3274,7 @@ function groupsTab(body) {
     const help = ids.filter((id) => !own.includes(id));
     // the den's segments, less those the den's other groups have finished
     const others = names.filter((m) => m !== n && home[m] === d.key);
-    const othersDone = d.segments.filter((id) => isDone(id) && others.includes(rec(id).group)).length;
+    const othersDone = d.segments.filter((id) => isDone(id) && others.some((m) => groupKey(m) === groupKey(rec(id).group))).length;
     const share = d.segments.length - othersDone;
     const exact = d.segments.every(isDone);
     const tr = h("tr", "", null, tb);
