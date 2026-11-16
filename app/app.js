@@ -2912,7 +2912,7 @@ function showGroupQr(i) {
 // ---------- dispatcher: the walk's board, on one computer ----------
 // Picked from the den drop-down, like Den leader. The whole pack's map, and a panel (beside the map on a
 // computer, below it on a phone) where the dispatcher records what the texts say: a quick box by segment code
-// (W6, W6 12, W6 +3, W6 c, W6 g Wolf B, W6 u), a grid to edit, a passive list of groups from the names typed
+// (W6, W6 12, W6 +3, W6 c, W6 #Wolf B, W6 u), a grid to edit, a passive list of groups from the names typed
 // in, and exports. Saved on this computer only (localStorage, per week), with a backup file.
 const DISPATCH = "DISPATCH";
 const BOARD_KEY = "sff.board";
@@ -2994,10 +2994,10 @@ function dispatchStyle() {
   if (bbox) { placedK = 0; commit(); }
 }
 
-// ---- quick entry: "W6", "W6 12", "W6 +3", "W6 c", "W6 g Wolf B", "W6 u"; several with commas ----
+// ---- quick entry: "W6", "W6 12", "W6 +3", "W6 c", "W6 12 #Wolf B", "W6 u"; several with commas ----
 function parseQuick(text) {
   // each part: a segment code, then any of: a bag count (12), more bags (+3), c (needs coverage), u (clear),
-  // and g <group name> last. "W6 12 g Wolf A" = done with 12 bags, group Wolf A.
+  // and #<group name> last. "W6 12 #Wolf A" = done with 12 bags, group Wolf A.
   const out = [];
   for (const part of text.split(/[,;\n]+/)) {
     if (!part.trim()) continue;
@@ -3007,7 +3007,7 @@ function parseQuick(text) {
     let rest = m[2].trim();
     if (!segById(id)) { out.push({ error: `There’s no segment ${id}.` }); continue; }
     const cmds = [];
-    const g = rest.match(/(?:^|\s)(?:g|group)\s+(\S.*)$/i);
+    const g = rest.match(/(?:^|\s)#\s*(\S.*)$/) || rest.match(/(?:^|\s)(?:g|group)\s+(\S.*)$/i);   // "#Wolf A" (or the older "g Wolf A")
     if (g) { cmds.push({ id, kind: "group", name: g[1].trim().slice(0, 24) }); rest = rest.slice(0, g.index).trim(); }
     let bad = null;
     for (const tok of rest ? rest.split(/\s+/) : []) {
@@ -3017,7 +3017,7 @@ function parseQuick(text) {
       else if (/^(u|undo|clear)$/i.test(tok)) cmds.unshift({ id, kind: "clear" });
       else { bad = tok; break; }
     }
-    if (bad) { out.push({ error: `Didn’t understand “${bad}” after ${id}. Try W6 12, W6 +3, W6 c or W6 g Wolf A.` }); continue; }
+    if (bad) { out.push({ error: `Didn’t understand “${bad}” after ${id}. Try W6 12, W6 +3, W6 c or W6 #Wolf A.` }); continue; }
     if (!cmds.some((c) => c.kind !== "group")) cmds.unshift({ id, kind: cmds.length ? "group-only" : "done" });
     out.push(...cmds.filter((c) => c.kind !== "group-only"));
   }
@@ -3129,14 +3129,14 @@ function totalsBar(parent) {
 function boardTab(body) {
   const qf = h("form", "dq", null, body);
   const q = h("input", "dq-input", null, qf);
-  Object.assign(q, { type: "text", autocomplete: "off", spellcheck: false, placeholder: week() === 2 ? "W6 12 g Wolf B   (or W6, W6 +3, W6 c, W6 u)" : "W6 g Wolf B   (or W6, W6 c, W6 u)" });
+  Object.assign(q, { type: "text", autocomplete: "off", spellcheck: false, placeholder: week() === 2 ? "W6 12 #Wolf B   (or W6, W6 +3, W6 c, W6 u)" : "W6 #Wolf B   (or W6, W6 c, W6 u)" });
   q.setAttribute("aria-label", "Quick entry by segment code");
   q.autocapitalize = "characters";
   // group names complete as you type "W6 g wo": a hint shows the match, Tab (or tapping it) fills it in; a new
   // name just keeps typing
   const hints = h("div", "dq-hints", null, body); hints.hidden = true;   // tappable matches, under the box
   const matches = () => {
-    const m = q.value.match(/(?:^|,)\s*[A-Za-z]+\s?\d+\s+g(?:roup)?\s+([^,]*)$/i);
+    const m = q.value.match(/(?:^|,)\s*[A-Za-z]+\s?\d+[^,#]*#\s*([^,]*)$/) || q.value.match(/(?:^|,)\s*[A-Za-z]+\s?\d+\s+(?:\S+\s+)*?g(?:roup)?\s+([^,]*)$/i);
     if (!m || !m[1].trim()) return null;
     const pre = groupKey(m[1]);
     const hits = knownGroups().filter((n) => groupKey(n).startsWith(pre) && groupKey(n) !== pre);
@@ -3168,8 +3168,8 @@ function boardTab(body) {
     else { const n = dispatchPanel.querySelector(".dq-input"); if (n) { n.value = q.value; n.focus(); } }
   });
   h("p", "dq-help", week() === 2
-    ? "W6 = done • W6 12 = done, 12 bags • W6 +3 = 3 more (second pass) • W6 c = needs coverage • add g Wolf B to any for the group (W6 12 g Wolf B) • W6 u = clear. Commas for several."
-    : "W6 = done • W6 c = needs coverage • add g Wolf B for the group (W6 g Wolf B) • W6 u = clear. Commas for several.", body);
+    ? "W6 = done • W6 12 = done, 12 bags • W6 +3 = 3 more (second pass) • W6 c = needs coverage • add #Wolf B to any for the group (W6 12 #Wolf B) • W6 u = clear. Commas for several."
+    : "W6 = done • W6 c = needs coverage • add #Wolf B for the group (W6 #Wolf B) • W6 u = clear. Commas for several.", body);
   // what the last entry did, and anything to decide
   if (dispatch.msg.length || dispatch.undo) {
     const box = h("div", "dq-msg", null, body);
@@ -3293,7 +3293,7 @@ function groupsTab(body) {
   const groups = {};
   for (const s of DATA.segments) { const g = rec(s.id).group; if (g) (groups[groupName(g)] ||= []).push(s.id); }
   const names = Object.keys(groups);
-  if (!names.length) h("p", "hint", "Groups show up here as you type their names on segments (W6 g Wolf B, or the Group column).", body);
+  if (!names.length) h("p", "hint", "Groups show up here as you type their names on segments (W6 #Wolf B, or the Group column).", body);
   const homeOf = (ids) => {
     const own = ids.filter((id) => !covering(id)), count = {};
     for (const id of own.length ? own : ids) count[segById(id).den] = (count[segById(id).den] || 0) + 1;
