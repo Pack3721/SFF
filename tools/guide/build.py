@@ -98,13 +98,19 @@ def inline(t):
     t = html.escape(t, quote=False)
     return re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", t)
 
-def page(g, other):
+CURRENT = ' aria-current="page"'
+GUIDES = [("week1.html", "Week 1 bags"), ("week2.html", "Week 2 pickup"), ("dispatcher.html", "Dispatcher")]
+
+def page(g, other):                     # other: this page's file name (its tab is highlighted)
     out = ['<!doctype html>', '<html lang="en">', '<head>', '<meta charset="utf-8">',
            '<meta name="viewport" content="width=device-width, initial-scale=1">',
            '<meta http-equiv="Content-Security-Policy" content="default-src \'self\'; img-src \'self\'; object-src \'none\'; base-uri \'none\'; form-action \'none\'">',
            '<meta name="referrer" content="no-referrer">',
            f'<title>{html.escape(g["title"])} – SFF 721 Map</title>', '<link rel="stylesheet" href="guide.css?v=dev">', '</head>', '<body>',
-           '<nav class="top"><a href="../">‹ Back to the map</a>' + f'<a href="{other[0]}">{html.escape(other[1])} ›</a></nav>',
+           '<nav class="top"><a href="../">‹ Back to the map</a></nav>',
+           '<nav class="guides">' + "".join(
+               f'<a href="{f}"{CURRENT if f == other else ""}>{html.escape(t)}</a>'
+               for f, t in GUIDES) + '</nav>',
            f'<h1>{html.escape(g["title"])}</h1>', f'<p class="lead">{inline(g["lead"])}</p>']
     parents = next((h for h, _, _ in g["sections"] if h and h.startswith("What parents")), None)
     if parents: out.append(f'<p class="jump"><a href="#parents">Jump to {html.escape(parents.lower())} \u2193</a></p>')
@@ -199,7 +205,7 @@ DISPATCH = {
 }
 
 if __name__ == "__main__":
-    open(os.path.join(APP, "guide", "week1.html"), "w").write(page(WEEK1, ("week2.html", "Week 2 guide")))
-    open(os.path.join(APP, "guide", "week2.html"), "w").write(page(WEEK2, ("week1.html", "Week 1 guide")))
-    open(os.path.join(APP, "guide", "dispatcher.html"), "w").write(page(DISPATCH, ("week2.html", "Den leader guide")))
+    open(os.path.join(APP, "guide", "week1.html"), "w").write(page(WEEK1, "week1.html"))
+    open(os.path.join(APP, "guide", "week2.html"), "w").write(page(WEEK2, "week2.html"))
+    open(os.path.join(APP, "guide", "dispatcher.html"), "w").write(page(DISPATCH, "dispatcher.html"))
     print("built")
