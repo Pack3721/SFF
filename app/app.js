@@ -3371,7 +3371,7 @@ function shareCanvas(mode, W, H) {
   g.font = font(44); g.fillText(done ? `Pack 721 Scouting for Food • ${day}` : `Pack 721 Scouting for Food • progress at ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`, 40 * u, 34 * u);
   g.font = font(64, 800); g.fillStyle = "#1e7e34";
   g.fillText(done ? (wk2 ? `${t.bags.toLocaleString()} bags of food collected` : `${t.housesDone.toLocaleString()} houses got bags`)
-                  : `${t.housesDone.toLocaleString()} of ${t.houses.toLocaleString()} houses done` + (wk2 && t.bags ? ` • ${t.bags.toLocaleString()} bags` : ""), 40 * u, 90 * u);
+                  : `${Math.round(100 * t.housesDone / t.houses)}% of houses done` + (wk2 && t.bags ? ` • ${t.bags.toLocaleString()} bags` : ""), 40 * u, 90 * u);
   // the map: fit every house into the space under the title
   const top = 190 * u, foot = 60 * u, pad = 30 * u;
   const pts = DATA.houses.map((hh) => P(hh.lonlat));
@@ -3400,7 +3400,7 @@ function shareCanvas(mode, W, H) {
     const hp = DATA.houses.filter((hh) => d.segments.includes(hh.seg)).map((hh) => X(P(hh.lonlat)));
     const cx = hp.reduce((a, p) => a + p[0], 0) / hp.length, cy = hp.reduce((a, p) => a + p[1], 0) / hp.length;
     const hd = d.segments.filter((id) => segStatus(id) === "done").reduce((a, id) => a + segById(id).houses, 0), bags = d.segments.reduce((a, id) => a + bagsOf(id), 0);
-    const sub = done ? (wk2 ? `${bags.toLocaleString()} bags` : `${d.houses} houses`) : `${hd} of ${d.houses} houses` + (wk2 && bags ? ` \u2022 ${bags} bags` : "");
+    const sub = done ? (wk2 ? `${bags.toLocaleString()} bags` : `${d.houses} houses`) : `${Math.round(100 * hd / d.houses)}%` + (wk2 && bags ? ` \u2022 ${bags} bags` : "");
     // one line on a white pill: the den's name in its colour, then its numbers
     g.font = font(30, 800); const wName = g.measureText(d.short + " ").width;
     g.font = font(26, 700); const wSub = g.measureText(sub).width;
