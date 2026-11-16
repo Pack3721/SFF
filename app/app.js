@@ -3389,7 +3389,7 @@ function shareCanvas(mode, W, H) {
   // title
   const day = new Date(WEEK_DAYS[week()] + "T12:00").toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
   g.textBaseline = "alphabetic"; g.textAlign = "left";
-  g.fillStyle = "#7fb2ff"; g.font = font(24, 800);
+  g.fillStyle = "#7fb2ff"; g.font = font(28, 800);
   g.fillText((done ? `SCOUTING FOR FOOD • ${day}` : `SCOUTING FOR FOOD • LIVE • ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`).toUpperCase(), 40 * u, 62 * u);
   g.fillStyle = "#fff"; g.font = font(58, 800);
   g.fillText(done ? (wk2 ? `${t.bags.toLocaleString()} bags of food collected` : `${t.housesDone.toLocaleString()} houses reached`) : `Pack 721 is ${pct}% done`, 40 * u, 122 * u);
@@ -3426,15 +3426,15 @@ function shareCanvas(mode, W, H) {
     const [fx, fy] = X(P(fire.lonlat));
     g.shadowColor = "#ff6b3d"; g.shadowBlur = 20 * u; g.fillStyle = "#ff6b3d";
     g.beginPath(); g.arc(fx, fy, 7 * u, 0, Math.PI * 2); g.fill(); g.shadowBlur = 0;
-    g.fillStyle = "#ffb199"; g.font = font(16, 700); g.textAlign = "left"; g.fillText("Fire Station 5", fx + 12 * u, fy + 5 * u);
+    g.fillStyle = "#ffb199"; g.font = font(22, 700); g.textAlign = "left"; g.fillText("Fire Station 5", fx + 12 * u, fy + 5 * u);
   }
   g.restore();
   // stats: big tiles, then a bar per den
   const tile = (x, y, w, big, small, col) => {
     g.fillStyle = "rgba(255,255,255,.05)"; g.strokeStyle = "rgba(127,178,255,.25)"; g.lineWidth = 1.5 * u;
-    g.beginPath(); g.roundRect(x, y, w, 96 * u, 14 * u); g.fill(); g.stroke();
-    g.textAlign = "left"; g.fillStyle = col || "#fff"; g.font = font(42, 800); g.fillText(big, x + 18 * u, y + 52 * u);
-    g.fillStyle = "#8fa6c8"; g.font = font(17, 700); g.fillText(small.toUpperCase(), x + 18 * u, y + 80 * u);
+    g.beginPath(); g.roundRect(x, y, w, 100 * u, 14 * u); g.fill(); g.stroke();
+    g.textAlign = "left"; g.fillStyle = col || "#fff"; g.font = font(46, 800); g.fillText(big, x + 18 * u, y + 54 * u);
+    g.fillStyle = "#a9bcda"; g.font = font(21, 700); g.fillText(small.toUpperCase(), x + 18 * u, y + 84 * u);
   };
   const tiles = wk2 ? [[t.bags.toLocaleString(), "bags of food", "#6ef2b4"], [`${pct}%`, "houses done", "#7fb2ff"]]
                     : [[t.housesDone.toLocaleString(), "houses reached", "#6ef2b4"], [`${pct}%`, "of the area", "#7fb2ff"]];
@@ -3443,16 +3443,16 @@ function shareCanvas(mode, W, H) {
   // per den: name, a glowing bar of houses done, and its number
   // wide: one column of bars; square: two columns of three
   const cols = wide ? 1 : 2, perCol = Math.ceil(DATA.dens.length / cols), colW = (side.w - (cols - 1) * 30 * u) / cols;
-  const rowsY = side.y + 126 * u, rowH = Math.min(78 * u, (H - rowsY - 60 * u) / perCol);
+  const rowsY = side.y + 132 * u, rowH = Math.min(92 * u, (H - rowsY - 64 * u) / perCol);
   DATA.dens.forEach((d, i) => {
     const y = rowsY + (i % perCol) * rowH, sx = side.x + Math.floor(i / perCol) * (colW + 30 * u);
     const side_ = { x: sx, w: colW };
     const hd = d.segments.filter((id) => segStatus(id) === "done").reduce((a, id) => a + segById(id).houses, 0);
     const frac = done ? 1 : hd / d.houses, bags = d.segments.reduce((a, id) => a + bagsOf(id), 0);
     const label = wk2 ? `${bags.toLocaleString()} bags` : done ? `${d.houses} houses` : `${Math.round(100 * frac)}%`;
-    g.textAlign = "left"; g.fillStyle = d.color; g.font = font(22, 800); g.fillText(d.short, side_.x, y + 22 * u);
-    g.textAlign = "right"; g.fillStyle = "#dfe8f7"; g.font = font(20, 700); g.fillText(label, side_.x + side_.w, y + 22 * u);
-    const by = y + 32 * u, bh = 10 * u;
+    g.textAlign = "left"; g.fillStyle = d.color; g.font = font(30, 800); g.fillText(d.short, side_.x, y + 30 * u);
+    g.textAlign = "right"; g.fillStyle = "#eef3fb"; g.font = font(28, 800); g.fillText(label, side_.x + side_.w, y + 30 * u);
+    const by = y + 42 * u, bh = 12 * u;
     g.fillStyle = "rgba(255,255,255,.08)"; g.beginPath(); g.roundRect(side_.x, by, side_.w, bh, bh / 2); g.fill();
     if (frac > 0) {
       g.shadowColor = d.color; g.shadowBlur = 14 * u; g.fillStyle = d.color;
@@ -3460,7 +3460,7 @@ function shareCanvas(mode, W, H) {
     }
   });
   // footer
-  g.textAlign = "left"; g.fillStyle = "#5f7699"; g.font = font(18, 600);
+  g.textAlign = "left"; g.fillStyle = "#8ea4c6"; g.font = font(22, 600);
   g.fillText("Pack 721 • Thank you to every scout, family and neighbor!", 40 * u, H - 24 * u);
   if (!done && t.cov) { g.textAlign = "right"; g.fillStyle = "#ff7d93"; g.fillText(`${t.cov} segment${t.cov === 1 ? "" : "s"} need coverage`, W - 40 * u, H - 24 * u); }
   return c;
