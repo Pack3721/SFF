@@ -3030,7 +3030,7 @@ function applyCmd(c, how) {               // how: "replace" | "add" for a confli
 }
 const describe = (c) => ({
   done: `${c.id} done`, bags: `${c.id} done, ${c.n} bag${c.n === 1 ? "" : "s"}`, more: `${c.id} +${c.n} second pass`,
-  cov: `${c.id} needs coverage`, group: `${c.id} → ${c.name}`, clear: `${c.id} cleared` }[c.kind]);
+  cov: `${c.id} needs coverage`, group: `${c.id} → ${rec(c.id).group || c.name}`, clear: `${c.id} cleared` }[c.kind]);
 // A text from the app pasted in ("Wk2: Wolf A – W6 done, 12 bags") works too, as a quiet convenience:
 // it becomes the same quick entries (done, bags, group, coverage, second pass). Other texts just get a note.
 function textToQuick(line) {
