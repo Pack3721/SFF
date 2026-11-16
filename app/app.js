@@ -3007,7 +3007,7 @@ function parseQuick(text) {
     let rest = m[2].trim();
     if (!segById(id)) { out.push({ error: `There’s no segment ${id}.` }); continue; }
     const cmds = [];
-    const g = rest.match(/(?:^|\s)#\s*(\S.*)$/) || rest.match(/(?:^|\s)(?:g|group)\s+(\S.*)$/i);   // "#Wolf A" (or the older "g Wolf A")
+    const g = rest.match(/(?:^|\s)#\s*(\S.*)$/);   // "#Wolf A"
     if (g) { cmds.push({ id, kind: "group", name: g[1].trim().slice(0, 24) }); rest = rest.slice(0, g.index).trim(); }
     let bad = null;
     for (const tok of rest ? rest.split(/\s+/) : []) {
@@ -3053,8 +3053,8 @@ function textToQuick(line) {
   const note = (t) => ({ quick: "", notes: [t] });
   if (wk !== week()) return note(`That text is from Week ${wk}; this board is Week ${week()}.`);
   let r;
-  if ((r = rest.match(/^([A-Za-z]+\d+) done(?:,\s*(\d+) bags?)?$/i))) return { quick: `${r[1]}${r[2] ? " " + r[2] : ""}, ${r[1]} g ${group}`, notes: [] };
-  if ((r = rest.match(/^([A-Za-z]+\d+) second pass,\s*(\d+) more bags?$/i))) return { quick: `${r[1]} +${r[2]}, ${r[1]} g ${group}`, notes: [] };
+  if ((r = rest.match(/^([A-Za-z]+\d+) done(?:,\s*(\d+) bags?)?$/i))) return { quick: `${r[1]}${r[2] ? " " + r[2] : ""} #${group}`, notes: [] };
+  if ((r = rest.match(/^([A-Za-z]+\d+) second pass,\s*(\d+) more bags?$/i))) return { quick: `${r[1]} +${r[2]} #${group}`, notes: [] };
   if ((r = rest.match(/^((?:[A-Za-z]+\d+)(?:\s*,\s*[A-Za-z]+\d+)*) needs? coverage$/i))) return { quick: r[1].split(/\s*,\s*/).map((id) => `${id} c`).join(", "), notes: [] };
   if (/^send bags to/i.test(rest)) return note(`${group} needs bags (${rest.replace(/^send bags to\s*/i, "")}).`);
   if (/^available/i.test(rest) || /^heading to/i.test(rest)) return note(`${group} is ${rest}.`);
@@ -3136,7 +3136,7 @@ function boardTab(body) {
   // name just keeps typing
   const hints = h("div", "dq-hints", null, body); hints.hidden = true;   // tappable matches, under the box
   const matches = () => {
-    const m = q.value.match(/(?:^|,)\s*[A-Za-z]+\s?\d+[^,#]*#\s*([^,]*)$/) || q.value.match(/(?:^|,)\s*[A-Za-z]+\s?\d+\s+(?:\S+\s+)*?g(?:roup)?\s+([^,]*)$/i);
+    const m = q.value.match(/(?:^|,)\s*[A-Za-z]+\s?\d+[^,#]*#\s*([^,]*)$/);
     if (!m || !m[1].trim()) return null;
     const pre = groupKey(m[1]);
     const hits = knownGroups().filter((n) => groupKey(n).startsWith(pre) && groupKey(n) !== pre);
