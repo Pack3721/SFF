@@ -3129,7 +3129,7 @@ function totalsBar(parent) {
 function boardTab(body) {
   const qf = h("form", "dq", null, body);
   const q = h("input", "dq-input", null, qf);
-  Object.assign(q, { type: "text", autocomplete: "off", spellcheck: false, placeholder: week() === 2 ? "W6 12 #Wolf B   (or W6, W6 +3, W6!, W6 u)" : "W6 #Wolf B   (or W6, W6!, W6 u)" });
+  Object.assign(q, { type: "text", autocomplete: "off", spellcheck: false, placeholder: week() === 2 ? "W6 12 #Wolf B" : "W6 #Wolf B" });
   q.setAttribute("aria-label", "Quick entry by segment code");
   q.autocapitalize = "characters";
   // group names complete as you type "W6 g wo": a hint shows the match, Tab (or tapping it) fills it in; a new
