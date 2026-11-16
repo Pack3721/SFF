@@ -3024,7 +3024,26 @@ function applyCmd(c, how) {               // how: "replace" | "add" for a confli
 const describe = (c) => ({
   done: `${c.id} done`, bags: `${c.id} done, ${c.n} bag${c.n === 1 ? "" : "s"}`, more: `${c.id} +${c.n} second pass`,
   cov: `${c.id} needs coverage`, group: `${c.id} → ${c.name}`, clear: `${c.id} cleared` }[c.kind]);
+// A text from the app pasted in ("Wk2: Wolf A – W6 done, 12 bags") works too, as a quiet convenience:
+// it becomes the same quick entries (done, bags, group, coverage, second pass). Other texts just get a note.
+function textToQuick(line) {
+  const m = line.trim().match(/^Wk\s*([12])\s*:\s*(.+?)\s+[–—-]\s+(.+)$/i) || line.trim().match(/^Wk\s*([12])\s*:\s*(.+?)\s+(available.*|heading to .*)$/i);
+  if (!m) return null;
+  const wk = Number(m[1]), group = m[2].trim().slice(0, 24), rest = m[3].trim();
+  const note = (t) => ({ quick: "", notes: [t] });
+  if (wk !== week()) return note(`That text is from Week ${wk}; this board is Week ${week()}.`);
+  let r;
+  if ((r = rest.match(/^([A-Za-z]+\d+) done(?:,\s*(\d+) bags?)?$/i))) return { quick: `${r[1]}${r[2] ? " " + r[2] : ""}, ${r[1]} g ${group}`, notes: [] };
+  if ((r = rest.match(/^([A-Za-z]+\d+) second pass,\s*(\d+) more bags?$/i))) return { quick: `${r[1]} +${r[2]}, ${r[1]} g ${group}`, notes: [] };
+  if ((r = rest.match(/^((?:[A-Za-z]+\d+)(?:\s*,\s*[A-Za-z]+\d+)*) needs? coverage$/i))) return { quick: r[1].split(/\s*,\s*/).map((id) => `${id} c`).join(", "), notes: [] };
+  if (/^send bags to/i.test(rest)) return note(`${group} needs bags (${rest.replace(/^send bags to\s*/i, "")}).`);
+  if (/^available/i.test(rest) || /^heading to/i.test(rest)) return note(`${group} is ${rest}.`);
+  return note(`Couldn’t read that text: “${line.trim()}”.`);
+}
 function runQuick(text) {
+  const notes = [];
+  text = text.split(/\n+/).map((l) => { const t = textToQuick(l); if (!t) return l; notes.push(...t.notes); return t.quick; })
+    .filter((l) => l.trim()).join(", ");
   const cmds = parseQuick(text);
   const before = {};                       // for one-step undo
   const done = [], asks = [], errors = [];
@@ -3036,7 +3055,7 @@ function runQuick(text) {
     applyCmd(c); done.push(describe(c));
   }
   if (done.length) dispatch.undo = before;
-  dispatch.msg = [...done.map((t) => ({ ok: t })), ...errors.map((t) => ({ err: t })), ...asks.map((a) => ({ ask: a }))];
+  dispatch.msg = [...notes.map((t) => ({ note: t })), ...done.map((t) => ({ ok: t })), ...errors.map((t) => ({ err: t })), ...asks.map((a) => ({ ask: a }))];
   if (cmds.length && !errors.length && !asks.length) dispatch.sel = cmds[cmds.length - 1].id;
   saveBoard(); styleSegments(); renderDispatch();
   return !errors.length && !asks.length;
@@ -3093,6 +3112,12 @@ function boardTab(body) {
   Object.assign(q, { type: "text", autocomplete: "off", spellcheck: false, placeholder: week() === 2 ? "W6 12   (W6 +3, W6 c, W6 g Wolf B, W6 u)" : "W6   (W6 c, W6 g Wolf B, W6 u)" });
   q.setAttribute("aria-label", "Quick entry by segment code");
   q.autocapitalize = "characters";
+  q.addEventListener("paste", (e) => {   // several pasted texts: keep each on its own line
+    const t = (e.clipboardData || window.clipboardData).getData("text");
+    if (!/\n/.test(t)) return;
+    e.preventDefault();
+    runQuick(t);
+  });
   const go = h("button", "share-btn", "Enter", qf); go.type = "submit";
   qf.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -3107,7 +3132,8 @@ function boardTab(body) {
   if (dispatch.msg.length || dispatch.undo) {
     const box = h("div", "dq-msg", null, body);
     for (const m of dispatch.msg) {
-      if (m.ok) h("p", "ok", "✔︎ " + m.ok, box);
+      if (m.note) h("p", "note", m.note, box);
+      else if (m.ok) h("p", "ok", "✔︎ " + m.ok, box);
       else if (m.err) h("p", "err", m.err, box);
       else {
         const { c, clash } = m.ask;

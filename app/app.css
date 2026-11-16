@@ -587,3 +587,4 @@ body.dispatch #banner, body.dispatch #setup-status, body.dispatch #tools, body.d
 .dp-groups tr.unlabeled td:first-child { color: #666; font-style: italic; }
 .dp-groups .dp-note { font-size: 11px; color: #b00020; font-style: normal; }
 .dp-groups td.num { white-space: nowrap; }
+.dq-msg .note { color: #1a5fb4; font-weight: 600; }
