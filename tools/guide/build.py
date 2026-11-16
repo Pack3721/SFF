@@ -145,7 +145,7 @@ DISPATCH = {
             "- **W6 +2** \u2013 2 more bags on a second pass",
             "- **W6!** \u2013 needs coverage",
             "- **#Wolf B** after any of them \u2013 the group: **W6 5 #Wolf B**. Start typing a name and the ones already used pop up; Tab picks the first.",
-            "- **W6 u** \u2013 clear it; **commas** for several at once: **W10 5, W11!, W12**"],
+            "- **W6--** \u2013 clear it; **commas** for several at once: **W10 5, W11!, W12**"],
             []),
         (None, [
             "Copied a text from the app? Paste it in; it\u2019s read the same way.",

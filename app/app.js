@@ -2914,7 +2914,7 @@ function showGroupQr(i) {
 // ---------- dispatcher: the walk's board, on one computer ----------
 // Picked from the den drop-down, like Den leader. The whole pack's map, and a panel (beside the map on a
 // computer, below it on a phone) where the dispatcher records what the texts say: a quick box by segment code
-// (W6, W6 5, W6 +3, W6!, W6 #Wolf B, W6 u), a grid to edit, a passive list of groups from the names typed
+// (W6, W6 5, W6 +3, W6!, W6 #Wolf B, W6--), a grid to edit, a passive list of groups from the names typed
 // in, and exports. Saved on this computer only (localStorage, per week), with a backup file.
 const DISPATCH = "DISPATCH";
 const BOARD_KEY = "sff.board";
@@ -3040,9 +3040,9 @@ function dispatchStyle() {
   if (bbox) { placedK = 0; commit(); }
 }
 
-// ---- quick entry: "W6", "W6 5", "W6 +3", "W6!", "W6 5 #Wolf B", "W6 u"; several with commas ----
+// ---- quick entry: "W6", "W6 5", "W6 +3", "W6!", "W6 5 #Wolf B", "W6--"; several with commas ----
 function parseQuick(text) {
-  // each part: a segment code, then any of: a bag count (12), more bags (+3), ! (needs coverage), u (clear),
+  // each part: a segment code, then any of: a bag count (12), more bags (+3), ! (needs coverage), -- (clear),
   // and #<group name> last. "W6 5 #Wolf A" = done with 5 bags, group Wolf A.
   const out = [];
   for (const part of text.split(/[,;\n]+/)) {
@@ -3060,7 +3060,7 @@ function parseQuick(text) {
       if (/^\d+$/.test(tok)) cmds.unshift({ id, kind: "bags", n: Number(tok) });
       else if (/^\+\d+$/.test(tok)) cmds.unshift({ id, kind: "more", n: Number(tok.slice(1)) });
       else if (tok === "!") cmds.unshift({ id, kind: "cov" });   // W9! = needs coverage
-      else if (/^(u|undo|clear)$/i.test(tok)) cmds.unshift({ id, kind: "clear" });
+      else if (tok === "--") cmds.unshift({ id, kind: "clear" });   // W6-- = clear it
       else { bad = tok; break; }
     }
     if (bad) { out.push({ error: `Didn’t understand “${bad}” after ${id}. Try W6 5, W6 +3, W6! or W6 #Wolf A.` }); continue; }
@@ -3216,8 +3216,8 @@ function boardTab(body) {
   // the codes in a typewriter font, each with what it means
   const help = h("div", "dq-help", null, body);
   const items = week() === 2
-    ? [["W6", "done"], ["W6 5", "done, 5 bags"], ["W6 +2", "2 more (second pass)"], ["W6!", "needs coverage"], ["#Wolf B", "group, after any of them"], ["W6 u", "clear"], [",", "several at once"]]
-    : [["W6", "done"], ["W6!", "needs coverage"], ["#Wolf B", "group, after either"], ["W6 u", "clear"], [",", "several at once"]];
+    ? [["W6", "done"], ["W6 5", "done, 5 bags"], ["W6 +2", "2 more (second pass)"], ["W6!", "needs coverage"], ["#Wolf B", "group, after any of them"], ["W6--", "clear"], [",", "several at once"]]
+    : [["W6", "done"], ["W6!", "needs coverage"], ["#Wolf B", "group, after either"], ["W6--", "clear"], [",", "several at once"]];
   for (const [code, what] of items) { const it = h("span", "", null, help); h("code", "", code, it); it.append(" " + what); }
   // what the last entry did, and anything to decide
   if (dispatch.msg.length || dispatch.undo) {
