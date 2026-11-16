@@ -3364,63 +3364,105 @@ function densCsv() {
   rows.push([week(), "Total", t.segs, t.done, t.houses, t.housesDone, t.bags, t.cov]);
   return csvRows(rows);
 }
-// ---- the share picture, drawn on a canvas ----
+// ---- the share picture, drawn on a canvas: a dark "mission control" look ----
+// Glowing segments in den colours over a faint street grid, a title, big totals, and a bar per den.
+// Progress (for the group chat) dims what's left and pulses coverage red; Finished (for social media) lights
+// every den up with its total.
 function shareCanvas(mode, W, H) {
   const c = document.createElement("canvas"); c.width = W; c.height = H;
   const g = c.getContext("2d");
-  const u = Math.min(W, H) / 1080;                       // 1 at 1080 px
+  const u = Math.min(W, H) / 1080;
   const font = (px, weight) => `${weight || 700} ${Math.round(px * u)}px -apple-system, "Helvetica Neue", Arial, sans-serif`;
-  g.fillStyle = "#fff"; g.fillRect(0, 0, W, H);
   const t = totals(), wk2 = week() === 2, done = mode === "done";
+  const pct = Math.round(100 * t.housesDone / t.houses);
+  // background: deep navy, a soft glow in the middle, a fine grid
+  const bg = g.createRadialGradient(W * 0.4, H * 0.55, 0, W * 0.4, H * 0.55, Math.max(W, H) * 0.8);
+  bg.addColorStop(0, "#14213d"); bg.addColorStop(1, "#070b16");
+  g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  g.strokeStyle = "rgba(120,170,255,.06)"; g.lineWidth = 1;
+  for (let x = 0; x < W; x += 40 * u) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke(); }
+  for (let y = 0; y < H; y += 40 * u) { g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); }
+  // layout: wide = map left, stats right; square = map top, stats below
+  const wide = W / H > 1.2;
+  const map = wide ? { x: 30 * u, y: 150 * u, w: W * 0.6, h: H - 190 * u } : { x: 30 * u, y: 150 * u, w: W - 60 * u, h: H * 0.48 };
+  const side = wide ? { x: map.x + map.w + 30 * u, y: 150 * u, w: W - map.w - 90 * u } : { x: 40 * u, y: map.y + map.h + 20 * u, w: W - 80 * u };
   // title
   const day = new Date(WEEK_DAYS[week()] + "T12:00").toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
-  g.fillStyle = "#111"; g.textBaseline = "top";
-  g.font = font(44); g.fillText(done ? `Pack 721 Scouting for Food • ${day}` : `Pack 721 Scouting for Food • progress at ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`, 40 * u, 34 * u);
-  g.font = font(64, 800); g.fillStyle = "#1e7e34";
-  g.fillText(done ? (wk2 ? `${t.bags.toLocaleString()} bags of food collected` : `${t.housesDone.toLocaleString()} houses got bags`)
-                  : `${Math.round(100 * t.housesDone / t.houses)}% of houses done` + (wk2 && t.bags ? ` • ${t.bags.toLocaleString()} bags` : ""), 40 * u, 90 * u);
-  // the map: fit every house into the space under the title
-  const top = 190 * u, foot = 60 * u, pad = 30 * u;
+  g.textBaseline = "alphabetic"; g.textAlign = "left";
+  g.fillStyle = "#7fb2ff"; g.font = font(24, 800);
+  g.fillText((done ? `SCOUTING FOR FOOD • ${day}` : `SCOUTING FOR FOOD • LIVE • ${new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`).toUpperCase(), 40 * u, 62 * u);
+  g.fillStyle = "#fff"; g.font = font(58, 800);
+  g.fillText(done ? (wk2 ? `${t.bags.toLocaleString()} bags of food collected` : `${t.housesDone.toLocaleString()} houses reached`) : `Pack 721 is ${pct}% done`, 40 * u, 122 * u);
+  // the map
   const pts = DATA.houses.map((hh) => P(hh.lonlat));
   const bx = [Math.min(...pts.map((p) => p[0])), Math.min(...pts.map((p) => p[1])), Math.max(...pts.map((p) => p[0])), Math.max(...pts.map((p) => p[1]))];
-  const sc = Math.min((W - 2 * pad) / (bx[2] - bx[0]), (H - top - foot - 2 * pad) / (bx[3] - bx[1]));
-  const ox = (W - (bx[2] - bx[0]) * sc) / 2 - bx[0] * sc, oy = top + pad + (H - top - foot - 2 * pad - (bx[3] - bx[1]) * sc) / 2 - bx[1] * sc;
+  const sc = Math.min(map.w / (bx[2] - bx[0]), map.h / (bx[3] - bx[1]));
+  const ox = map.x + (map.w - (bx[2] - bx[0]) * sc) / 2 - bx[0] * sc, oy = map.y + (map.h - (bx[3] - bx[1]) * sc) / 2 - bx[1] * sc;
   const X = (p) => [ox + p[0] * sc, oy + p[1] * sc];
-  const line = (pts2, colour, width) => {
-    g.beginPath(); pts2.forEach((p, i) => { const [x, y] = X(p); if (i) g.lineTo(x, y); else g.moveTo(x, y); });
-    g.strokeStyle = colour; g.lineWidth = width; g.lineCap = "round"; g.lineJoin = "round"; g.stroke();
-  };
-  for (const st of DATA.streets) line(st.line.map(P), "#e4e4e4", 3 * u);
-  for (const a of DATA.arterials) line(a.line.map(P), "#eadcb4", 7 * u);
+  const path = (ptsL) => { g.beginPath(); ptsL.forEach((p, i) => { const [x, y] = X(p); if (i) g.lineTo(x, y); else g.moveTo(x, y); }); };
+  g.lineCap = "round"; g.lineJoin = "round";
+  g.save(); g.beginPath(); g.rect(map.x - 20 * u, map.y - 20 * u, map.w + 40 * u, map.h + 40 * u); g.clip();
+  g.strokeStyle = "rgba(140,170,220,.16)"; g.lineWidth = 2 * u;
+  for (const st of DATA.streets) { path(st.line.map(P)); g.stroke(); }
+  g.strokeStyle = "rgba(140,170,220,.3)"; g.lineWidth = 4 * u;
+  for (const a of DATA.arterials) { path(a.line.map(P)); g.stroke(); }
   const den = Object.fromEntries(DATA.dens.map((d) => [d.key, d]));
-  const order = DATA.segments.slice().sort((a, b) => (segStatus(a.id) === "done") - (segStatus(b.id) === "done"));   // done on top
-  for (const s of order) {
+  // left to do: dim; done: the den's colour with a glow; coverage (progress only): red glow
+  for (const pass of ["todo", "cov", "on"]) for (const s of DATA.segments) {
     const st = segStatus(s.id), on = done || st === "done";
+    const kind = on ? "on" : st === "cov" ? "cov" : "todo";
+    if (kind !== pass) continue;
+    const col = kind === "on" ? den[s.den].color : kind === "cov" ? "#ff3b5c" : "rgba(160,180,210,.35)";
     for (const r of [s.route, ...s.route_parts]) {
-      if (!done && st === "cov") line(r.map(P), "#d0021b", 15 * u);
-      line(r.map(P), on ? den[s.den].color : "#c9c9c9", 9 * u);
+      path(r.map(P));
+      if (kind !== "todo") { g.shadowColor = col; g.shadowBlur = 18 * u; g.strokeStyle = col; g.lineWidth = 8 * u; g.stroke(); }
+      g.shadowBlur = 0; g.strokeStyle = kind === "todo" ? col : col; g.lineWidth = (kind === "todo" ? 5 : 6) * u; g.stroke();
+      if (kind === "on") { g.strokeStyle = "rgba(255,255,255,.55)"; g.lineWidth = 1.6 * u; g.stroke(); }   // a bright core
     }
   }
-  // each den's name and its numbers, over the middle of its houses
-  g.textAlign = "center"; g.textBaseline = "middle"; g.lineJoin = "round";
-  for (const d of DATA.dens) {
-    const hp = DATA.houses.filter((hh) => d.segments.includes(hh.seg)).map((hh) => X(P(hh.lonlat)));
-    const cx = hp.reduce((a, p) => a + p[0], 0) / hp.length, cy = hp.reduce((a, p) => a + p[1], 0) / hp.length;
-    const hd = d.segments.filter((id) => segStatus(id) === "done").reduce((a, id) => a + segById(id).houses, 0), bags = d.segments.reduce((a, id) => a + bagsOf(id), 0);
-    const sub = done ? (wk2 ? `${bags.toLocaleString()} bags` : `${d.houses} houses`) : `${Math.round(100 * hd / d.houses)}%` + (wk2 && bags ? ` \u2022 ${bags} bags` : "");
-    // one line on a white pill: the den's name in its colour, then its numbers
-    g.font = font(30, 800); const wName = g.measureText(d.short + " ").width;
-    g.font = font(26, 700); const wSub = g.measureText(sub).width;
-    const pw = wName + wSub + 28 * u, ph = 46 * u, px = cx - pw / 2, py = cy - ph / 2;
-    g.fillStyle = "rgba(255,255,255,.92)"; g.strokeStyle = d.color; g.lineWidth = 3 * u;
-    g.beginPath(); g.roundRect ? g.roundRect(px, py, pw, ph, ph / 2) : g.rect(px, py, pw, ph); g.fill(); g.stroke();
-    g.textAlign = "left";
-    g.font = font(30, 800); g.fillStyle = d.color; g.fillText(d.short + " ", px + 14 * u, cy);
-    g.font = font(26, 700); g.fillStyle = "#111"; g.fillText(sub, px + 14 * u + wName, cy);
+  // Fire Station 5 in Week 2: a small beacon
+  const fire = DATA.landmarks.find((lm) => lm.icon === "fire");
+  if (wk2 && fire) {
+    const [fx, fy] = X(P(fire.lonlat));
+    g.shadowColor = "#ff6b3d"; g.shadowBlur = 20 * u; g.fillStyle = "#ff6b3d";
+    g.beginPath(); g.arc(fx, fy, 7 * u, 0, Math.PI * 2); g.fill(); g.shadowBlur = 0;
+    g.fillStyle = "#ffb199"; g.font = font(16, 700); g.textAlign = "left"; g.fillText("Fire Station 5", fx + 12 * u, fy + 5 * u);
   }
+  g.restore();
+  // stats: big tiles, then a bar per den
+  const tile = (x, y, w, big, small, col) => {
+    g.fillStyle = "rgba(255,255,255,.05)"; g.strokeStyle = "rgba(127,178,255,.25)"; g.lineWidth = 1.5 * u;
+    g.beginPath(); g.roundRect(x, y, w, 96 * u, 14 * u); g.fill(); g.stroke();
+    g.textAlign = "left"; g.fillStyle = col || "#fff"; g.font = font(42, 800); g.fillText(big, x + 18 * u, y + 52 * u);
+    g.fillStyle = "#8fa6c8"; g.font = font(17, 700); g.fillText(small.toUpperCase(), x + 18 * u, y + 80 * u);
+  };
+  const tiles = wk2 ? [[t.bags.toLocaleString(), "bags of food", "#6ef2b4"], [`${pct}%`, "houses done", "#7fb2ff"]]
+                    : [[t.housesDone.toLocaleString(), "houses reached", "#6ef2b4"], [`${pct}%`, "of the area", "#7fb2ff"]];
+  const tw = (side.w - 16 * u) / 2;
+  tiles.forEach(([big, small, col], i) => tile(side.x + i * (tw + 16 * u), side.y, tw, big, small, col));
+  // per den: name, a glowing bar of houses done, and its number
+  // wide: one column of bars; square: two columns of three
+  const cols = wide ? 1 : 2, perCol = Math.ceil(DATA.dens.length / cols), colW = (side.w - (cols - 1) * 30 * u) / cols;
+  const rowsY = side.y + 126 * u, rowH = Math.min(78 * u, (H - rowsY - 60 * u) / perCol);
+  DATA.dens.forEach((d, i) => {
+    const y = rowsY + (i % perCol) * rowH, sx = side.x + Math.floor(i / perCol) * (colW + 30 * u);
+    const side_ = { x: sx, w: colW };
+    const hd = d.segments.filter((id) => segStatus(id) === "done").reduce((a, id) => a + segById(id).houses, 0);
+    const frac = done ? 1 : hd / d.houses, bags = d.segments.reduce((a, id) => a + bagsOf(id), 0);
+    const label = wk2 ? `${bags.toLocaleString()} bags` : done ? `${d.houses} houses` : `${Math.round(100 * frac)}%`;
+    g.textAlign = "left"; g.fillStyle = d.color; g.font = font(22, 800); g.fillText(d.short, side_.x, y + 22 * u);
+    g.textAlign = "right"; g.fillStyle = "#dfe8f7"; g.font = font(20, 700); g.fillText(label, side_.x + side_.w, y + 22 * u);
+    const by = y + 32 * u, bh = 10 * u;
+    g.fillStyle = "rgba(255,255,255,.08)"; g.beginPath(); g.roundRect(side_.x, by, side_.w, bh, bh / 2); g.fill();
+    if (frac > 0) {
+      g.shadowColor = d.color; g.shadowBlur = 14 * u; g.fillStyle = d.color;
+      g.beginPath(); g.roundRect(side_.x, by, Math.max(bh, side_.w * frac), bh, bh / 2); g.fill(); g.shadowBlur = 0;
+    }
+  });
   // footer
-  g.textAlign = "left"; g.textBaseline = "bottom"; g.fillStyle = "#888"; g.font = font(22, 600);
-  g.fillText("Thank you to every scout, family and neighbor! • SFF 721 Map", 40 * u, H - 20 * u);
+  g.textAlign = "left"; g.fillStyle = "#5f7699"; g.font = font(18, 600);
+  g.fillText("Pack 721 • Thank you to every scout, family and neighbor!", 40 * u, H - 24 * u);
+  if (!done && t.cov) { g.textAlign = "right"; g.fillStyle = "#ff7d93"; g.fillText(`${t.cov} segment${t.cov === 1 ? "" : "s"} need coverage`, W - 40 * u, H - 24 * u); }
   return c;
 }
 // backup: the whole board (both weeks) as a file, to keep or move to another computer
