@@ -3148,7 +3148,7 @@ function boardTab(body) {
   const wk2 = week() === 2;
   const table = h("table", "dp-grid", null, body);
   const hr = h("tr", "", null, h("thead", "", null, table));
-  for (const l of ["Seg", "Street", "Hses", "Status", ...(wk2 ? ["Bags", "2nd"] : []), "Group"]) h("th", "", l, hr);
+  for (const l of ["Seg", "Status", ...(wk2 ? ["Bags", "2nd"] : []), "Group", "Street", "Hses"]) h("th", "", l, hr);   // inputs next to the ID
   const tb = h("tbody", "", null, table);
   for (const d of DATA.dens) {
     if (dispatch.den && d.key !== dispatch.den) continue;
@@ -3166,9 +3166,6 @@ function boardTab(body) {
       if (r.at || r.covAt) tr.title = "Entered " + new Date(r.at || r.covAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
       const idc = h("td", "", null, tr); chip(sg, idc);
       idc.addEventListener("click", () => dispatchSelect(id, false));
-      const first = sg.lines.find((l) => !l.warning);
-      h("td", "street", first ? first.text : "", tr).addEventListener("click", () => dispatchSelect(id, false));
-      h("td", "num", String(sg.houses), tr);
       const sc2 = h("td", "", null, tr);
       const ss = h("select", "", null, sc2); ss.setAttribute("aria-label", `Status of ${id}`);
       for (const [v, l] of [["todo", "–"], ["done", "Done"], ["cov", "Coverage"]]) { const o = h("option", "", l, ss); o.value = v; }
@@ -3205,6 +3202,9 @@ function boardTab(body) {
         board[id] = nr; dispatch.msg = [{ ok: v ? `${id} → ${v}` : `${id}: no group` }];
         saveBoard(); styleSegments(); renderDispatch();
       });
+      const first = sg.lines.find((l) => !l.warning);
+      h("td", "street", first ? first.text : "", tr).addEventListener("click", () => dispatchSelect(id, false));
+      h("td", "num", String(sg.houses), tr);
     }
   }
   if (dispatchWide() && !dispatch.msg.some((m) => m.ask)) setTimeout(() => { const n = dispatchPanel.querySelector(".dq-input"); if (n && document.activeElement === document.body) n.focus(); }, 0);
