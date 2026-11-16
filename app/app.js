@@ -2932,6 +2932,11 @@ const segStatus = (id) => (rec(id).done ? "done" : rec(id).cov ? "cov" : "todo")
 const bagsOf = (id) => (rec(id).bags || 0) + (rec(id).bags2 || 0);
 // group names aren't case sensitive: "wolf b" is Wolf B. A name already on the board keeps its spelling.
 const groupKey = (n) => String(n || "").trim().replace(/\s+/g, " ").toLowerCase();
+function knownGroups() {                  // every group name on the board, one spelling each
+  const seen = new Map();
+  for (const r of Object.values(board)) if (r.group && !seen.has(groupKey(r.group))) seen.set(groupKey(r.group), r.group);
+  return [...seen.values()].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+}
 function groupName(n) {
   n = String(n || "").trim().replace(/\s+/g, " ");
   for (const r of Object.values(board)) if (r.group && groupKey(r.group) === groupKey(n)) return r.group;
@@ -3119,6 +3124,28 @@ function boardTab(body) {
   Object.assign(q, { type: "text", autocomplete: "off", spellcheck: false, placeholder: week() === 2 ? "W6 12   (W6 +3, W6 c, W6 g Wolf B, W6 u)" : "W6   (W6 c, W6 g Wolf B, W6 u)" });
   q.setAttribute("aria-label", "Quick entry by segment code");
   q.autocapitalize = "characters";
+  // group names complete as you type "W6 g wo": a hint shows the match, Tab (or tapping it) fills it in; a new
+  // name just keeps typing
+  const hints = h("div", "dq-hints", null, body); hints.hidden = true;   // tappable matches, under the box
+  const matches = () => {
+    const m = q.value.match(/(?:^|,)\s*[A-Za-z]+\s?\d+\s+g(?:roup)?\s+([^,]*)$/i);
+    if (!m || !m[1].trim()) return null;
+    const pre = groupKey(m[1]);
+    const hits = knownGroups().filter((n) => groupKey(n).startsWith(pre) && groupKey(n) !== pre);
+    return hits.length ? { hits, from: q.value.length - m[1].length } : null;
+  };
+  const fill = (name) => { const m = matches(); if (!m) return; q.value = q.value.slice(0, m.from) + name; showHints(); q.focus(); };
+  const showHints = () => {
+    const m = matches(); hints.hidden = !m; hints.textContent = "";
+    if (!m) return;
+    m.hits.slice(0, 6).forEach((n, i) => {
+      const b = h("button", "dq-hint", n + (i === 0 ? "  \u21e5" : ""), hints); b.type = "button"; b.tabIndex = -1;
+      b.addEventListener("mousedown", (e) => e.preventDefault());   // keep the box focused
+      b.addEventListener("click", () => fill(n));
+    });
+  };
+  q.addEventListener("input", showHints);
+  q.addEventListener("keydown", (e) => { if (e.key === "Tab" && !e.shiftKey) { const m = matches(); if (m) { e.preventDefault(); fill(m.hits[0]); } } });
   q.addEventListener("paste", (e) => {   // several pasted texts: keep each on its own line
     const t = (e.clipboardData || window.clipboardData).getData("text");
     if (!/\n/.test(t)) return;
@@ -3177,6 +3204,9 @@ function boardTab(body) {
   for (const [v, l] of [["", "Any status"], ["todo", "To do"], ["done", "Done"], ["cov", "Needs coverage"]]) { const o = h("option", "", l, stat); o.value = v; }
   stat.value = dispatch.status;
   stat.addEventListener("change", () => { dispatch.status = stat.value; renderDispatch(); });
+  // the names already used, offered as you type in a Group cell
+  const dl = h("datalist", "", null, body); dl.id = "dp-groups-list";
+  for (const n of knownGroups()) { const op = h("option", "", null, dl); op.value = n; }
   // the grid
   const wk2 = week() === 2;
   const table = h("table", "dp-grid", null, body);
@@ -3226,7 +3256,8 @@ function boardTab(body) {
       if (wk2) { numCell("bags"); numCell("bags2"); }
       const gc = h("td", "", null, tr);
       const gi = h("input", "grp-in", null, gc);
-      Object.assign(gi, { type: "text", value: r.group || "", maxLength: 24, placeholder: "" });
+      Object.assign(gi, { type: "text", value: r.group || "", maxLength: 24, placeholder: "", autocomplete: "off" });
+      gi.setAttribute("list", "dp-groups-list");   // suggests the names already used; a new one can still be typed
       gi.setAttribute("aria-label", `Group for ${id}`);
       gi.addEventListener("change", () => {
         dispatch.undo = { [id]: board[id] ? { ...board[id] } : null };

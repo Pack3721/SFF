@@ -539,8 +539,8 @@ body.dispatch #banner, body.dispatch #setup-status, body.dispatch #tools, body.d
 .dp-totals span { font-size: 11px; color: #666; }
 .dq { display: flex; gap: 8px; }
 .dq-input { flex: 1; min-width: 0; font: inherit; font-size: 18px; font-weight: 700; min-height: 44px; padding: 0 10px; border: 2px solid #333; border-radius: 10px;
-  text-transform: uppercase; }
-.dq-input::placeholder { text-transform: none; font-weight: 400; color: #999; }
+}
+.dq-input::placeholder { font-weight: 400; color: #999; }
 #dispatch .share-btn { font: inherit; font-size: 15px; font-weight: 700; min-height: 44px; padding: 0 14px; color: #111; background: #fff; border: 2px solid #333; border-radius: 22px; }
 .dq-help { margin: 4px 0 6px; font-size: 12px; color: #666; }
 .dq-msg { margin: 0 0 8px; padding: 6px 8px; border-radius: 8px; background: #f7f7f7; font-size: 14px; }
@@ -588,3 +588,6 @@ body.dispatch #banner, body.dispatch #setup-status, body.dispatch #tools, body.d
 .dp-groups .dp-note { font-size: 11px; color: #b00020; font-style: normal; }
 .dp-groups td.num { white-space: nowrap; }
 .dq-msg .note { color: #1a5fb4; font-weight: 600; }
+.dq-hints { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; }
+.dq-hint { font: inherit; font-size: 14px; font-weight: 700; padding: 4px 10px; border: 1.5px solid #1a5fb4; border-radius: 14px; background: #eef4fc; color: #1a5fb4; }
+.dq-hint:first-child { background: #1a5fb4; color: #fff; }
